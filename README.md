@@ -17,7 +17,9 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. Visit
+[http://localhost:3000/db-test](http://localhost:3000/db-test) to confirm that the application can
+connect to the database specified by the `DATABASE_URL` environment variable.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
