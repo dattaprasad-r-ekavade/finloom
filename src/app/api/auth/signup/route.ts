@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 
 import { prisma } from '@/lib/prisma';
+import { ensureDatabase } from '@/lib/ensureDatabase';
 
 interface SignupRequestBody {
   email?: string;
@@ -12,6 +13,8 @@ interface SignupRequestBody {
 
 export async function POST(request: Request) {
   try {
+    await ensureDatabase();
+
     const body = (await request.json()) as SignupRequestBody;
     const { email, password, name, role } = body;
 
