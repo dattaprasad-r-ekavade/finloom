@@ -1,6 +1,6 @@
 'use client';
 
-import { createTheme, Theme } from '@mui/material/styles';
+import { createTheme } from '@mui/material/styles';
 
 // Light theme colors
 const lightTheme = createTheme({

@@ -113,7 +113,7 @@ export default function LoginPage() {
               <Divider sx={{ my: 3 }} />
 
               <Typography variant="body2" align="center" color="text.secondary">
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <Link
                   href="#"
                   sx={{ textDecoration: 'none', color: 'primary.main', fontWeight: 500 }}
