@@ -30,44 +30,44 @@ const lightTheme = createTheme({
       paper: '#FFFFFF',
     },
     text: {
-      primary: '#1A1A1A',
-      secondary: '#666666',
+      primary: '#1E1E1E',
+      secondary: '#4D5561',
     },
   },
   typography: {
-    fontFamily: '"Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+    fontFamily: 'var(--font-inter), "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
     h1: {
-      fontFamily: '"Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
       fontWeight: 700,
     },
     h2: {
-      fontFamily: '"Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
       fontWeight: 600,
     },
     h3: {
-      fontFamily: '"Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
       fontWeight: 600,
     },
     h4: {
-      fontFamily: '"Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
       fontWeight: 600,
     },
     h5: {
-      fontFamily: '"Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
       fontWeight: 500,
     },
     h6: {
-      fontFamily: '"Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
       fontWeight: 500,
     },
     body1: {
-      fontFamily: '"Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'var(--font-inter), "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
     },
     body2: {
-      fontFamily: '"Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'var(--font-inter), "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
     },
     button: {
-      fontFamily: '"Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'var(--font-inter), "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
       fontWeight: 500,
       textTransform: 'none',
     },
@@ -76,6 +76,14 @@ const lightTheme = createTheme({
     borderRadius: 12,
   },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          backgroundColor: '#FAFAFA',
+          color: '#1E1E1E',
+        },
+      },
+    },
     MuiCard: {
       styleOverrides: {
         root: {
@@ -93,6 +101,13 @@ const lightTheme = createTheme({
         root: {
           borderRadius: 8,
           padding: '10px 24px',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
         },
       },
     },
@@ -132,39 +147,39 @@ const darkTheme = createTheme({
     },
   },
   typography: {
-    fontFamily: '"Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+    fontFamily: 'var(--font-inter), "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
     h1: {
-      fontFamily: '"Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
       fontWeight: 700,
     },
     h2: {
-      fontFamily: '"Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
       fontWeight: 600,
     },
     h3: {
-      fontFamily: '"Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
       fontWeight: 600,
     },
     h4: {
-      fontFamily: '"Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
       fontWeight: 600,
     },
     h5: {
-      fontFamily: '"Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
       fontWeight: 500,
     },
     h6: {
-      fontFamily: '"Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
       fontWeight: 500,
     },
     body1: {
-      fontFamily: '"Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'var(--font-inter), "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
     },
     body2: {
-      fontFamily: '"Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'var(--font-inter), "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
     },
     button: {
-      fontFamily: '"Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+      fontFamily: 'var(--font-inter), "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
       fontWeight: 500,
       textTransform: 'none',
     },
@@ -173,6 +188,14 @@ const darkTheme = createTheme({
     borderRadius: 12,
   },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          backgroundColor: '#0D1117',
+          color: '#E6EDF3',
+        },
+      },
+    },
     MuiCard: {
       styleOverrides: {
         root: {
@@ -193,11 +216,18 @@ const darkTheme = createTheme({
         },
       },
     },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
+        },
+      },
+    },
   },
 });
 
 // Font family for monospace stats
-const robotoMonoFontFamily = '"Roboto Mono", "Courier New", monospace';
+const robotoMonoFontFamily = 'var(--font-roboto-mono), "Roboto Mono", "Courier New", monospace';
 
 export { lightTheme, darkTheme, robotoMonoFontFamily };
 

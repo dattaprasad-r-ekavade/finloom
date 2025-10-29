@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import ThemeProvider from "@/theme/ThemeProvider";
+import { Inter, Poppins, Roboto_Mono } from "next/font/google";
+
+const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"], variable: "--font-inter" });
+const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"], variable: "--font-poppins" });
+const robotoMono = Roboto_Mono({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-roboto-mono" });
 
 export const metadata: Metadata = {
   title: "Finloom - Modern Fintech Platform",
@@ -14,15 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body>
+      <body className={`${inter.variable} ${poppins.variable} ${robotoMono.variable}`}>
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
