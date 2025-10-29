@@ -1,72 +1,77 @@
-import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { prisma } from './prisma';
 
 let initialisationPromise: Promise<void> | null = null;
 
-const runPrismaDbPush = async () => {
-  const prismaBinary = join(
-    process.cwd(),
-    'node_modules',
-    '.bin',
-    process.platform === 'win32' ? 'prisma.cmd' : 'prisma'
-  );
-  const schemaPath = join(process.cwd(), 'prisma', 'schema.prisma');
+const createRoleEnum = async () => {
+  await prisma.$executeRawUnsafe(`
+    DO $$
+    BEGIN
+      CREATE TYPE "UserRole" AS ENUM ('TRADER', 'ADMIN');
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END;
+    $$;
+  `);
+};
 
-  if (!existsSync(prismaBinary)) {
-    throw new Error(
-      'Prisma CLI not found. Please run `npm install` before starting the server.'
+const createUserTable = async () => {
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "User" (
+      "id" TEXT NOT NULL,
+      "email" TEXT NOT NULL,
+      "passwordHash" TEXT NOT NULL,
+      "name" TEXT,
+      "role" "UserRole" NOT NULL DEFAULT 'TRADER',
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "User_pkey" PRIMARY KEY ("id")
     );
-  }
+  `);
+};
 
-  await new Promise<void>((resolve, reject) => {
-    const child = spawn(
-      prismaBinary,
-      ['db', 'push', `--schema=${schemaPath}`, '--skip-generate'],
-      {
-        env: process.env,
-        stdio: ['ignore', 'pipe', 'pipe'],
-      }
-    );
+const ensureEmailUniqueIndex = async () => {
+  await prisma.$executeRawUnsafe(`
+    CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User"("email");
+  `);
+};
 
-    let stderr = '';
-    let stdout = '';
+const ensureUpdatedAtTrigger = async () => {
+  await prisma.$executeRawUnsafe(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE tgname = 'user_updated_at_trigger'
+      ) THEN
+        CREATE OR REPLACE FUNCTION set_user_updated_at()
+        RETURNS trigger AS $$
+        BEGIN
+          NEW."updatedAt" = NOW();
+          RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
 
-    child.stdout.on('data', (chunk) => {
-      stdout += chunk.toString();
-    });
+        CREATE TRIGGER user_updated_at_trigger
+        BEFORE UPDATE ON "User"
+        FOR EACH ROW
+        EXECUTE FUNCTION set_user_updated_at();
+      END IF;
+    END;
+    $$;
+  `);
+};
 
-    child.stderr.on('data', (chunk) => {
-      stderr += chunk.toString();
-    });
-
-    child.on('close', (code) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        const error = new Error(
-          `Failed to apply Prisma schema (exit code ${code}).\n${stderr || stdout}`
-        );
-        reject(error);
-      }
-    });
-
-    child.on('error', (error) => {
-      reject(error);
-    });
-  });
+const initialiseDatabase = async () => {
+  await createRoleEnum();
+  await createUserTable();
+  await ensureEmailUniqueIndex();
+  await ensureUpdatedAtTrigger();
 };
 
 export const ensureDatabase = async () => {
   if (!initialisationPromise) {
-    initialisationPromise = (async () => {
-      try {
-        await runPrismaDbPush();
-      } catch (error) {
-        initialisationPromise = null;
-        throw error;
-      }
-    })();
+    initialisationPromise = initialiseDatabase();
   }
 
   return initialisationPromise;
