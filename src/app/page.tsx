@@ -8,11 +8,11 @@ import {
   Button,
   Card,
   CardContent,
-  Grid,
   Chip,
   Stack,
   Divider,
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import {
   TrendingUp,
   Security,
