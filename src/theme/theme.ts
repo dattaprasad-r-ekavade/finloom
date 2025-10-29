@@ -30,8 +30,8 @@ const lightTheme = createTheme({
       paper: '#FFFFFF',
     },
     text: {
-      primary: '#1A1A1A',
-      secondary: '#666666',
+      primary: '#1E1E1E',
+      secondary: '#4D5561',
     },
   },
   typography: {
@@ -76,6 +76,14 @@ const lightTheme = createTheme({
     borderRadius: 12,
   },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          backgroundColor: '#FAFAFA',
+          color: '#1E1E1E',
+        },
+      },
+    },
     MuiCard: {
       styleOverrides: {
         root: {
@@ -93,6 +101,13 @@ const lightTheme = createTheme({
         root: {
           borderRadius: 8,
           padding: '10px 24px',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
         },
       },
     },
@@ -173,6 +188,14 @@ const darkTheme = createTheme({
     borderRadius: 12,
   },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          backgroundColor: '#0D1117',
+          color: '#E6EDF3',
+        },
+      },
+    },
     MuiCard: {
       styleOverrides: {
         root: {
@@ -190,6 +213,13 @@ const darkTheme = createTheme({
         root: {
           borderRadius: 8,
           padding: '10px 24px',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
         },
       },
     },
