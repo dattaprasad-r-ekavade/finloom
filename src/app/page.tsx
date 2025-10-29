@@ -123,7 +123,6 @@ export default function Home() {
   const router = useRouter();
 
   const fadeInUpStyles = (delay = '0s') => ({
-    opacity: 0,
     transform: 'translateY(24px)',
     animation: 'fadeInUp 0.9s ease forwards',
     animationDelay: delay,
@@ -185,7 +184,7 @@ export default function Home() {
       >
         <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1 }}>
           <Grid container spacing={6} alignItems="center">
-            <Grid item xs={12} md={7}>
+            <Grid size={{ xs: 12, md: 7 }}>
               <Stack spacing={3}>
                 <Typography
                   variant="h2"
@@ -257,7 +256,7 @@ export default function Home() {
                 </Stack>
               </Stack>
             </Grid>
-            <Grid item xs={12} md={5}>
+            <Grid size={{ xs: 12, md: 5 }}>
               <Box
                 sx={{
                   display: 'grid',
@@ -331,7 +330,7 @@ export default function Home() {
 
         <Grid container spacing={3}>
           {features.map((feature) => (
-            <Grid item xs={12} sm={6} md={4} key={feature.title}>
+            <Grid key={feature.title} size={{ xs: 12, sm: 6, md: 4 }}>
               <Card
                 sx={{
                   height: '100%',
@@ -378,7 +377,7 @@ export default function Home() {
       <Container maxWidth="xl" sx={{ py: { xs: 8, md: 10 } }}>
         <Grid container spacing={4} alignItems="stretch">
           {dashboards.map((item) => (
-            <Grid item xs={12} md={6} key={item.title}>
+            <Grid key={item.title} size={{ xs: 12, md: 6 }}>
               <Card
                 sx={{
                   height: '100%',
