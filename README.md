@@ -2,8 +2,8 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-Create an `.env` file based on `.env.example` and provide a valid `DATABASE_URL` for Prisma. By default the example file uses a
-SQLite database stored at `prisma/dev.db`.
+Create an `.env` file based on `.env.example` and provide a valid `DATABASE_URL` for Prisma. The application expects a
+PostgreSQL connection string (for example from a Neon database) with SSL enabled.
 
 First, run the development server:
 
