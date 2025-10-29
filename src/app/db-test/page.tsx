@@ -2,7 +2,18 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
-async function getConnectionStatus() {
+type ConnectionStatus =
+  | {
+      ok: true;
+      timestamp: Date;
+    }
+  | {
+      ok: false;
+      message: string;
+      hint?: string;
+    };
+
+async function getConnectionStatus(): Promise<ConnectionStatus> {
   try {
     const result = await prisma.$queryRaw<{ now: Date }[]>`SELECT NOW() as now`;
     const timestamp = result[0]?.now ?? new Date();
@@ -12,9 +23,17 @@ async function getConnectionStatus() {
       timestamp,
     };
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const lowerCaseMessage = message.toLowerCase();
+
+    const hint = lowerCaseMessage.includes('protocol `file:`')
+      ? 'Your Prisma client was generated for SQLite. Ensure `prisma generate` runs after updating the datasource provider and redeploy to refresh the client.'
+      : undefined;
+
     return {
       ok: false as const,
-      message: error instanceof Error ? error.message : String(error),
+      message,
+      hint,
     };
   }
 }
@@ -61,6 +80,9 @@ export default async function DatabaseTestPage() {
           <div style={{ marginTop: '0.75rem' }}>
             <p style={{ color: '#b91c1c', fontWeight: 500 }}>Failed to connect to the database.</p>
             <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>{status.message}</p>
+            {status.hint ? (
+              <p style={{ color: '#6b7280', fontSize: '0.9rem', marginTop: '0.5rem' }}>{status.hint}</p>
+            ) : null}
           </div>
         )}
       </section>
