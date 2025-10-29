@@ -2,6 +2,11 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+Create an `.env` file based on `.env.example` and provide a valid `DATABASE_URL` for Prisma. The application expects a
+PostgreSQL connection string (for example from a Neon database) with SSL enabled. Run `npm install` (or your preferred
+package manager install command) whenever the datasource configuration changes so Prisma can regenerate the client for
+the new connection type.
+
 First, run the development server:
 
 ```bash
@@ -14,7 +19,9 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result. Visit
+[http://localhost:3000/db-test](http://localhost:3000/db-test) to confirm that the application can
+connect to the database specified by the `DATABASE_URL` environment variable.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
