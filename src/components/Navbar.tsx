@@ -62,7 +62,7 @@ export default function Navbar() {
             </Button>
             <Button
               variant="contained"
-              onClick={() => router.push('/login')}
+              onClick={() => router.push('/signup')}
               sx={{
                 backgroundImage: (theme) =>
                   theme.palette.mode === 'light'
@@ -75,7 +75,7 @@ export default function Navbar() {
                 },
               }}
             >
-              Request Funding
+              Sign up
             </Button>
             <IconButton
               onClick={toggleTheme}

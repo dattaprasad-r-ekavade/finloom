@@ -10,43 +10,56 @@ import {
   TextField,
   Button,
   Divider,
-  Link,
   Chip,
   Stack,
   Alert,
+  ToggleButton,
+  ToggleButtonGroup,
+  Link,
 } from '@mui/material';
-import { Lock } from '@mui/icons-material';
+import { PersonAdd } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState<'TRADER' | 'ADMIN'>('TRADER');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    setSuccess(null);
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ name, email, password, role }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error ?? 'Unable to sign in.');
+        setError(data.error ?? 'Unable to create account.');
         return;
       }
 
-      const destination = data.user?.role === 'ADMIN' ? '/dashboard/admin' : '/dashboard/user';
-      router.push(destination);
+      setSuccess('Account created! You can now sign in.');
+      setName('');
+      setEmail('');
+      setPassword('');
+      setRole('TRADER');
+
+      setTimeout(() => {
+        router.push('/login');
+      }, 900);
     } catch (err) {
       console.error(err);
       setError('Unexpected error. Please try again.');
@@ -95,8 +108,8 @@ export default function LoginPage() {
           >
             <Stack spacing={3} sx={{ maxWidth: 420 }}>
               <Chip
-                icon={<Lock fontSize="small" />}
-                label="Secure Sign In"
+                icon={<PersonAdd fontSize="small" />}
+                label="Create Account"
                 color="primary"
                 variant="outlined"
                 sx={{ alignSelf: 'flex-start', fontWeight: 600 }}
@@ -110,10 +123,10 @@ export default function LoginPage() {
                     mb: 1,
                   }}
                 >
-                  Welcome back to Finloom
+                  Join the Finloom network
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
-                  Access your trading intelligence and operational oversight in seconds.
+                  Register to unlock trading workspaces or administrative dashboards tailored to your role.
                 </Typography>
               </Box>
               <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -122,6 +135,18 @@ export default function LoginPage() {
                     {error}
                   </Alert>
                 )}
+                {success && (
+                  <Alert severity="success" onClose={() => setSuccess(null)}>
+                    {success}
+                  </Alert>
+                )}
+                <TextField
+                  fullWidth
+                  label="Full Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  autoComplete="name"
+                />
                 <TextField
                   fullWidth
                   label="Email Address"
@@ -137,14 +162,27 @@ export default function LoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   required
                 />
-                <Box sx={{ textAlign: 'right' }}>
-                  <Link href="#" underline="hover" color="primary.main" fontWeight={600}>
-                    Forgot password?
-                  </Link>
-                </Box>
+                <ToggleButtonGroup
+                  exclusive
+                  value={role}
+                  color="primary"
+                  onChange={(_, newRole: 'TRADER' | 'ADMIN' | null) => {
+                    if (newRole) {
+                      setRole(newRole);
+                    }
+                  }}
+                  sx={{ display: 'flex', flexWrap: 'wrap' }}
+                >
+                  <ToggleButton value="TRADER" sx={{ flex: 1, textTransform: 'none', fontWeight: 600 }}>
+                    Trader workspace
+                  </ToggleButton>
+                  <ToggleButton value="ADMIN" sx={{ flex: 1, textTransform: 'none', fontWeight: 600 }}>
+                    Admin command center
+                  </ToggleButton>
+                </ToggleButtonGroup>
                 <Button
                   fullWidth
                   type="submit"
@@ -164,16 +202,16 @@ export default function LoginPage() {
                     },
                   }}
                 >
-                  {loading ? 'Signing in…' : 'Sign in'}
+                  {loading ? 'Creating account…' : 'Create account'}
                 </Button>
                 <Button
                   fullWidth
                   variant="outlined"
                   size="large"
-                  onClick={() => router.push('/signup')}
+                  onClick={() => router.push('/login')}
                   sx={{ py: 1.6, fontWeight: 600 }}
                 >
-                  Create an account
+                  Back to sign in
                 </Button>
               </Box>
             </Stack>
@@ -183,25 +221,32 @@ export default function LoginPage() {
                 variant="h6"
                 sx={{ fontWeight: 600, fontFamily: '"Poppins", "Segoe UI", sans-serif' }}
               >
-                Designed for high-performance teams
+                Choose your operating cockpit
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Real-time account status, scalable risk controls, and instant messaging keep traders and admins
-                aligned. Enjoy light, performant UI transitions optimised for focus.
+                Traders get high-tempo analytics, instant funding signals, and execution tooling. Admins unlock
+                compliance overviews, firm-wide reporting, and capital allocator dashboards.
               </Typography>
               <Divider flexItem>
                 <Typography variant="caption" color="text.secondary">
-                  Access Requests
+                  Already on the platform?
                 </Typography>
               </Divider>
               <Typography variant="body2">
-                Don&apos;t have credentials yet?{' '}
-                <Link href="/signup" underline="hover" color="primary.main" fontWeight={600}>
-                  Request platform access
+                Returning members can{' '}
+                <Link
+                  component="button"
+                  type="button"
+                  onClick={() => router.push('/login')}
+                  sx={{ fontWeight: 600 }}
+                >
+                  sign in here
                 </Link>
+                .
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Demo mode: sign in to preview the dashboards with your configured role.
+                Accounts are provisioned instantly. Role-based routing takes you straight to the right dashboard
+                after sign-in.
               </Typography>
             </Stack>
           </CardContent>
