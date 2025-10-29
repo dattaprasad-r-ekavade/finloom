@@ -8,6 +8,8 @@ import {
   CardContent,
   Typography,
   Paper,
+  Chip,
+  Stack,
 } from '@mui/material';
 import {
   TrendingUp,
@@ -98,9 +100,20 @@ export default function UserDashboard() {
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
       <Navbar />
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, mb: 4 }}>
-          User Dashboard
-        </Typography>
+        <Stack spacing={2} sx={{ mb: 4 }}>
+          <Typography variant="h4" sx={{ fontWeight: 600 }}>
+            User Dashboard
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 720 }}>
+            Monitor your funded accounts, measure risk in real time, and action opportunities instantly with
+            responsive analytics tailored for traders.
+          </Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+            <Chip label="Live" color="success" variant="outlined" />
+            <Chip label="Risk Guardrails" color="warning" variant="outlined" />
+            <Chip label="Performance" color="primary" variant="outlined" />
+          </Stack>
+        </Stack>
 
         {/* Stats Cards */}
         <Box
@@ -116,8 +129,18 @@ export default function UserDashboard() {
           }}
         >
           {stats.map((stat, index) => (
-            <Card key={index}>
-              <CardContent>
+            <Card
+              key={index}
+              sx={{
+                height: '100%',
+                border: (theme) => `1px solid ${theme.palette.divider}`,
+                background: (theme) =>
+                  theme.palette.mode === 'light'
+                    ? 'linear-gradient(135deg, rgba(0,97,168,0.04) 0%, rgba(0,168,107,0.08) 100%)'
+                    : 'linear-gradient(135deg, rgba(79,195,247,0.12) 0%, rgba(76,175,80,0.12) 100%)',
+              }}
+            >
+              <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                     <Typography variant="body2" color="text.secondary">
                       {stat.title}
@@ -161,7 +184,17 @@ export default function UserDashboard() {
             }}
           >
             {/* Portfolio Value Chart */}
-            <Paper sx={{ p: 3 }}>
+            <Paper
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                border: (theme) => `1px solid ${theme.palette.divider}`,
+                transition: 'transform 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                },
+              }}
+            >
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                 Portfolio Value
               </Typography>
@@ -189,7 +222,17 @@ export default function UserDashboard() {
             </Paper>
 
             {/* Trade Volume Chart */}
-            <Paper sx={{ p: 3 }}>
+            <Paper
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                border: (theme) => `1px solid ${theme.palette.divider}`,
+                transition: 'transform 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                },
+              }}
+            >
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                 Trade Volume
               </Typography>
@@ -206,7 +249,17 @@ export default function UserDashboard() {
           </Box>
 
           {/* Profit & Loss Chart */}
-          <Paper sx={{ p: 3 }}>
+          <Paper
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              border: (theme) => `1px solid ${theme.palette.divider}`,
+              transition: 'transform 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+              },
+            }}
+          >
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                 Profit & Loss Trend
               </Typography>

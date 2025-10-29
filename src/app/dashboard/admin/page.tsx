@@ -15,6 +15,7 @@ import {
   TableHead,
   TableRow,
   Chip,
+  Stack,
 } from '@mui/material';
 import {
   People,
@@ -98,9 +99,20 @@ export default function AdminDashboard() {
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
       <Navbar />
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, mb: 4 }}>
-          Admin Dashboard
-        </Typography>
+        <Stack spacing={2} sx={{ mb: 4 }}>
+          <Typography variant="h4" sx={{ fontWeight: 600 }}>
+            Admin Dashboard
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 760 }}>
+            Gain real-time visibility into firm performance, risk posture, and trader success with dashboards
+            tuned for operational leaders.
+          </Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+            <Chip label="Capital" color="primary" variant="outlined" />
+            <Chip label="Risk Alerts" color="error" variant="outlined" />
+            <Chip label="Compliance" color="warning" variant="outlined" />
+          </Stack>
+        </Stack>
 
         {/* Stats Cards */}
         <Box
@@ -116,8 +128,18 @@ export default function AdminDashboard() {
           }}
         >
           {stats.map((stat, index) => (
-            <Card key={index}>
-              <CardContent>
+            <Card
+              key={index}
+              sx={{
+                height: '100%',
+                border: (theme) => `1px solid ${theme.palette.divider}`,
+                background: (theme) =>
+                  theme.palette.mode === 'light'
+                    ? 'linear-gradient(135deg, rgba(0,97,168,0.04) 0%, rgba(0,168,107,0.08) 100%)'
+                    : 'linear-gradient(135deg, rgba(79,195,247,0.12) 0%, rgba(76,175,80,0.12) 100%)',
+              }}
+            >
+              <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                     <Typography variant="body2" color="text.secondary">
                       {stat.title}
@@ -161,7 +183,17 @@ export default function AdminDashboard() {
             }}
           >
             {/* Platform Revenue & Users */}
-            <Paper sx={{ p: 3 }}>
+            <Paper
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                border: (theme) => `1px solid ${theme.palette.divider}`,
+                transition: 'transform 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                },
+              }}
+            >
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                 Platform Revenue & User Growth
               </Typography>
@@ -206,7 +238,17 @@ export default function AdminDashboard() {
             </Paper>
 
             {/* User Activity Pie Chart */}
-            <Paper sx={{ p: 3 }}>
+            <Paper
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                border: (theme) => `1px solid ${theme.palette.divider}`,
+                transition: 'transform 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                },
+              }}
+            >
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                 User Activity
               </Typography>
@@ -233,7 +275,17 @@ export default function AdminDashboard() {
           </Box>
 
           {/* Top Traders Table */}
-          <Paper sx={{ p: 3 }}>
+          <Paper
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              border: (theme) => `1px solid ${theme.palette.divider}`,
+              transition: 'transform 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+              },
+            }}
+          >
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
                 Top Traders
               </Typography>
