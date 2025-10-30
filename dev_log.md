@@ -11,3 +11,7 @@
   - Built the `/kyc` client experience with validation, status messaging, and post-approval routing.
   - Added the `/api/kyc/submit` auto-approval endpoint and wired auth responses to include KYC state.
   - Gated dashboard interactions and introduced a challenge plan placeholder route pending phase 3.
+- Executed Phase 3 challenge plan selection capabilities:
+  - Implemented `/api/challenges/plans`, `/api/challenges/select`, and `/api/challenges/selection` endpoints for plan discovery and persistence.
+  - Shipped the `/challenge-plans` comparison interface with reservation flow into the mocked payment checkpoint.
+  - Surfaced reserved plan details and payment handoffs on the trader dashboard, plus added the mock payment placeholder.

@@ -238,7 +238,7 @@ export default function TraderSignupPage() {
                 </Link>
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Accounts are provisioned instantly. You'll be taken straight to your personalized dashboard
+                Accounts are provisioned instantly. You&apos;ll be taken straight to your personalized dashboard
                 after registration.
               </Typography>
             </Stack>

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Container,
@@ -12,6 +12,7 @@ import {
   Stack,
   Button,
   Alert,
+  Skeleton,
 } from '@mui/material';
 import {
   TrendingUp,
@@ -38,12 +39,92 @@ import { useRouter } from 'next/navigation';
 import { robotoMonoFontFamily } from '@/theme/theme';
 import { useAuthStore } from '@/store/authStore';
 
+type ChallengeSelection = {
+  id: string;
+  status: string;
+  plan: {
+    id: string;
+    name: string;
+    level: number;
+    accountSize: number;
+    fee: number;
+    profitTargetPct: number;
+    maxLossPct: number;
+    dailyLossPct: number;
+    durationDays: number;
+    profitSplit: number;
+    allowedInstruments: string[];
+  };
+};
+
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(value);
+
 export default function UserDashboard() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const hasCompletedKyc = user?.hasCompletedKyc ?? false;
   const kycStatusText = hasCompletedKyc ? 'KYC approved' : 'KYC pending';
   const kycChipColor = hasCompletedKyc ? 'success' : 'warning';
+  const [selection, setSelection] = useState<ChallengeSelection | null>(null);
+  const [selectionLoading, setSelectionLoading] = useState(false);
+  const [selectionError, setSelectionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+
+    const fetchSelection = async () => {
+      if (!hasCompletedKyc) {
+        return;
+      }
+
+      setSelectionLoading(true);
+      setSelectionError(null);
+
+      try {
+        const response = await fetch(
+          `/api/challenges/selection?userId=${encodeURIComponent(user.id)}`
+        );
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error ?? 'Unable to load challenge selection.');
+        }
+
+        setSelection(data.selection ?? null);
+      } catch (error) {
+        console.error(error);
+        setSelectionError('Unable to load your challenge plan.');
+      } finally {
+        setSelectionLoading(false);
+      }
+    };
+
+    fetchSelection();
+  }, [hasCompletedKyc, router, user]);
+
+  const challengeHighlights = useMemo(
+    () =>
+      selection
+        ? [
+            { label: 'Capital', value: formatCurrency(selection.plan.accountSize) },
+            { label: 'Fee', value: formatCurrency(selection.plan.fee) },
+            { label: 'Profit target', value: `${selection.plan.profitTargetPct}%` },
+            { label: 'Max loss', value: `${selection.plan.maxLossPct}%` },
+            { label: 'Daily loss', value: `${selection.plan.dailyLossPct}%` },
+            { label: 'Duration', value: `${selection.plan.durationDays} days` },
+            { label: 'Profit split', value: `${selection.plan.profitSplit}%` },
+          ]
+        : [],
+    [selection]
+  );
 
   // Sample data for charts
   const performanceData = [
@@ -155,32 +236,115 @@ export default function UserDashboard() {
             borderRadius: 3,
             border: (theme) => `1px solid ${theme.palette.divider}`,
             mb: 4,
-            display: 'flex',
-            flexDirection: { xs: 'column', md: 'row' },
-            alignItems: { xs: 'flex-start', md: 'center' },
-            gap: 2,
           }}
         >
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Challenge plan access
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Your KYC status determines when you can reserve a challenge account. Approved traders can proceed straight to plan selection.
-            </Typography>
-          </Box>
-          <Button
-            variant="contained"
-            size="large"
-            disabled={!hasCompletedKyc}
-            onClick={() => router.push('/challenge-plans')}
-            sx={{
-              flexShrink: 0,
-              pointerEvents: hasCompletedKyc ? 'auto' : 'none',
-            }}
-          >
-            {hasCompletedKyc ? 'Explore challenge plans' : 'Locked until KYC'}
-          </Button>
+          {selectionLoading ? (
+            <Stack spacing={2}>
+              <Skeleton variant="text" width={240} height={28} />
+              <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2 }} />
+            </Stack>
+          ) : selection ? (
+            <Stack spacing={2}>
+              <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between">
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    Challenge plan reserved: {selection.plan.name}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    Level {selection.plan.level} pathway secured. Complete the mocked payment to activate your simulated capital.
+                  </Typography>
+                </Box>
+                <Chip label={selection.status} color="primary" sx={{ alignSelf: 'flex-start' }} />
+              </Stack>
+
+              <Stack
+                direction="row"
+                flexWrap="wrap"
+                gap={2}
+                sx={{ mt: 1 }}
+              >
+                {challengeHighlights.map((item) => (
+                  <Box
+                    key={item.label}
+                    sx={{
+                      minWidth: 140,
+                      px: 1.5,
+                      py: 1,
+                      borderRadius: 2,
+                      border: (theme) => `1px solid ${theme.palette.divider}`,
+                    }}
+                  >
+                    <Typography variant="caption" color="text.secondary">
+                      {item.label}
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {item.value}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+
+              <Stack direction="row" flexWrap="wrap" gap={1}>
+                {selection.plan.allowedInstruments.map((instrument) => (
+                  <Chip key={instrument} label={instrument} variant="outlined" size="small" />
+                ))}
+              </Stack>
+
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+                <Button
+                  variant="contained"
+                  size="large"
+                  onClick={() =>
+                    router.push(`/payments/mock?planId=${encodeURIComponent(selection.plan.id)}`)
+                  }
+                  sx={{ fontWeight: 600 }}
+                >
+                  Proceed to mocked payment
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={() => router.push('/challenge-plans')}
+                >
+                  Switch plan
+                </Button>
+              </Stack>
+            </Stack>
+          ) : (
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={2}
+              alignItems={{ xs: 'flex-start', md: 'center' }}
+            >
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Reserve your evaluation plan
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  Once you select a plan you will be guided through mocked payment and receive demo credentials to start practicing.
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                size="large"
+                disabled={!hasCompletedKyc}
+                onClick={() => router.push('/challenge-plans')}
+                sx={{ fontWeight: 600 }}
+              >
+                Explore challenge plans
+              </Button>
+            </Stack>
+          )}
+
+          {selectionError && (
+            <Alert
+              severity="error"
+              onClose={() => setSelectionError(null)}
+              sx={{ mt: 2 }}
+            >
+              {selectionError}
+            </Alert>
+          )}
         </Paper>
 
         {/* Stats Cards */}

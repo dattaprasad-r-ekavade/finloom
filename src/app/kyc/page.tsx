@@ -13,7 +13,6 @@ import {
   Alert,
   Chip,
   Divider,
-  Grid,
 } from '@mui/material';
 import { VerifiedUser, ArrowForward } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
@@ -209,82 +208,78 @@ export default function KycPage() {
                   </Button>
                 </Stack>
               ) : (
-                <Box component="form" onSubmit={handleSubmit} noValidate>
-                  <Grid container spacing={2.5}>
-                    <Grid item xs={12}>
-                      <TextField
-                        fullWidth
-                        label="Full Name"
-                        value={fullName}
-                        onChange={(event) => setFullName(event.target.value)}
-                        error={Boolean(errors.fullName)}
-                        helperText={errors.fullName}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        label="Phone Number"
-                        value={phoneNumber}
-                        onChange={(event) => setPhoneNumber(event.target.value)}
-                        error={Boolean(errors.phoneNumber)}
-                        helperText={errors.phoneNumber}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        label="ID Number"
-                        value={idNumber}
-                        onChange={(event) => setIdNumber(event.target.value)}
-                        error={Boolean(errors.idNumber)}
-                        helperText={errors.idNumber}
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <TextField
-                        fullWidth
-                        multiline
-                        minRows={3}
-                        label="Address"
-                        value={address}
-                        onChange={(event) => setAddress(event.target.value)}
-                        error={Boolean(errors.address)}
-                        helperText={errors.address}
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                        <Button
-                          type="submit"
-                          variant="contained"
-                          size="large"
-                          disabled={submitting}
-                          sx={{
-                            flex: 1,
-                            fontWeight: 600,
-                            py: 1.5,
-                            backgroundImage: (theme) =>
-                              theme.palette.mode === 'light'
-                                ? 'linear-gradient(135deg, #0061A8 0%, #00A86B 100%)'
-                                : 'linear-gradient(135deg, #4FC3F7 0%, #4CAF50 100%)',
-                            boxShadow: 'none',
-                          }}
-                        >
-                          {submitting ? 'Submitting...' : 'Submit & auto-approve'}
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          size="large"
-                          sx={{ flex: 1, fontWeight: 600, py: 1.5 }}
-                          onClick={() => router.push(destinationAfterKyc)}
-                        >
-                          Back to dashboard
-                        </Button>
-                      </Stack>
-                    </Grid>
-                  </Grid>
-                </Box>
+                <Stack component="form" onSubmit={handleSubmit} spacing={2.5} noValidate>
+                  <TextField
+                    fullWidth
+                    label="Full Name"
+                    value={fullName}
+                    onChange={(event) => setFullName(event.target.value)}
+                    error={Boolean(errors.fullName)}
+                    helperText={errors.fullName}
+                  />
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                      gap: 2.5,
+                    }}
+                  >
+                    <TextField
+                      fullWidth
+                      label="Phone Number"
+                      value={phoneNumber}
+                      onChange={(event) => setPhoneNumber(event.target.value)}
+                      error={Boolean(errors.phoneNumber)}
+                      helperText={errors.phoneNumber}
+                    />
+                    <TextField
+                      fullWidth
+                      label="ID Number"
+                      value={idNumber}
+                      onChange={(event) => setIdNumber(event.target.value)}
+                      error={Boolean(errors.idNumber)}
+                      helperText={errors.idNumber}
+                    />
+                  </Box>
+                  <TextField
+                    fullWidth
+                    multiline
+                    minRows={3}
+                    label="Address"
+                    value={address}
+                    onChange={(event) => setAddress(event.target.value)}
+                    error={Boolean(errors.address)}
+                    helperText={errors.address}
+                  />
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      size="large"
+                      disabled={submitting}
+                      sx={{
+                        flex: 1,
+                        fontWeight: 600,
+                        py: 1.5,
+                        backgroundImage: (theme) =>
+                          theme.palette.mode === 'light'
+                            ? 'linear-gradient(135deg, #0061A8 0%, #00A86B 100%)'
+                            : 'linear-gradient(135deg, #4FC3F7 0%, #4CAF50 100%)',
+                        boxShadow: 'none',
+                      }}
+                    >
+                      {submitting ? 'Submitting...' : 'Submit & auto-approve'}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      sx={{ flex: 1, fontWeight: 600, py: 1.5 }}
+                      onClick={() => router.push(destinationAfterKyc)}
+                    >
+                      Back to dashboard
+                    </Button>
+                  </Stack>
+                </Stack>
               )}
             </Stack>
           </CardContent>
