@@ -31,6 +31,8 @@ export default function Navbar() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [adminMenuAnchor, setAdminMenuAnchor] = useState<null | HTMLElement>(null);
+  const [traderMenuAnchor, setTraderMenuAnchor] = useState<null | HTMLElement>(null);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -38,6 +40,22 @@ export default function Navbar() {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleAdminMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAdminMenuAnchor(event.currentTarget);
+  };
+
+  const handleAdminMenuClose = () => {
+    setAdminMenuAnchor(null);
+  };
+
+  const handleTraderMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setTraderMenuAnchor(event.currentTarget);
+  };
+
+  const handleTraderMenuClose = () => {
+    setTraderMenuAnchor(null);
   };
 
   const handleLogout = async () => {
@@ -141,26 +159,60 @@ export default function Navbar() {
                 >
                   Home
                 </Button>
-                <Button color="inherit" onClick={() => router.push('/login')} sx={{ fontWeight: 500 }}>
-                  Login
+                <Button 
+                  color="inherit" 
+                  onClick={handleTraderMenuOpen} 
+                  sx={{ fontWeight: 500 }}
+                >
+                  Trader
                 </Button>
-                <Button
-                  variant="contained"
-                  onClick={() => router.push('/signup')}
-                  sx={{
-                    backgroundImage: (theme) =>
-                      theme.palette.mode === 'light'
-                        ? 'linear-gradient(135deg, #0061A8 0%, #00A86B 100%)'
-                        : 'linear-gradient(135deg, #4FC3F7 0%, #4CAF50 100%)',
-                    boxShadow: 'none',
-                    fontWeight: 600,
-                    '&:hover': {
-                      boxShadow: '0 8px 20px rgba(0, 97, 168, 0.25)',
-                    },
+                <Menu
+                  anchorEl={traderMenuAnchor}
+                  open={Boolean(traderMenuAnchor)}
+                  onClose={handleTraderMenuClose}
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'right',
+                  }}
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
                   }}
                 >
-                  Sign up
+                  <MenuItem onClick={() => { router.push('/trader/login'); handleTraderMenuClose(); }}>
+                    Trader Login
+                  </MenuItem>
+                  <MenuItem onClick={() => { router.push('/trader/signup'); handleTraderMenuClose(); }}>
+                    Trader Sign Up
+                  </MenuItem>
+                </Menu>
+                <Button 
+                  color="inherit" 
+                  onClick={handleAdminMenuOpen}
+                  sx={{ fontWeight: 500 }}
+                >
+                  Admin
                 </Button>
+                <Menu
+                  anchorEl={adminMenuAnchor}
+                  open={Boolean(adminMenuAnchor)}
+                  onClose={handleAdminMenuClose}
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'right',
+                  }}
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                  }}
+                >
+                  <MenuItem onClick={() => { router.push('/admin/login'); handleAdminMenuClose(); }}>
+                    Admin Login
+                  </MenuItem>
+                  <MenuItem onClick={() => { router.push('/admin/signup'); handleAdminMenuClose(); }}>
+                    Admin Sign Up
+                  </MenuItem>
+                </Menu>
               </>
             )}
             <IconButton

@@ -216,7 +216,7 @@ export default function Home() {
                   <Button
                     variant="contained"
                     size="large"
-                    onClick={() => router.push('/login')}
+                    onClick={() => router.push('/trader/login')}
                     sx={{
                       px: 5,
                       py: 1.6,
@@ -229,12 +229,12 @@ export default function Home() {
                       },
                     }}
                   >
-                    Get Started
+                    Trader Portal
                   </Button>
                   <Button
                     variant="outlined"
                     size="large"
-                    onClick={() => router.push('/login')}
+                    onClick={() => router.push('/admin/login')}
                     sx={{
                       px: 5,
                       py: 1.6,
@@ -251,7 +251,7 @@ export default function Home() {
                       },
                     }}
                   >
-                    Explore Platform
+                    Admin Portal
                   </Button>
                 </Stack>
               </Stack>
@@ -451,7 +451,7 @@ export default function Home() {
             <Button
               variant="contained"
               size="large"
-              onClick={() => router.push('/login')}
+              onClick={() => router.push('/trader/signup')}
               sx={{
                 px: 5,
                 py: 1.6,
@@ -462,12 +462,12 @@ export default function Home() {
                 '&:hover': { backgroundColor: 'rgba(255,255,255,0.9)' },
               }}
             >
-              Create Account
+              Join as Trader
             </Button>
             <Button
               variant="outlined"
               size="large"
-              onClick={() => router.push('/login')}
+              onClick={() => router.push('/admin/signup')}
               sx={{
                 px: 5,
                 py: 1.6,
@@ -484,7 +484,7 @@ export default function Home() {
                 },
               }}
             >
-              Talk with Us
+              Join as Admin
             </Button>
           </Stack>
         </Container>

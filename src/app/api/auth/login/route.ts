@@ -7,6 +7,7 @@ import { ensureDatabase } from '@/lib/ensureDatabase';
 interface LoginRequestBody {
   email?: string;
   password?: string;
+  expectedRole?: 'ADMIN' | 'TRADER';
 }
 
 export async function POST(request: Request) {
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
     await ensureDatabase();
 
     const body = (await request.json()) as LoginRequestBody;
-    const { email, password } = body;
+    const { email, password, expectedRole } = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -42,6 +43,14 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'Invalid email or password.' },
         { status: 401 }
+      );
+    }
+
+    // Check if the user's role matches the expected role (if provided)
+    if (expectedRole && user.role !== expectedRole) {
+      return NextResponse.json(
+        { error: `This portal is for ${expectedRole === 'ADMIN' ? 'administrators' : 'traders'} only. Please use the correct login page.` },
+        { status: 403 }
       );
     }
 
