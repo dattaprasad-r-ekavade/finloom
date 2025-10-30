@@ -28,6 +28,7 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.findUnique({
       where: { email: normalisedEmail },
+      include: { mockedKyc: true },
     });
 
     if (!user) {
@@ -54,14 +55,18 @@ export async function POST(request: Request) {
       );
     }
 
+    const responseUser = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      kycStatus: user.mockedKyc ? user.mockedKyc.status : ('NOT_SUBMITTED' as const),
+      hasCompletedKyc: Boolean(user.mockedKyc),
+    };
+
     return NextResponse.json({
       message: 'Signed in successfully.',
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-      },
+      user: responseUser,
     });
   } catch (error) {
     console.error('Login error', error);

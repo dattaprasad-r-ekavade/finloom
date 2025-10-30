@@ -1,11 +1,15 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
+type KycStatus = 'NOT_SUBMITTED' | 'AUTO_APPROVED';
+
 interface User {
   id: string;
   email: string;
   name: string | null;
   role: string;
+  kycStatus?: KycStatus;
+  hasCompletedKyc?: boolean;
 }
 
 interface AuthState {

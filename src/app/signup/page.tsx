@@ -56,11 +56,13 @@ export default function SignupPage() {
       // Store user data in Zustand store and redirect to dashboard
       if (data.user) {
         setUser(data.user);
-        setSuccess('Account created! Redirecting to dashboard...');
-        
+        const isAdmin = data.user?.role === 'ADMIN';
+        const nextRoute = isAdmin ? '/dashboard/admin' : '/kyc';
+
+        setSuccess(isAdmin ? 'Admin account created! Redirecting you to the command center.' : 'Account created! Let\'s wrap up your KYC.');
+
         setTimeout(() => {
-          const destination = data.user?.role === 'ADMIN' ? '/dashboard/admin' : '/dashboard/user';
-          router.push(destination);
+          router.push(nextRoute);
         }, 1000);
       } else {
         setSuccess('Account created! You can now sign in.');

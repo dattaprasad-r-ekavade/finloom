@@ -56,9 +56,18 @@ export async function POST(request: Request) {
       },
     });
 
+    const responseUser = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      kycStatus: 'NOT_SUBMITTED' as const,
+      hasCompletedKyc: false,
+    };
+
     return NextResponse.json({
       message: 'Account created successfully.',
-      user,
+      user: responseUser,
     });
   } catch (error) {
     console.error('Signup error', error);

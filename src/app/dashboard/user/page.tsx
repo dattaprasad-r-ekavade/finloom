@@ -10,6 +10,8 @@ import {
   Paper,
   Chip,
   Stack,
+  Button,
+  Alert,
 } from '@mui/material';
 import {
   TrendingUp,
@@ -32,9 +34,17 @@ import {
   Legend,
 } from 'recharts';
 import Navbar from '@/components/Navbar';
+import { useRouter } from 'next/navigation';
 import { robotoMonoFontFamily } from '@/theme/theme';
+import { useAuthStore } from '@/store/authStore';
 
 export default function UserDashboard() {
+  const router = useRouter();
+  const user = useAuthStore((state) => state.user);
+  const hasCompletedKyc = user?.hasCompletedKyc ?? false;
+  const kycStatusText = hasCompletedKyc ? 'KYC approved' : 'KYC pending';
+  const kycChipColor = hasCompletedKyc ? 'success' : 'warning';
+
   // Sample data for charts
   const performanceData = [
     { month: 'Jan', profit: 4000, loss: 2400 },
@@ -112,8 +122,66 @@ export default function UserDashboard() {
             <Chip label="Live" color="success" variant="outlined" />
             <Chip label="Risk Guardrails" color="warning" variant="outlined" />
             <Chip label="Performance" color="primary" variant="outlined" />
+            <Chip label={kycStatusText} color={kycChipColor} variant="filled" />
           </Stack>
         </Stack>
+
+        {!hasCompletedKyc && (
+          <Alert
+            severity="warning"
+            sx={{
+              borderRadius: 3,
+              border: (theme) => `1px solid ${theme.palette.warning.light}`,
+              mb: 4,
+            }}
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => router.push('/kyc')}
+                sx={{ fontWeight: 600 }}
+              >
+                Complete now
+              </Button>
+            }
+          >
+            Complete the rapid KYC flow to unlock challenge plans and funding simulations.
+          </Alert>
+        )}
+
+        <Paper
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            border: (theme) => `1px solid ${theme.palette.divider}`,
+            mb: 4,
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            alignItems: { xs: 'flex-start', md: 'center' },
+            gap: 2,
+          }}
+        >
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Challenge plan access
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Your KYC status determines when you can reserve a challenge account. Approved traders can proceed straight to plan selection.
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            size="large"
+            disabled={!hasCompletedKyc}
+            onClick={() => router.push('/challenge-plans')}
+            sx={{
+              flexShrink: 0,
+              pointerEvents: hasCompletedKyc ? 'auto' : 'none',
+            }}
+          >
+            {hasCompletedKyc ? 'Explore challenge plans' : 'Locked until KYC'}
+          </Button>
+        </Paper>
 
         {/* Stats Cards */}
         <Box
