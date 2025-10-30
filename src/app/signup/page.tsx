@@ -20,9 +20,11 @@ import {
 import { PersonAdd } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
+import { useAuthStore } from '@/store/authStore';
 
 export default function SignupPage() {
   const router = useRouter();
+  const setUser = useAuthStore((state) => state.setUser);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,15 +53,21 @@ export default function SignupPage() {
         return;
       }
 
-      setSuccess('Account created! You can now sign in.');
-      setName('');
-      setEmail('');
-      setPassword('');
-      setRole('TRADER');
-
-      setTimeout(() => {
-        router.push('/login');
-      }, 900);
+      // Store user data in Zustand store and redirect to dashboard
+      if (data.user) {
+        setUser(data.user);
+        setSuccess('Account created! Redirecting to dashboard...');
+        
+        setTimeout(() => {
+          const destination = data.user?.role === 'ADMIN' ? '/dashboard/admin' : '/dashboard/user';
+          router.push(destination);
+        }, 1000);
+      } else {
+        setSuccess('Account created! You can now sign in.');
+        setTimeout(() => {
+          router.push('/login');
+        }, 1000);
+      }
     } catch (err) {
       console.error(err);
       setError('Unexpected error. Please try again.');

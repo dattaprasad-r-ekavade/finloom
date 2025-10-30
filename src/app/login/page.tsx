@@ -18,9 +18,11 @@ import {
 import { Lock } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
+import { useAuthStore } from '@/store/authStore';
 
 export default function LoginPage() {
   const router = useRouter();
+  const setUser = useAuthStore((state) => state.setUser);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -43,6 +45,11 @@ export default function LoginPage() {
       if (!response.ok) {
         setError(data.error ?? 'Unable to sign in.');
         return;
+      }
+
+      // Store user data in Zustand store
+      if (data.user) {
+        setUser(data.user);
       }
 
       const destination = data.user?.role === 'ADMIN' ? '/dashboard/admin' : '/dashboard/user';

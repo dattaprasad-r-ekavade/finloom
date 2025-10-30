@@ -36,6 +36,18 @@ const ensureEmailUniqueIndex = async () => {
 };
 
 const ensureUpdatedAtTrigger = async () => {
+  // Create the trigger function
+  await prisma.$executeRawUnsafe(`
+    CREATE OR REPLACE FUNCTION set_user_updated_at()
+    RETURNS trigger AS $$
+    BEGIN
+      NEW."updatedAt" = NOW();
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+  `);
+
+  // Create the trigger if it doesn't exist
   await prisma.$executeRawUnsafe(`
     DO $$
     BEGIN
@@ -44,14 +56,6 @@ const ensureUpdatedAtTrigger = async () => {
         FROM pg_trigger
         WHERE tgname = 'user_updated_at_trigger'
       ) THEN
-        CREATE OR REPLACE FUNCTION set_user_updated_at()
-        RETURNS trigger AS $$
-        BEGIN
-          NEW."updatedAt" = NOW();
-          RETURN NEW;
-        END;
-        $$ LANGUAGE plpgsql;
-
         CREATE TRIGGER user_updated_at_trigger
         BEFORE UPDATE ON "User"
         FOR EACH ROW
