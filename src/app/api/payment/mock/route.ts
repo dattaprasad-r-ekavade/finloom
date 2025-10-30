@@ -2,54 +2,25 @@ import { NextResponse } from 'next/server';
 import { ChallengeStatus } from '@prisma/client';
 
 import { prisma } from '@/lib/prisma';
+import {
+  parseChallengeCredentials,
+  serialiseChallengeCredentials,
+  ChallengeCredentials,
+} from '@/lib/challengeCredentials';
 
 interface MockPaymentRequest {
   userId?: string;
 }
-
-type CredentialPair = {
-  username: string;
-  password: string;
-};
 
 const ELIGIBLE_CHALLENGE_STATUSES: ChallengeStatus[] = ['PENDING', 'ACTIVE'];
 
 const generateTransactionId = () =>
   `razorpay_mock_${Math.random().toString(36).slice(2, 14)}`;
 
-const generateCredentials = (): CredentialPair => ({
+const generateCredentials = (): ChallengeCredentials => ({
   username: `demo_trader_${Math.random().toString(36).slice(2, 8)}`,
   password: `Pass@${Math.random().toString(36).slice(2, 10)}`,
 });
-
-const parseStoredCredentials = (value: string | null): CredentialPair | null => {
-  if (!value) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(value) as CredentialPair;
-
-    if (parsed.username && parsed.password) {
-      return parsed;
-    }
-  } catch (error) {
-    console.warn('Unable to parse stored demo credentials', error);
-  }
-
-  const [usernamePart, passwordPart] = value.split('|').map((part) => part.trim());
-
-  if (usernamePart?.toLowerCase().startsWith('username') && passwordPart?.toLowerCase().startsWith('password')) {
-    const username = usernamePart.split(':')[1]?.trim();
-    const password = passwordPart.split(':')[1]?.trim();
-
-    if (username && password) {
-      return { username, password };
-    }
-  }
-
-  return null;
-};
 
 export async function POST(request: Request) {
   try {
@@ -115,7 +86,7 @@ export async function POST(request: Request) {
     const existingPayment = challenge.mockedPayments[0] ?? null;
 
     if (existingPayment && challenge.status === 'ACTIVE') {
-      const storedCredentials = parseStoredCredentials(challenge.demoAccountCredentials);
+      const storedCredentials = parseChallengeCredentials(challenge.demoAccountCredentials);
 
       return NextResponse.json({
         message: 'Mock payment already processed.',
@@ -126,7 +97,7 @@ export async function POST(request: Request) {
     }
 
     const credentials =
-      parseStoredCredentials(challenge.demoAccountCredentials) ?? generateCredentials();
+      parseChallengeCredentials(challenge.demoAccountCredentials) ?? generateCredentials();
 
     const transactionId = generateTransactionId();
 
@@ -147,7 +118,7 @@ export async function POST(request: Request) {
       data: {
         status: 'ACTIVE',
         startDate: challenge.startDate ?? new Date(),
-        demoAccountCredentials: JSON.stringify(credentials),
+        demoAccountCredentials: serialiseChallengeCredentials(credentials),
       },
       include: {
         plan: true,

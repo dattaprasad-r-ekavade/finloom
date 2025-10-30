@@ -13,6 +13,13 @@ import {
   Button,
   Alert,
   Skeleton,
+  LinearProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import {
   TrendingUp,
@@ -39,6 +46,51 @@ import Navbar from '@/components/Navbar';
 import { useRouter } from 'next/navigation';
 import { robotoMonoFontFamily } from '@/theme/theme';
 import { useAuthStore } from '@/store/authStore';
+import { parseChallengeCredentials } from '@/lib/challengeCredentials';
+
+interface ChallengeStatusPayload {
+  challenge: {
+    id: string;
+    status: string;
+    startDate: string | null;
+    endDate: string | null;
+  };
+  plan: {
+    id: string;
+    name: string;
+    level: number;
+    accountSize: number;
+    profitTargetPct: number;
+    maxLossPct: number;
+    dailyLossPct: number;
+    durationDays: number;
+    profitSplit: number;
+  };
+  payments: {
+    id: string;
+    amount: number;
+    mockTransactionId: string;
+    paidAt: string;
+  }[];
+  credentials: {
+    username: string;
+    password: string;
+  } | null;
+  summary: {
+    daysRemaining: number;
+    progressPct: number;
+    profitTarget: number;
+  };
+  metrics: {
+    id: string;
+    date: string;
+    dailyPnl: number;
+    cumulativePnl: number;
+    tradesCount: number;
+    winRate: number;
+    maxDrawdown: number;
+  }[];
+}
 
 type ChallengeSelection = {
   id: string;
@@ -78,36 +130,36 @@ const formatDateTime = (value: string) =>
     timeStyle: 'short',
   }).format(new Date(value));
 
-const parseCredentials = (
-  value: string | null
-): { username: string; password: string } | null => {
-  if (!value) {
-    return null;
-  }
 
-  try {
-    const parsed = JSON.parse(value) as { username: string; password: string };
+const FALLBACK_PERFORMANCE_DATA = [
+  { date: 'Jan', pnl: 4000, cumulative: 4000 },
+  { date: 'Feb', pnl: 3000, cumulative: 7000 },
+  { date: 'Mar', pnl: 2000, cumulative: 9000 },
+  { date: 'Apr', pnl: 2780, cumulative: 11780 },
+  { date: 'May', pnl: 1890, cumulative: 13670 },
+  { date: 'Jun', pnl: 2390, cumulative: 16060 },
+];
 
-    if (parsed.username && parsed.password) {
-      return parsed;
-    }
-  } catch (error) {
-    console.warn('Unable to parse stored demo credentials', error);
-  }
+const FALLBACK_PORTFOLIO_DATA = [
+  { date: '1', value: 45000 },
+  { date: '5', value: 47000 },
+  { date: '10', value: 46500 },
+  { date: '15', value: 49000 },
+  { date: '20', value: 51000 },
+  { date: '25', value: 52500 },
+  { date: '30', value: 54200 },
+];
 
-  const [usernamePart, passwordPart] = value.split('|').map((part) => part.trim());
+const FALLBACK_TRADE_VOLUME_DATA = [
+  { date: 'Mon', trades: 120, winRate: 65 },
+  { date: 'Tue', trades: 150, winRate: 60 },
+  { date: 'Wed', trades: 98, winRate: 62 },
+  { date: 'Thu', trades: 180, winRate: 70 },
+  { date: 'Fri', trades: 200, winRate: 68 },
+  { date: 'Sat', trades: 85, winRate: 55 },
+  { date: 'Sun', trades: 60, winRate: 58 },
+];
 
-  if (usernamePart?.toLowerCase().startsWith('username') && passwordPart?.toLowerCase().startsWith('password')) {
-    const username = usernamePart.split(':')[1]?.trim();
-    const password = passwordPart.split(':')[1]?.trim();
-
-    if (username && password) {
-      return { username, password };
-    }
-  }
-
-  return null;
-};
 
 export default function UserDashboard() {
   const router = useRouter();
@@ -119,6 +171,10 @@ export default function UserDashboard() {
   const [selectionLoading, setSelectionLoading] = useState(false);
   const [selectionError, setSelectionError] = useState<string | null>(null);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [challengeStatus, setChallengeStatus] =
+    useState<ChallengeStatusPayload | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -156,12 +212,46 @@ export default function UserDashboard() {
     fetchSelection();
   }, [hasCompletedKyc, router, user]);
 
-  const isActiveChallenge = selection?.status === 'ACTIVE';
+  useEffect(() => {
+    const fetchStatus = async () => {
+      if (!selection) {
+        setChallengeStatus(null);
+        return;
+      }
 
-  const primaryPayment = selection?.mockedPayments?.[0] ?? null;
+      setStatusLoading(true);
+      setStatusError(null);
+
+      try {
+        const response = await fetch(`/api/challenges/status/${selection.id}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error ?? 'Unable to load challenge status.');
+        }
+
+        setChallengeStatus(data as ChallengeStatusPayload);
+      } catch (error) {
+        console.error(error);
+        setStatusError('Unable to load challenge status.');
+      } finally {
+        setStatusLoading(false);
+      }
+    };
+
+    fetchStatus();
+  }, [selection]);
+
+  const isActiveChallenge =
+    (challengeStatus?.challenge.status ?? selection?.status) === 'ACTIVE';
+
+  const primaryPayment =
+    challengeStatus?.payments?.[0] ?? selection?.mockedPayments?.[0] ?? null;
   const credentials = useMemo(
-    () => parseCredentials(selection?.demoAccountCredentials ?? null),
-    [selection?.demoAccountCredentials]
+    () =>
+      challengeStatus?.credentials ??
+      parseChallengeCredentials(selection?.demoAccountCredentials ?? null),
+    [challengeStatus?.credentials, selection?.demoAccountCredentials]
   );
 
   const handleCopyCredentials = useCallback(async () => {
@@ -182,51 +272,78 @@ export default function UserDashboard() {
     }
   }, [credentials]);
 
-  const challengeHighlights = useMemo(
-    () =>
-      selection
-        ? [
-            { label: 'Capital', value: formatCurrency(selection.plan.accountSize) },
-            { label: 'Fee', value: formatCurrency(selection.plan.fee) },
-            { label: 'Profit target', value: `${selection.plan.profitTargetPct}%` },
-            { label: 'Max loss', value: `${selection.plan.maxLossPct}%` },
-            { label: 'Daily loss', value: `${selection.plan.dailyLossPct}%` },
-            { label: 'Duration', value: `${selection.plan.durationDays} days` },
-            { label: 'Profit split', value: `${selection.plan.profitSplit}%` },
-          ]
-        : [],
-    [selection]
-  );
+  const challengeHighlights = useMemo(() => {
+    const basePlan = challengeStatus?.plan ?? selection?.plan ?? null;
+    const summary = challengeStatus?.summary ?? null;
 
-  // Sample data for charts
-  const performanceData = [
-    { month: 'Jan', profit: 4000, loss: 2400 },
-    { month: 'Feb', profit: 3000, loss: 1398 },
-    { month: 'Mar', profit: 2000, loss: 9800 },
-    { month: 'Apr', profit: 2780, loss: 3908 },
-    { month: 'May', profit: 1890, loss: 4800 },
-    { month: 'Jun', profit: 2390, loss: 3800 },
-  ];
+    if (!basePlan) {
+      return [];
+    }
 
-  const portfolioData = [
-    { date: '1', value: 45000 },
-    { date: '5', value: 47000 },
-    { date: '10', value: 46500 },
-    { date: '15', value: 49000 },
-    { date: '20', value: 51000 },
-    { date: '25', value: 52500 },
-    { date: '30', value: 54200 },
-  ];
+    const targetAmount = basePlan.accountSize * (basePlan.profitTargetPct / 100);
 
-  const tradeVolumeData = [
-    { day: 'Mon', volume: 120 },
-    { day: 'Tue', volume: 150 },
-    { day: 'Wed', volume: 98 },
-    { day: 'Thu', volume: 180 },
-    { day: 'Fri', volume: 200 },
-    { day: 'Sat', volume: 85 },
-    { day: 'Sun', volume: 60 },
-  ];
+    return [
+      { label: 'Capital', value: formatCurrency(basePlan.accountSize) },
+      {
+        label: 'Profit target',
+        value: `${basePlan.profitTargetPct}% (${formatCurrency(targetAmount)})`,
+      },
+      { label: 'Max loss', value: `${basePlan.maxLossPct}%` },
+      { label: 'Daily loss', value: `${basePlan.dailyLossPct}%` },
+      { label: 'Duration', value: `${basePlan.durationDays} days` },
+      {
+        label: 'Progress',
+        value: summary ? `${summary.progressPct.toFixed(1)}%` : '—',
+      },
+      {
+        label: 'Days remaining',
+        value: summary ? `${summary.daysRemaining}` : '—',
+      },
+    ];
+  }, [challengeStatus, selection]);
+
+  const metricsSeries = useMemo(() => {
+    const metrics = challengeStatus?.metrics ?? [];
+
+    if (metrics.length === 0) {
+      return {
+        cumulative: FALLBACK_PORTFOLIO_DATA,
+        daily: FALLBACK_PERFORMANCE_DATA,
+        trades: FALLBACK_TRADE_VOLUME_DATA,
+      };
+    }
+
+    const accountSize =
+      challengeStatus?.plan.accountSize ?? selection?.plan.accountSize ?? 0;
+
+    const cumulative = metrics.map((metric) => ({
+      date: new Date(metric.date).toLocaleDateString('en-IN', {
+        month: 'short',
+        day: 'numeric',
+      }),
+      value: accountSize + metric.cumulativePnl,
+    }));
+
+    const daily = metrics.map((metric) => ({
+      date: new Date(metric.date).toLocaleDateString('en-IN', {
+        month: 'short',
+        day: 'numeric',
+      }),
+      pnl: metric.dailyPnl,
+      cumulative: metric.cumulativePnl,
+    }));
+
+    const trades = metrics.map((metric) => ({
+      date: new Date(metric.date).toLocaleDateString('en-IN', {
+        month: 'short',
+        day: 'numeric',
+      }),
+      trades: metric.tradesCount,
+      winRate: metric.winRate,
+    }));
+
+    return { cumulative, daily, trades };
+  }, [challengeStatus, selection]);
 
   const stats = [
     {
@@ -302,6 +419,20 @@ export default function UserDashboard() {
           </Alert>
         )}
 
+        {statusError && (
+          <Alert
+            severity="error"
+            onClose={() => setStatusError(null)}
+            sx={{
+              borderRadius: 3,
+              border: (theme) => `1px solid ${theme.palette.error.light}`,
+              mb: 4,
+            }}
+          >
+            {statusError}
+          </Alert>
+        )}
+
         <Paper
           sx={{
             p: 3,
@@ -310,7 +441,7 @@ export default function UserDashboard() {
             mb: 4,
           }}
         >
-          {selectionLoading ? (
+          {selectionLoading || statusLoading ? (
             <Stack spacing={2}>
               <Skeleton variant="text" width={240} height={28} />
               <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2 }} />
@@ -369,6 +500,24 @@ export default function UserDashboard() {
                 ))}
               </Stack>
 
+              {challengeStatus && (
+                <Stack spacing={1}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    Profit target progress
+                  </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={challengeStatus.summary.progressPct}
+                    sx={{ borderRadius: 10, height: 10 }}
+                  />
+                  <Typography variant="caption" color="text.secondary">
+                    {challengeStatus.summary.progressPct.toFixed(1)}% of{' '}
+                    {formatCurrency(challengeStatus.summary.profitTarget)} reached.{' '}
+                    {challengeStatus.summary.daysRemaining} days remaining.
+                  </Typography>
+                </Stack>
+              )}
+
               {primaryPayment && (
                 <Stack spacing={0.75}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
@@ -378,7 +527,7 @@ export default function UserDashboard() {
                     Transaction ID: <strong>{primaryPayment.mockTransactionId}</strong>
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Paid on {formatDateTime(primaryPayment.paidAt)} · Amount {formatCurrency(primaryPayment.amount)}
+                    Paid on {formatDateTime(primaryPayment.paidAt)} • Amount {formatCurrency(primaryPayment.amount)}
                   </Typography>
                 </Stack>
               )}
@@ -445,15 +594,17 @@ export default function UserDashboard() {
                   <Button
                     variant="contained"
                     size="large"
-                    onClick={() => router.push('/challenge-plans')}
+                    onClick={() => router.push('/dashboard/user/challenge')}
                     sx={{ fontWeight: 600 }}
                   >
-                    Explore other plans
+                    Open challenge monitor
                   </Button>
                   <Button
                     variant="outlined"
                     size="large"
-                    onClick={() => router.push('/payments/mock')}
+                    onClick={() =>
+                      router.push(`/payments/mock?planId=${encodeURIComponent(selection.plan.id)}`)
+                    }
                   >
                     View payment details
                   </Button>
@@ -581,7 +732,7 @@ export default function UserDashboard() {
                 Portfolio Value
               </Typography>
               <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={portfolioData}>
+                <AreaChart data={metricsSeries.cumulative}>
                   <defs>
                     <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#00A86B" stopOpacity={0.8} />
@@ -619,12 +770,12 @@ export default function UserDashboard() {
                 Trade Volume
               </Typography>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={tradeVolumeData}>
+                <BarChart data={metricsSeries.trades}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day" />
+                  <XAxis dataKey="date" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="volume" fill="#0061A8" />
+                  <Bar dataKey="trades" fill="#0061A8" />
                 </BarChart>
               </ResponsiveContainer>
             </Paper>
@@ -646,31 +797,107 @@ export default function UserDashboard() {
                 Profit & Loss Trend
               </Typography>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={performanceData}>
+                <LineChart data={metricsSeries.daily}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
+                  <XAxis dataKey="date" />
                   <YAxis />
                   <Tooltip />
                   <Legend />
                   <Line
                     type="monotone"
-                    dataKey="profit"
+                    dataKey="cumulative"
                     stroke="#00A86B"
                     strokeWidth={2}
-                    name="Profit"
+                    name="Cumulative"
                   />
                   <Line
                     type="monotone"
-                    dataKey="loss"
+                    dataKey="pnl"
                     stroke="#E74C3C"
                     strokeWidth={2}
-                    name="Loss"
+                    name="Daily P&L"
                   />
                 </LineChart>
               </ResponsiveContainer>
-            </Paper>
+          </Paper>
         </Box>
+
+        {challengeStatus?.metrics && challengeStatus.metrics.length > 0 && (
+          <Paper
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              border: (theme) => `1px solid ${theme.palette.divider}`,
+            }}
+          >
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              justifyContent="space-between"
+              spacing={2}
+              sx={{ mb: 2 }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Recent challenge metrics
+              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => router.push('/dashboard/user/challenge')}
+              >
+                View full monitor
+              </Button>
+            </Stack>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell align="right">Daily P&L</TableCell>
+                    <TableCell align="right">Cumulative</TableCell>
+                    <TableCell align="right">Trades</TableCell>
+                    <TableCell align="right">Win rate</TableCell>
+                    <TableCell align="right">Drawdown</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {challengeStatus.metrics.slice(-7).map((metric) => (
+                    <TableRow key={metric.id}>
+                      <TableCell>
+                        {new Date(metric.date).toLocaleDateString('en-IN', {
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </TableCell>
+                      <TableCell align="right">
+                        {formatCurrency(metric.dailyPnl)}
+                      </TableCell>
+                      <TableCell align="right">
+                        {formatCurrency(metric.cumulativePnl)}
+                      </TableCell>
+                      <TableCell align="right">{metric.tradesCount}</TableCell>
+                      <TableCell align="right">
+                        {metric.winRate.toFixed(1)}%
+                      </TableCell>
+                      <TableCell align="right">
+                        {formatCurrency(metric.maxDrawdown)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        )}
       </Container>
     </Box>
   );
 }
+
+
+
+
+
+
+
+
+
