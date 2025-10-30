@@ -39,6 +39,13 @@ type ChallengeSelection = {
   id: string;
   status: string;
   plan: ChallengePlan;
+  mockedPayments: {
+    id: string;
+    amount: number;
+    mockTransactionId: string;
+    paidAt: string;
+  }[];
+  demoAccountCredentials: string | null;
 };
 
 const formatCurrency = (value: number) =>
@@ -117,6 +124,12 @@ export default function ChallengePlansPage() {
   }, [router, user]);
 
   const selectedPlanId = selection?.plan?.id ?? null;
+
+  useEffect(() => {
+    if (selection?.status === 'ACTIVE' && !successMessage) {
+      setSuccessMessage('Challenge is already active with mock funding.');
+    }
+  }, [selection?.status, successMessage]);
 
   const comparisonHighlights = useMemo(
     () => [
@@ -260,6 +273,7 @@ export default function ChallengePlansPage() {
             >
               {plans.map((plan) => {
                 const isSelected = plan.id === selectedPlanId;
+                const isActivePlan = isSelected && selection?.status === 'ACTIVE';
 
                 return (
                   <Card
@@ -280,15 +294,15 @@ export default function ChallengePlansPage() {
                       overflow: 'hidden',
                     }}
                   >
-                    {isSelected && (
-                      <Chip
-                        icon={<CheckCircle fontSize="small" />}
-                        label="Reserved"
-                        color="success"
-                        size="small"
-                        sx={{ position: 'absolute', top: 16, right: 16 }}
-                      />
-                    )}
+                      {isSelected && (
+                        <Chip
+                          icon={<CheckCircle fontSize="small" />}
+                          label={isActivePlan ? 'Live challenge' : 'Reserved'}
+                          color={isActivePlan ? 'success' : 'info'}
+                          size="small"
+                          sx={{ position: 'absolute', top: 16, right: 16 }}
+                        />
+                      )}
                     <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                       <Stack spacing={0.5}>
                         <Typography variant="subtitle2" color="text.secondary">
@@ -365,7 +379,11 @@ export default function ChallengePlansPage() {
                         startIcon={<Payment />}
                         sx={{ mt: 1.5, fontWeight: 600 }}
                       >
-                        {isSelected ? 'Reserved for you' : 'Reserve & continue'}
+                        {isSelected
+                          ? isActivePlan
+                            ? 'Challenge live'
+                            : 'Reserved for you'
+                          : 'Reserve & continue'}
                       </Button>
                     </CardContent>
                   </Card>

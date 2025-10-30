@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Container,
@@ -19,6 +19,7 @@ import {
   TrendingDown,
   AccountBalance,
   ShowChart,
+  ContentCopy,
 } from '@mui/icons-material';
 import {
   LineChart,
@@ -55,6 +56,13 @@ type ChallengeSelection = {
     profitSplit: number;
     allowedInstruments: string[];
   };
+  mockedPayments: {
+    id: string;
+    amount: number;
+    mockTransactionId: string;
+    paidAt: string;
+  }[];
+  demoAccountCredentials: string | null;
 };
 
 const formatCurrency = (value: number) =>
@@ -63,6 +71,43 @@ const formatCurrency = (value: number) =>
     currency: 'INR',
     maximumFractionDigits: 0,
   }).format(value);
+
+const formatDateTime = (value: string) =>
+  new Intl.DateTimeFormat('en-IN', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
+
+const parseCredentials = (
+  value: string | null
+): { username: string; password: string } | null => {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(value) as { username: string; password: string };
+
+    if (parsed.username && parsed.password) {
+      return parsed;
+    }
+  } catch (error) {
+    console.warn('Unable to parse stored demo credentials', error);
+  }
+
+  const [usernamePart, passwordPart] = value.split('|').map((part) => part.trim());
+
+  if (usernamePart?.toLowerCase().startsWith('username') && passwordPart?.toLowerCase().startsWith('password')) {
+    const username = usernamePart.split(':')[1]?.trim();
+    const password = passwordPart.split(':')[1]?.trim();
+
+    if (username && password) {
+      return { username, password };
+    }
+  }
+
+  return null;
+};
 
 export default function UserDashboard() {
   const router = useRouter();
@@ -73,6 +118,7 @@ export default function UserDashboard() {
   const [selection, setSelection] = useState<ChallengeSelection | null>(null);
   const [selectionLoading, setSelectionLoading] = useState(false);
   const [selectionError, setSelectionError] = useState<string | null>(null);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -109,6 +155,32 @@ export default function UserDashboard() {
 
     fetchSelection();
   }, [hasCompletedKyc, router, user]);
+
+  const isActiveChallenge = selection?.status === 'ACTIVE';
+
+  const primaryPayment = selection?.mockedPayments?.[0] ?? null;
+  const credentials = useMemo(
+    () => parseCredentials(selection?.demoAccountCredentials ?? null),
+    [selection?.demoAccountCredentials]
+  );
+
+  const handleCopyCredentials = useCallback(async () => {
+    if (!credentials) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(
+        `Username: ${credentials.username}\nPassword: ${credentials.password}`
+      );
+      setCopyFeedback('Credentials copied to clipboard.');
+      setTimeout(() => setCopyFeedback(null), 2500);
+    } catch (error) {
+      console.error('Clipboard copy failed', error);
+      setCopyFeedback('Unable to copy credentials. Please copy them manually.');
+      setTimeout(() => setCopyFeedback(null), 3000);
+    }
+  }, [credentials]);
 
   const challengeHighlights = useMemo(
     () =>
@@ -245,16 +317,23 @@ export default function UserDashboard() {
             </Stack>
           ) : selection ? (
             <Stack spacing={2}>
-              <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between">
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between">
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
                     Challenge plan reserved: {selection.plan.name}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                    Level {selection.plan.level} pathway secured. Complete the mocked payment to activate your simulated capital.
+                    Level {selection.plan.level}{' '}
+                    {isActiveChallenge
+                      ? 'is funded with mock capital. Monitor your metrics and stay within guardrails.'
+                      : 'pathway secured. Complete the mocked payment to activate your simulated capital.'}
                   </Typography>
                 </Box>
-                <Chip label={selection.status} color="primary" sx={{ alignSelf: 'flex-start' }} />
+                <Chip
+                  label={selection.status}
+                  color={isActiveChallenge ? 'success' : 'warning'}
+                  sx={{ alignSelf: 'flex-start' }}
+                />
               </Stack>
 
               <Stack
@@ -290,25 +369,96 @@ export default function UserDashboard() {
                 ))}
               </Stack>
 
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-                <Button
-                  variant="contained"
-                  size="large"
-                  onClick={() =>
-                    router.push(`/payments/mock?planId=${encodeURIComponent(selection.plan.id)}`)
+              {primaryPayment && (
+                <Stack spacing={0.75}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    Latest mock payment
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Transaction ID: <strong>{primaryPayment.mockTransactionId}</strong>
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Paid on {formatDateTime(primaryPayment.paidAt)} · Amount {formatCurrency(primaryPayment.amount)}
+                  </Typography>
+                </Stack>
+              )}
+
+              {credentials && (
+                <Alert
+                  severity="success"
+                  sx={{
+                    borderRadius: 2,
+                    border: (theme) => `1px solid ${theme.palette.success.light}`,
+                  }}
+                  action={
+                    <Button
+                      color="inherit"
+                      size="small"
+                      startIcon={<ContentCopy fontSize="small" />}
+                      onClick={handleCopyCredentials}
+                    >
+                      Copy
+                    </Button>
                   }
-                  sx={{ fontWeight: 600 }}
                 >
-                  Proceed to mocked payment
-                </Button>
-                <Button
-                  variant="outlined"
-                  size="large"
-                  onClick={() => router.push('/challenge-plans')}
+                  Demo credentials ready — Username: <strong>{credentials.username}</strong>, Password:{' '}
+                  <strong>{credentials.password}</strong>
+                </Alert>
+              )}
+
+              {copyFeedback && (
+                <Alert
+                  severity="info"
+                  sx={{
+                    borderRadius: 2,
+                    border: (theme) => `1px solid ${theme.palette.info.light}`,
+                  }}
                 >
-                  Switch plan
-                </Button>
-              </Stack>
+                  {copyFeedback}
+                </Alert>
+              )}
+
+              {!isActiveChallenge && (
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    onClick={() =>
+                      router.push(`/payments/mock?planId=${encodeURIComponent(selection.plan.id)}`)
+                    }
+                    sx={{ fontWeight: 600 }}
+                  >
+                    Proceed to mocked payment
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    onClick={() => router.push('/challenge-plans')}
+                  >
+                    Switch plan
+                  </Button>
+                </Stack>
+              )}
+
+              {isActiveChallenge && (
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    onClick={() => router.push('/challenge-plans')}
+                    sx={{ fontWeight: 600 }}
+                  >
+                    Explore other plans
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    onClick={() => router.push('/payments/mock')}
+                  >
+                    View payment details
+                  </Button>
+                </Stack>
+              )}
             </Stack>
           ) : (
             <Stack
@@ -330,10 +480,10 @@ export default function UserDashboard() {
                 disabled={!hasCompletedKyc}
                 onClick={() => router.push('/challenge-plans')}
                 sx={{ fontWeight: 600 }}
-              >
-                Explore challenge plans
-              </Button>
-            </Stack>
+                  >
+                    Explore challenge plans
+                  </Button>
+                </Stack>
           )}
 
           {selectionError && (

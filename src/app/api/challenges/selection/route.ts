@@ -3,7 +3,7 @@ import { ChallengeStatus } from '@prisma/client';
 
 import { prisma } from '@/lib/prisma';
 
-const ACTIVE_STATUSES: ChallengeStatus[] = ['PENDING', 'ACTIVE'];
+const TRACKED_STATUSES: ChallengeStatus[] = ['PENDING', 'ACTIVE'];
 
 export async function GET(request: Request) {
   try {
@@ -20,9 +20,14 @@ export async function GET(request: Request) {
     const selection = await prisma.userChallenge.findFirst({
       where: {
         userId,
-        status: { in: ACTIVE_STATUSES },
+        status: { in: TRACKED_STATUSES },
       },
-      include: { plan: true },
+      include: {
+        plan: true,
+        mockedPayments: {
+          orderBy: { createdAt: 'desc' },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
 

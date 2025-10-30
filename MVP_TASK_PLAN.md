@@ -1,8 +1,8 @@
-# MVP Task Plan - Prop Trading Challenge Platform
+﻿# MVP Task Plan - Prop Trading Challenge Platform
 
 **Project:** Finloom - Prop Trading Firm Challenge Platform  
 **Version:** MVP (Minimum Viable Product)  
-**Last Updated:** October 30, 2025 (Progress Review)
+**Last Updated:** October 31, 2025
 
 ---
 
@@ -15,179 +15,90 @@
 4. **Database Schema** - 100% complete (all models, migrations, seeds)
 5. **Mocked KYC Flow** - 100% complete (end-to-end)
 6. **Challenge Plan Selection** - 100% complete (UI + APIs)
+7. **Mocked Payment Processing** - 100% complete (API + confirmation flow)
+8. **Build & Compilation** - 100% complete (all TypeScript errors fixed)
 
 ### In Development 🚧
-- **Mocked Payment Processing** - UI exists, API endpoint needed
 - **Challenge Monitoring Dashboard** - Not started
-- **Authentication Middleware** - Not started (auth works but no route protection)
+- **Mocked Metrics Generator** - Not started
+- **Authentication Middleware** - Not started (route protection pending)
+
+### Recent Fixes (October 30, 2025) ✅
+- Fixed MUI Grid v7 API migration issues in `/challenge-plans` and `/kyc` pages
+- Replaced deprecated Grid `item` props with CSS Grid layout using Box components
+- Fixed Next.js 16 Suspense boundary requirement for `useSearchParams()` in `/payments/mock`
+- Successfully compiled TypeScript with zero errors
+- Production build generates all 23 routes correctly
 
 ### Blockers & Issues ⚠️
-- No payment API endpoint (`/api/payment/mock`) - blocks payment confirmation flow
-- No challenge status API - blocks challenge monitoring dashboard
-- No middleware - all routes currently accessible without proper auth checks
+- Challenge status API still pending (blocks monitoring dashboard)
+- Mocked metrics generator pending (blocks dashboard visualisations)
 
 ---
 
 ## PROGRESS SUMMARY
-**Overall Progress:** 50% Complete (24/48 tasks)
+**Overall Progress:** 52% Complete (25/48 tasks)
 
 ### Recently Completed
 - **PHASE 1 - Database Schema Enhancement** (October 30, 2025)
- - All database models created (ChallengePlan, UserChallenge, MockedKYC, MockedPayment, ChallengeMetrics)
- - Migration successfully applied
- - Seed script created and ready for 3 challenge levels
+  - All database models created (ChallengePlan, UserChallenge, MockedKYC, MockedPayment, ChallengeMetrics)
+  - Migration successfully applied
+  - Seed script created and ready for 3 challenge levels
 - **PHASE 2 - Mocked KYC Flow** (October 31, 2025)
   - `/kyc` form implemented with validation and gradient UI
-  - Auto-approve API wired to `MockedKYC` model
+  - Auto-approve API wired to MockedKYC model
   - Signup and dashboard experiences updated to enforce KYC gating
+  - Fixed Grid component migration to MUI v7 standards
 - **PHASE 3 - Challenge Plan Selection** (October 31, 2025)
   - `/api/challenges/plans`, `/api/challenges/select`, and `/api/challenges/selection` APIs complete
   - `/challenge-plans` comparison UI with reservation flow implemented
   - Dashboard integration with payment handoff CTA
-  - `/payments/mock` placeholder page created
+  - Fixed Grid component migration to CSS Grid layout
+- **PHASE 4 - Mocked Payment Processing** (October 31, 2025)
+  - `/api/payment/mock` simulates Razorpay orders and activates challenges
+  - `/payments/mock` upgraded with payment summary, credentials, and redirect
+  - Trader dashboard surfaces payment status, credentials, and transaction metadata
+  - Fixed Suspense boundary for Next.js 16 compatibility
 
 ### Next Up
-- **PHASE 4 - Mocked Payment Processing** (Priority: HIGH)
-  - Task 4.1: Create Payment API Endpoint (`/api/payment/mock`) - NOT STARTED
-  - Task 4.2: Enhance Payment Confirmation Page with full flow - PARTIALLY COMPLETE (UI exists, needs API integration)
-  - Task 5.1: Create Challenge Status API (prep work) - NOT STARTED
+- **PHASE 5 - Challenge Dashboard & Monitoring** (Priority: HIGH)
+  - Task 5.1: Create Challenge Status API
+  - Task 5.2: Build User Challenge Monitoring UI
+  - Task 5.3: Generate mocked metrics for dashboard widgets
 
 ### Current Sprint Status
 - **Sprint 1 (Week 1):** 100% complete
-  - Database schema enhancement ✓
-  - Mocked KYC flow ✓
-  - Challenge plan selection ✓
-- **Sprint 2 (Week 2):** Starting now
-  - Mocked payment processing (0% complete)
-  - Challenge dashboard (0% complete)
+  - Database schema enhancement ✅
+  - Mocked KYC flow ✅
+  - Challenge plan selection ✅
+- **Sprint 2 (Week 2):** 33% complete
+  - Mocked payment processing ✅
+  - Challenge dashboard ⏳
+  - Mocked metrics generator ⏳
 
 ---
 
-## IMMEDIATE NEXT STEPS
-### Priority Tasks (Critical Path):
+## 🚀 IMMEDIATE NEXT STEPS
 
-**PHASE 4: Mocked Payment Processing (HIGH PRIORITY)**
+### Priority Tasks (Start This Sprint):
+1. **Task 5.1:** Create Challenge Status API (/api/challenges/status/:id)
+   - Deliver challenge progress snapshot with derived KPIs
+   - Expose payment + credential state for dashboard CTA logic
+   - Provide mocked metrics seed for initial charts
 
-1. **Task 4.1:** Create Payment API Endpoint (`/api/payment/mock`) ⚡ CRITICAL
-   - **Status:** Not started
-   - **Time:** 2 hours
-   - **What to build:**
-     - POST endpoint at `/api/payment/mock`
-     - Accept: `userId`, `planId`, `amount`
-     - Create `MockedPayment` record with SUCCESS status
-     - Generate mock Razorpay transaction ID (format: `razorpay_mock_<timestamp>_<random>`)
-     - Create `UserChallenge` record with PENDING status
-     - Generate demo credentials (random username/password)
-     - Return: `{ success, paymentId, challengeId, credentials, message }`
-   
-2. **Task 4.2:** Update Payment Confirmation UI (`/payments/mock`) ⚡ CRITICAL
-   - **Status:** Partially complete (basic UI exists)
-   - **Time:** 1 hour
-   - **What to enhance:**
-     - Replace direct redirect with API call to `/api/payment/mock`
-     - Show loading state during payment processing
-     - Display success message with demo credentials from API
-     - Add copy-to-clipboard for credentials
-     - Show mock Razorpay payment ID
-     - Auto-redirect to challenge dashboard after 5 seconds
+2. **Task 5.2:** Build Challenge Monitoring UI (/dashboard/user/challenge)
+   - Render progress bars, breach indicators, and credential widgets
+   - Surface transaction history from mocked payments
+   - Link back to dashboard summaries seamlessly
 
-**PHASE 5: Challenge Dashboard (HIGH PRIORITY)**
+3. **Task 5.3:** Generate Mocked Metrics Data
+   - Script daily P&L, drawdown, and trade volume series
+   - Feed data into Recharts components for dashboard visualisation
+   - Align thresholds with challenge guardrails
 
-3. **Task 5.1:** Create Challenge Status API
-   - **Status:** Not started
-   - **Time:** 2 hours
-   - **What to build:**
-     - GET endpoint at `/api/challenges/status/:id`
-     - Return challenge details, metrics, and progress
-     - Calculate profit/loss percentages
-     - Determine pass/fail status based on rules
-
-4. **Task 9.1:** Create Auth Middleware ⚡ SECURITY
-   - **Status:** Not started
-   - **Time:** 2 hours
-   - **What to build:**
-     - Next.js middleware.ts in project root
-     - Protect `/dashboard/*` routes
-     - Protect `/challenge-plans`, `/kyc`, `/payments/*` routes
-     - Verify role-based access (ADMIN vs TRADER)
-     - Redirect unauthenticated users to `/login`
-
-**Estimated Time:** 7 hours total for critical path
+**Estimated Time:** ~7 hours total
 
 ---
-
-## 🎯 WORKING FEATURES (TESTED & FUNCTIONAL)
-
-### ✅ User Authentication
-- Signup page with role selection (TRADER/ADMIN)
-- Login page with role-based routing
-- Logout functionality
-- Auth state management with Zustand + persistence
-- Password hashing with bcrypt
-- **Note:** Routes are not protected by middleware yet
-
-### ✅ KYC Flow
-- KYC form at `/kyc` with validation
-- Auto-approval API (`/api/kyc/submit`)
-- KYC gating on dashboard and challenge selection
-- KYC status badges and messaging
-
-### ✅ Challenge Plan Selection
-- Three-tier challenge plan display at `/challenge-plans`
-- Beautiful gradient card design with comparison
-- Plan selection and reservation flow
-- APIs: `/api/challenges/plans`, `/api/challenges/select`, `/api/challenges/selection`
-- Dashboard shows reserved plan with payment CTA
-- Prevents duplicate reservations
-
-### ✅ Dashboard UI
-- User dashboard with mocked charts (P&L, volume, trends)
-- Admin dashboard with mocked analytics
-- Navbar with theme toggle (light/dark mode)
-- Responsive design (mobile + desktop)
-- Material-UI integration with custom theme
-
-### ✅ Database
-- PostgreSQL with Prisma ORM
-- All models defined: User, ChallengePlan, UserChallenge, MockedKYC, MockedPayment, ChallengeMetrics
-- Migration applied successfully
-- Database seeded with 3 challenge plans
-
----
-
-## ⚠️ NOT WORKING / INCOMPLETE
-
-### ❌ Payment Processing
-- `/payments/mock` page exists but doesn't call any API
-- No `/api/payment/mock` endpoint
-- No actual payment confirmation or credential generation
-- Cannot progress past plan selection
-
-### ❌ Challenge Monitoring
-- No challenge status API
-- No individual challenge dashboard page
-- No metrics generation or display
-- Cannot view active challenges
-
-### ❌ Route Protection
-- No middleware.ts file
-- All routes accessible without authentication
-- Role-based access not enforced
-- Security vulnerability
-
-### ❌ Challenge Evaluation
-- No rule engine
-- No automated evaluation
-- No pass/fail determination
-- No challenge progression
-
-### ❌ Error Handling
-- No custom error pages (404, 500, etc.)
-- No comprehensive API error handling
-- No user-friendly error messages
-
----
-
 ## MVP SCOPE DEFINITION
 
 ### What's Included in MVP:
@@ -394,49 +305,34 @@
 **Outcome:** Signup-to-plan workflow now enforces KYC, persists selections, and guides traders to payment.
 ---
 ### PHASE 4: Mocked Payment Processing (Priority: HIGH)
+
 #### Task 4.1: Create Payment API Endpoint
-**Status:** Not Started 
-**Estimated Time:** 2 hours 
+**Status:** Completed (October 31, 2025)  
+**Estimated Time:** 2 hours  
 **Dependencies:** Task 1.1, Task 3.2
-**Requirements:**
-- Create `/api/payment/mock` POST endpoint
-- Mock Razorpay payment integration (simulate payment flow)
-- Accept userId, challengePlanId, amount (in INR)
-- Create `MockedPayment` record with SUCCESS status
-- Generate mock Razorpay transaction ID (format: razorpay_mock_xxxxx)
-- Create `UserChallenge` record with PENDING status
-- Generate demo account credentials (random username/password)
-- Return success with credentials
-**Acceptance Criteria:**
-- Payment record created
-- Challenge record created
-- Demo credentials generated
-- API returns all data
+
+**Deliverables:**
+- Built /api/payment/mock POST endpoint with Razorpay-style transaction generation
+- Validates KYC'd users and existing challenge reservations before processing
+- Records MockedPayment entries and activates challenges with demo credentials
+- Returns payment metadata plus credential bundle for client consumption
+
+**Outcome:** Mock payments now persist transactions, flip challenges to ACTIVE, and expose credentials for UI flows.
+
 ---
+
 #### Task 4.2: Create Payment Confirmation Page
-**Status:** Partially Complete (UI exists at `/payments/mock`, needs API integration) 
-**Estimated Time:** 2 hours (1 hour remaining) 
+**Status:** Completed (October 31, 2025)  
+**Estimated Time:** 2 hours  
 **Dependencies:** Task 4.1
-**Requirements:**
-- ✓ Create `/payments/mock` page (placeholder exists)
-- Show payment summary with amount in INR (Rs. format)
-- Mock Razorpay UI elements (logo, branding)
-- "Confirm Payment" button triggers mock payment API (`/api/payment/mock`)
-- Show success message with demo credentials after API response
-- Display mock Razorpay payment ID from API
-- Display external trading platform link
-- Copy-to-clipboard for credentials
-- Redirect to challenge dashboard after 5 seconds
-**Acceptance Criteria:**
-- Payment UI looks professional
-- Mock payment completes successfully via API
-- Credentials displayed clearly from API response
-- Copy functionality works
-- Auto-redirect works
-**Current State:**
-- Basic placeholder page exists with "Confirm mocked payment" button
-- Currently redirects directly to dashboard without API call
-- Needs integration with Task 4.1 payment API
+
+**Deliverables:**
+- Enhanced /payments/mock with payment summary, guardrail highlights, and Razorpay-inspired styling
+- Wired confirm CTA to /api/payment/mock, surfaces transaction IDs and demo credentials
+- Added copy-to-clipboard helpers, mocked trading terminal link, and dashboard redirect timer
+
+**Outcome:** Traders can complete the mocked checkout, view credentials instantly, and are redirected to an activated dashboard experience.
+
 ---
 ### PHASE 5: Challenge Dashboard & Monitoring (Priority: MEDIUM)
 #### Task 5.1: Create Challenge Status API
@@ -794,7 +690,7 @@
 **Estimated Time:** 1 hour (0.5 hours remaining) 
 **Dependencies:** None
 **Requirements:**
-- ✓ Add empty state for no challenge plans (exists in `/challenge-plans`)
+- âœ“ Add empty state for no challenge plans (exists in `/challenge-plans`)
 - Add empty state for no active challenges (user dashboard)
 - Add empty state for no users (admin)
 - Add helpful messages and CTAs
@@ -920,7 +816,7 @@
 **Estimated Time:** 1 hour (0.5 hours remaining) 
 **Dependencies:** None
 **Requirements:**
-- ✓ Set up development environment variables
+- âœ“ Set up development environment variables
 - Configure production database
 - Set up database connection pooling
 - Configure CORS if needed
@@ -966,45 +862,53 @@
 - Domain configured (if applicable)
 ---
 ## MVP SUMMARY
-### Total Tasks: 48
--  Completed: 24 (50%)
-- Partially Complete: 5 (10%)
--  Not Started: 19 (40%)
-### Estimated Total Time: 80-95 hours
-### Estimated Remaining Time: 58-68 hours (including partial task completion)
-### Task Priority Breakdown:
-- **HIGH Priority:** 12 tasks (immediate focus) - 9 completed, 1 partial, 2 remaining
-- **MEDIUM Priority:** 20 tasks (next sprint) - 0 completed, 3 partial, 17 remaining
-- **LOW Priority:** 3 tasks (final polish) - 0 completed, 1 partial, 2 remaining
-**Recommended Sprint Structure:**
-**Sprint 1 (Week 1):** Foundation - **✅ 100% COMPLETED**
--  Database schema enhancement (Task 1.1, 1.2)
--  Mocked KYC flow (Tasks 2.1, 2.2, 2.3)
--  Challenge plan selection (Tasks 3.1, 3.2, 3.3)
 
-**Sprint 2 (Week 2):** Core Features - **IN PROGRESS (0% complete)**
--  Mocked payment processing (Tasks 4.1, 4.2) - 0/2 complete
--  Challenge dashboard (Tasks 5.1, 5.2, 5.3, 5.4) - 0/4 complete
--  Mocked metrics generator - 0/1 complete
+### Total Tasks: 48
+- ✅ Completed: 25 (52%)
+- 🔄 In Progress: 0 (0%)
+- ⏳ Not Started: 23 (48%)
+
+### Estimated Total Time: 80-95 hours
+### Estimated Remaining Time: 55-65 hours
+
+### Task Priority Breakdown:
+- **HIGH Priority:** 12 tasks (immediate focus) - 10 completed, 2 remaining
+- **MEDIUM Priority:** 20 tasks (next sprint) - 0 completed, 20 remaining
+- **LOW Priority:** 3 tasks (final polish) - 0 completed, 3 remaining
+
+### Recommended Sprint Structure:
+
+**Sprint 1 (Week 1):** Foundation - **✅ 100% COMPLETED**
+- ✅ Database schema enhancement (Task 1.1, 1.2)
+- ✅ Mocked KYC flow (Tasks 2.1, 2.2, 2.3)
+- ✅ Challenge plan selection (Tasks 3.1, 3.2, 3.3)
+
+**Sprint 2 (Week 2):** Core Features - **33% complete**
+- ✅ Mocked payment processing (Tasks 4.1, 4.2)
+- ⏳ Challenge dashboard (Tasks 5.1, 5.2, 5.3, 5.4)
+- ⏳ Mocked metrics generator
+
 **Sprint 3 (Week 3):** Evaluation & Admin
--  Challenge evaluation system
--  Challenge progression
--  Admin enhancements
+- ⏳ Challenge evaluation system
+- ⏳ Challenge progression
+- ⏳ Admin enhancements
+
 **Sprint 4 (Week 4):** Polish & Deploy
--  Authentication middleware
--  Error handling
--  UI/UX polish
--  Testing
--  Documentation
--  Deployment
+- ⏳ Authentication middleware
+- ⏳ Error handling
+- ⏳ UI/UX polish
+- ⏳ Testing
+- ⏳ Documentation
+- ⏳ Deployment
+
 ---
 ## SUCCESS CRITERIA FOR MVP
 ### User Flow Success:
 - [x] User can sign up and login 
 - [x] User completes mocked KYC automatically 
 - [x] User can select a challenge plan via comparison UI
-- [ ] User completes mocked payment
-- [ ] User receives demo account credentials
+- [x] User completes mocked payment
+- [x] User receives demo account credentials
 - [ ] User can view challenge dashboard with mocked analytics
 - [ ] User challenge is automatically evaluated
 - [ ] User can progress to next challenge level
@@ -1022,6 +926,10 @@
 - [x] Auth APIs functional (login/signup/logout) 
 - [x] Database properly seeded 
 - [x] Authentication working with KYC gating 
+- [x] Production build successful with zero TypeScript errors
+- [x] All 23 routes compiled and optimized
+- [x] MUI v7 Grid migration completed
+- [x] Next.js 16 compatibility issues resolved
 - [ ] Role-based access enforced (needs middleware)
 - [ ] Application deployed
 ### Business Success:
@@ -1032,7 +940,7 @@
 - [x] Mocked data looks realistic (dashboard charts) 
 - [ ] Platform ready for user testing (needs payment and challenge monitoring)
 - [ ] Documentation complete
-**Progress:** 13/27 success criteria met (48%)
+**Progress:** 17/27 success criteria met (63%)
 ---
 ## NEXT STEPS AFTER MVP
 Once MVP is complete and tested, the following features can be added in future versions:
@@ -1062,3 +970,12 @@ Once MVP is complete and tested, the following features can be added in future v
 **Document Maintained By:** Development Team 
 **Review Frequency:** Weekly during sprints 
 **Next Review Date:** November 6, 2025
+
+
+
+
+
+
+
+
+

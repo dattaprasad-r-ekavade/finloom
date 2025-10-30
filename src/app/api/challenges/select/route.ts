@@ -54,7 +54,12 @@ export async function POST(request: Request) {
         userId,
         status: { in: ACTIVE_STATUSES },
       },
-      include: { plan: true },
+      include: {
+        plan: true,
+        mockedPayments: {
+          orderBy: { createdAt: 'desc' },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -73,7 +78,12 @@ export async function POST(request: Request) {
               violationCount: 0,
               violationDetails: null,
             },
-            include: { plan: true },
+            include: {
+              plan: true,
+              mockedPayments: {
+                orderBy: { createdAt: 'desc' },
+              },
+            },
           })
         : existingChallenge;
 
@@ -85,7 +95,12 @@ export async function POST(request: Request) {
           planId,
           status: 'PENDING',
         },
-        include: { plan: true },
+        include: {
+          plan: true,
+          mockedPayments: {
+            orderBy: { createdAt: 'desc' },
+          },
+        },
       }));
 
     return NextResponse.json({
