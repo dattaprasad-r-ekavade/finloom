@@ -60,6 +60,9 @@ model ChallengePlan {
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   userChallenges     UserChallenge[]
+
+  @@index([isActive])
+  @@index([level])
 }
 
 model UserChallenge {
@@ -80,6 +83,10 @@ model UserChallenge {
   plan                   ChallengePlan      @relation(fields: [planId], references: [id], onDelete: Cascade)
   mockedPayments         MockedPayment[]
   metrics                ChallengeMetrics[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([userId, status])
 }
 
 model MockedKYC {
@@ -108,6 +115,9 @@ model MockedPayment {
   updatedAt         DateTime            @updatedAt
   user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   challenge         UserChallenge       @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([challengeId])
 }
 
 model ChallengeMetrics {
@@ -124,4 +134,7 @@ model ChallengeMetrics {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   challenge     UserChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId])
+  @@index([challengeId, date])
 }
