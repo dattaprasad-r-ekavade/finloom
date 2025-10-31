@@ -19,6 +19,7 @@ import { Lock } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { useAuthStore } from '@/store/authStore';
+import { validateEmail, validatePassword } from '@/lib/validation';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -27,10 +28,29 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    setEmailError(null);
+    setPasswordError(null);
+
+    // Validate email
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.valid) {
+      setEmailError(emailValidation.error ?? 'Invalid email');
+      return;
+    }
+
+    // Validate password
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      setPasswordError(passwordValidation.error ?? 'Invalid password');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -134,18 +154,28 @@ export default function LoginPage() {
                   label="Email Address"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setEmailError(null);
+                  }}
                   autoComplete="email"
                   required
+                  error={!!emailError}
+                  helperText={emailError}
                 />
                 <TextField
                   fullWidth
                   label="Password"
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setPasswordError(null);
+                  }}
                   autoComplete="current-password"
                   required
+                  error={!!passwordError}
+                  helperText={passwordError}
                 />
                 <Box sx={{ textAlign: 'right' }}>
                   <Link href="#" underline="hover" color="primary.main" fontWeight={600}>

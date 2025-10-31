@@ -19,6 +19,7 @@ import { useRouter } from 'next/navigation';
 
 import Navbar from '@/components/Navbar';
 import { useAuthStore } from '@/store/authStore';
+import { validateName, validatePhone, validateIdNumber, validateAddress } from '@/lib/validation';
 
 export default function KycPage() {
   const router = useRouter();
@@ -62,17 +63,28 @@ export default function KycPage() {
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!fullName.trim()) {
-      newErrors.fullName = 'Full name is required.';
+    // Validate full name
+    const nameValidation = validateName(fullName);
+    if (!nameValidation.valid) {
+      newErrors.fullName = nameValidation.error ?? 'Invalid name';
     }
-    if (!phoneNumber.trim()) {
-      newErrors.phoneNumber = 'Phone number is required.';
+
+    // Validate phone number
+    const phoneValidation = validatePhone(phoneNumber);
+    if (!phoneValidation.valid) {
+      newErrors.phoneNumber = phoneValidation.error ?? 'Invalid phone number';
     }
-    if (!idNumber.trim()) {
-      newErrors.idNumber = 'ID number is required.';
+
+    // Validate ID number
+    const idValidation = validateIdNumber(idNumber);
+    if (!idValidation.valid) {
+      newErrors.idNumber = idValidation.error ?? 'Invalid ID number';
     }
-    if (!address.trim()) {
-      newErrors.address = 'Address is required.';
+
+    // Validate address
+    const addressValidation = validateAddress(address);
+    if (!addressValidation.valid) {
+      newErrors.address = addressValidation.error ?? 'Invalid address';
     }
 
     setErrors(newErrors);

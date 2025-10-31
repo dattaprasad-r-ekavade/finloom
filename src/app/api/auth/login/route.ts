@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 
 import { prisma } from '@/lib/prisma';
 import { ensureDatabase } from '@/lib/ensureDatabase';
+import { signToken } from '@/lib/jwt';
+import { ErrorHandlers, successResponse, validateRequiredFields, isValidEmail } from '@/lib/apiResponse';
 
 interface LoginRequestBody {
   email?: string;
@@ -17,11 +19,14 @@ export async function POST(request: Request) {
     const body = (await request.json()) as LoginRequestBody;
     const { email, password, expectedRole } = body;
 
+    // Validate required fields
     if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email and password are required.' },
-        { status: 400 }
-      );
+      return ErrorHandlers.badRequest('Email and password are required');
+    }
+
+    // Validate email format
+    if (!isValidEmail(email)) {
+      return ErrorHandlers.badRequest('Please enter a valid email address');
     }
 
     const normalisedEmail = email.trim().toLowerCase();
@@ -32,26 +37,19 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid email or password.' },
-        { status: 401 }
-      );
+      return ErrorHandlers.unauthorized('Invalid email or password');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isPasswordValid) {
-      return NextResponse.json(
-        { error: 'Invalid email or password.' },
-        { status: 401 }
-      );
+      return ErrorHandlers.unauthorized('Invalid email or password');
     }
 
     // Check if the user's role matches the expected role (if provided)
     if (expectedRole && user.role !== expectedRole) {
-      return NextResponse.json(
-        { error: `This portal is for ${expectedRole === 'ADMIN' ? 'administrators' : 'traders'} only. Please use the correct login page.` },
-        { status: 403 }
+      return ErrorHandlers.forbidden(
+        `This portal is for ${expectedRole === 'ADMIN' ? 'administrators' : 'traders'} only. Please use the correct login page.`
       );
     }
 
@@ -64,15 +62,35 @@ export async function POST(request: Request) {
       hasCompletedKyc: Boolean(user.mockedKyc),
     };
 
-    return NextResponse.json({
+    // Generate JWT token
+    const token = signToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+    });
+
+    // Create response with cookie
+    const response = NextResponse.json({
       message: 'Signed in successfully.',
       user: responseUser,
     });
+
+    // Set HTTP-only cookie with JWT token
+    response.cookies.set('auth-token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    });
+
+    return response;
   } catch (error) {
-    console.error('Login error', error);
-    return NextResponse.json(
-      { error: 'Unable to sign in. Please try again later.' },
-      { status: 500 }
+    console.error('Login error:', error);
+    return ErrorHandlers.serverError(
+      'Unable to sign in. Please try again later.',
+      process.env.NODE_ENV === 'development' ? error : undefined
     );
   }
 }

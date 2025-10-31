@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/prisma';
+import { ErrorHandlers } from '@/lib/apiResponse';
 
 export async function GET() {
   try {
@@ -11,10 +12,10 @@ export async function GET() {
 
     return NextResponse.json({ plans });
   } catch (error) {
-    console.error('Challenge plans fetch error', error);
-    return NextResponse.json(
-      { error: 'Unable to load challenge plans right now.' },
-      { status: 500 }
+    console.error('Challenge plans fetch error:', error);
+    return ErrorHandlers.serverError(
+      'Unable to load challenge plans right now.',
+      process.env.NODE_ENV === 'development' ? error : undefined
     );
   }
 }

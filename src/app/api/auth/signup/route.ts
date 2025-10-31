@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 
 import { prisma } from '@/lib/prisma';
 import { ensureDatabase } from '@/lib/ensureDatabase';
+import { signToken } from '@/lib/jwt';
+import { ErrorHandlers, isValidEmail, isValidPassword } from '@/lib/apiResponse';
 
 interface SignupRequestBody {
   email?: string;
@@ -19,10 +21,15 @@ export async function POST(request: Request) {
     const { email, password, name, role } = body;
 
     if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email and password are required.' },
-        { status: 400 }
-      );
+      return ErrorHandlers.badRequest('Email and password are required.');
+    }
+
+    if (!isValidEmail(email)) {
+      return ErrorHandlers.badRequest('Please provide a valid email address.');
+    }
+
+    if (!isValidPassword(password)) {
+      return ErrorHandlers.badRequest('Password must be at least 8 characters long.');
     }
 
     const normalisedEmail = email.trim().toLowerCase();
@@ -32,10 +39,7 @@ export async function POST(request: Request) {
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'An account with this email already exists.' },
-        { status: 409 }
-      );
+      return ErrorHandlers.conflict('An account with this email already exists.');
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
@@ -65,15 +69,35 @@ export async function POST(request: Request) {
       hasCompletedKyc: false,
     };
 
-    return NextResponse.json({
+    // Generate JWT token
+    const token = signToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+    });
+
+    // Create response with cookie
+    const response = NextResponse.json({
       message: 'Account created successfully.',
       user: responseUser,
     });
+
+    // Set HTTP-only cookie with JWT token
+    response.cookies.set('auth-token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    });
+
+    return response;
   } catch (error) {
-    console.error('Signup error', error);
-    return NextResponse.json(
-      { error: 'Unable to create account. Please try again later.' },
-      { status: 500 }
+    console.error('Signup error:', error);
+    return ErrorHandlers.serverError(
+      'Unable to create account. Please try again later.',
+      process.env.NODE_ENV === 'development' ? error : undefined
     );
   }
 }

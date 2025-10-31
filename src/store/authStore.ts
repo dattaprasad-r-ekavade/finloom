@@ -14,16 +14,47 @@ interface User {
 
 interface AuthState {
   user: User | null;
+  isLoading: boolean;
   setUser: (user: User | null) => void;
-  logout: () => void;
+  setLoading: (loading: boolean) => void;
+  logout: () => Promise<void>;
+  checkAuth: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
+      isLoading: true,
       setUser: (user) => set({ user }),
-      logout: () => set({ user: null }),
+      setLoading: (loading) => set({ isLoading: loading }),
+      logout: async () => {
+        try {
+          await fetch('/api/auth/logout', { method: 'POST' });
+        } catch (error) {
+          console.error('Logout error:', error);
+        } finally {
+          set({ user: null });
+        }
+      },
+      checkAuth: async () => {
+        try {
+          set({ isLoading: true });
+          const response = await fetch('/api/auth/me');
+          
+          if (response.ok) {
+            const data = await response.json();
+            set({ user: data.user });
+          } else {
+            set({ user: null });
+          }
+        } catch (error) {
+          console.error('Check auth error:', error);
+          set({ user: null });
+        } finally {
+          set({ isLoading: false });
+        }
+      },
     }),
     {
       name: 'auth-storage',

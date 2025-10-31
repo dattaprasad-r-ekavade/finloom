@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { ChallengeStatus } from '@prisma/client';
 
 import { prisma } from '@/lib/prisma';
+import { ErrorHandlers } from '@/lib/apiResponse';
 
 interface SelectChallengeRequest {
   userId?: string;
@@ -16,10 +17,7 @@ export async function POST(request: Request) {
     const { userId, planId } = body;
 
     if (!userId || !planId) {
-      return NextResponse.json(
-        { error: 'User ID and plan ID are required.' },
-        { status: 400 }
-      );
+      return ErrorHandlers.badRequest('User ID and plan ID are required.');
     }
 
     const user = await prisma.user.findUnique({
@@ -28,14 +26,11 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found.' }, { status: 404 });
+      return ErrorHandlers.notFound('User not found.');
     }
 
     if (!user.mockedKyc) {
-      return NextResponse.json(
-        { error: 'KYC must be completed before selecting a challenge plan.' },
-        { status: 403 }
-      );
+      return ErrorHandlers.forbidden('KYC must be completed before selecting a challenge plan.');
     }
 
     const plan = await prisma.challengePlan.findUnique({
@@ -43,10 +38,7 @@ export async function POST(request: Request) {
     });
 
     if (!plan || !plan.isActive) {
-      return NextResponse.json(
-        { error: 'Challenge plan is unavailable.' },
-        { status: 404 }
-      );
+      return ErrorHandlers.notFound('Challenge plan is unavailable.');
     }
 
     const existingChallenge = await prisma.userChallenge.findFirst({
@@ -111,10 +103,10 @@ export async function POST(request: Request) {
       selection: challengeRecord,
     });
   } catch (error) {
-    console.error('Challenge selection error', error);
-    return NextResponse.json(
-      { error: 'Unable to reserve challenge plan. Please try again later.' },
-      { status: 500 }
+    console.error('Challenge selection error:', error);
+    return ErrorHandlers.serverError(
+      'Unable to reserve challenge plan. Please try again later.',
+      process.env.NODE_ENV === 'development' ? error : undefined
     );
   }
 }

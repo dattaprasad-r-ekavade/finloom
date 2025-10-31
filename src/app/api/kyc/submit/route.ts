@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/prisma';
 import { ensureDatabase } from '@/lib/ensureDatabase';
+import { ErrorHandlers } from '@/lib/apiResponse';
 
 interface KycRequestBody {
   userId?: string;
@@ -19,26 +20,17 @@ export async function POST(request: Request) {
     const { userId, fullName, phoneNumber, idNumber, address } = body;
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID is required.' },
-        { status: 400 }
-      );
+      return ErrorHandlers.badRequest('User ID is required.');
     }
 
     if (!fullName || !phoneNumber || !idNumber || !address) {
-      return NextResponse.json(
-        { error: 'All KYC fields are required.' },
-        { status: 400 }
-      );
+      return ErrorHandlers.badRequest('All KYC fields are required.');
     }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found.' },
-        { status: 404 }
-      );
+      return ErrorHandlers.notFound('User not found.');
     }
 
     const trimmedFullName = fullName.trim();
@@ -86,10 +78,10 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error('KYC submission error', error);
-    return NextResponse.json(
-      { error: 'Unable to process KYC submission. Please try again later.' },
-      { status: 500 }
+    console.error('KYC submission error:', error);
+    return ErrorHandlers.serverError(
+      'Unable to process KYC submission. Please try again later.',
+      process.env.NODE_ENV === 'development' ? error : undefined
     );
   }
 }

@@ -66,6 +66,12 @@ export default function ChallengePlansPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [progressionData, setProgressionData] = useState<{
+    highestPassedLevel: number;
+    unlockedLevels: number[];
+    canProgress: boolean;
+    reason: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -119,8 +125,40 @@ export default function ChallengePlansPage() {
       }
     };
 
+    const fetchProgression = async () => {
+      if (!user) {
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `/api/challenges/next-level?userId=${encodeURIComponent(user.id)}`
+        );
+        const data = await response.json();
+
+        if (response.ok) {
+          setProgressionData({
+            highestPassedLevel: data.highestPassedLevel ?? 0,
+            unlockedLevels: data.unlockedLevels ?? [1],
+            canProgress: data.canProgress ?? true,
+            reason: data.reason ?? '',
+          });
+        }
+      } catch (progressError) {
+        console.error(progressError);
+        // Default to level 1 unlocked if API fails
+        setProgressionData({
+          highestPassedLevel: 0,
+          unlockedLevels: [1],
+          canProgress: true,
+          reason: '',
+        });
+      }
+    };
+
     fetchPlans();
     fetchSelection();
+    fetchProgression();
   }, [router, user]);
 
   const selectedPlanId = selection?.plan?.id ?? null;
@@ -274,6 +312,12 @@ export default function ChallengePlansPage() {
               {plans.map((plan) => {
                 const isSelected = plan.id === selectedPlanId;
                 const isActivePlan = isSelected && selection?.status === 'ACTIVE';
+                const isLocked = progressionData 
+                  ? !progressionData.unlockedLevels.includes(plan.level)
+                  : plan.level > 1;
+                const isPassed = progressionData 
+                  ? plan.level <= progressionData.highestPassedLevel
+                  : false;
 
                 return (
                   <Card
@@ -284,23 +328,53 @@ export default function ChallengePlansPage() {
                       borderRadius: 4,
                       border: (theme) =>
                         `1px solid ${
-                          isSelected ? theme.palette.primary.light : theme.palette.divider
+                          isLocked
+                            ? theme.palette.grey[300]
+                            : isSelected 
+                            ? theme.palette.primary.light 
+                            : theme.palette.divider
                         }`,
                       background: (theme) =>
-                        theme.palette.mode === 'light'
+                        isLocked
+                          ? theme.palette.grey[100]
+                          : theme.palette.mode === 'light'
                           ? 'linear-gradient(135deg, rgba(0,97,168,0.05) 0%, rgba(0,168,107,0.08) 100%)'
                           : 'linear-gradient(135deg, rgba(79,195,247,0.12) 0%, rgba(76,175,80,0.15) 100%)',
                       position: 'relative',
                       overflow: 'hidden',
+                      opacity: isLocked ? 0.6 : 1,
                     }}
                   >
-                      {isSelected && (
+                      {isPassed && (
+                        <Chip
+                          icon={<CheckCircle fontSize="small" />}
+                          label="Completed"
+                          color="success"
+                          size="small"
+                          sx={{ position: 'absolute', top: 16, right: 16, zIndex: 1 }}
+                        />
+                      )}
+                      {isSelected && !isPassed && (
                         <Chip
                           icon={<CheckCircle fontSize="small" />}
                           label={isActivePlan ? 'Live challenge' : 'Reserved'}
                           color={isActivePlan ? 'success' : 'info'}
                           size="small"
-                          sx={{ position: 'absolute', top: 16, right: 16 }}
+                          sx={{ position: 'absolute', top: 16, right: 16, zIndex: 1 }}
+                        />
+                      )}
+                      {isLocked && (
+                        <Chip
+                          label="🔒 Locked"
+                          size="small"
+                          sx={{ 
+                            position: 'absolute', 
+                            top: 16, 
+                            right: 16, 
+                            zIndex: 1,
+                            backgroundColor: 'grey.300',
+                            color: 'grey.700',
+                          }}
                         />
                       )}
                     <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
@@ -374,12 +448,14 @@ export default function ChallengePlansPage() {
                         variant="contained"
                         size="large"
                         fullWidth
-                        disabled={isSubmitting || isSelected}
+                        disabled={isLocked || isSubmitting || isSelected}
                         onClick={() => handlePlanSelection(plan)}
-                        startIcon={<Payment />}
+                        startIcon={isLocked ? undefined : <Payment />}
                         sx={{ mt: 1.5, fontWeight: 600 }}
                       >
-                        {isSelected
+                        {isLocked
+                          ? `🔒 Complete Level ${(progressionData?.highestPassedLevel || 0) + 1} first`
+                          : isSelected
                           ? isActivePlan
                             ? 'Challenge live'
                             : 'Reserved for you'

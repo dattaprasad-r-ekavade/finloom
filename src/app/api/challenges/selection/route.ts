@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { ChallengeStatus } from '@prisma/client';
 
 import { prisma } from '@/lib/prisma';
+import { ErrorHandlers } from '@/lib/apiResponse';
 
 const TRACKED_STATUSES: ChallengeStatus[] = ['PENDING', 'ACTIVE'];
 
@@ -11,10 +12,7 @@ export async function GET(request: Request) {
     const userId = searchParams.get('userId');
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID is required.' },
-        { status: 400 }
-      );
+      return ErrorHandlers.badRequest('User ID is required.');
     }
 
     const selection = await prisma.userChallenge.findFirst({
@@ -35,10 +33,10 @@ export async function GET(request: Request) {
       selection,
     });
   } catch (error) {
-    console.error('Challenge selection fetch error', error);
-    return NextResponse.json(
-      { error: 'Unable to load challenge selection.' },
-      { status: 500 }
+    console.error('Challenge selection fetch error:', error);
+    return ErrorHandlers.serverError(
+      'Unable to load challenge selection.',
+      process.env.NODE_ENV === 'development' ? error : undefined
     );
   }
 }

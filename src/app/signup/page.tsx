@@ -21,6 +21,7 @@ import { PersonAdd } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { useAuthStore } from '@/store/authStore';
+import { validateEmail, validatePassword, validateName } from '@/lib/validation';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -32,11 +33,41 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     setSuccess(null);
+    setNameError(null);
+    setEmailError(null);
+    setPasswordError(null);
+
+    // Validate name (optional field)
+    if (name.trim()) {
+      const nameValidation = validateName(name);
+      if (!nameValidation.valid) {
+        setNameError(nameValidation.error ?? 'Invalid name');
+        return;
+      }
+    }
+
+    // Validate email
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.valid) {
+      setEmailError(emailValidation.error ?? 'Invalid email');
+      return;
+    }
+
+    // Validate password
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      setPasswordError(passwordValidation.error ?? 'Invalid password');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -154,26 +185,41 @@ export default function SignupPage() {
                   fullWidth
                   label="Full Name"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setNameError(null);
+                  }}
                   autoComplete="name"
+                  error={!!nameError}
+                  helperText={nameError || 'Optional'}
                 />
                 <TextField
                   fullWidth
                   label="Email Address"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setEmailError(null);
+                  }}
                   autoComplete="email"
                   required
+                  error={!!emailError}
+                  helperText={emailError}
                 />
                 <TextField
                   fullWidth
                   label="Password"
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setPasswordError(null);
+                  }}
                   autoComplete="new-password"
                   required
+                  error={!!passwordError}
+                  helperText={passwordError || 'Minimum 8 characters'}
                 />
                 <ToggleButtonGroup
                   exclusive
