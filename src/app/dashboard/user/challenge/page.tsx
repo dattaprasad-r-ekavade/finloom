@@ -24,6 +24,7 @@ import { useRouter } from 'next/navigation';
 
 import Navbar from '@/components/Navbar';
 import { useAuthStore } from '@/store/authStore';
+import { formatDateTime, formatChartDate } from '@/lib/dateFormat';
 
 interface ChallengeStatusPayload {
   challenge: {
@@ -316,10 +317,7 @@ export default function ChallengeMonitorPage() {
                         }}
                       >
                         Latest transaction {payment.mockTransactionId} paid on{' '}
-                        {new Date(payment.paidAt).toLocaleString('en-IN', {
-                          dateStyle: 'medium',
-                          timeStyle: 'short',
-                        })}
+                        {formatDateTime(payment.paidAt)}
                         . Amount {formatCurrency(payment.amount)}.
                       </Alert>
                     )}
@@ -358,10 +356,7 @@ export default function ChallengeMonitorPage() {
                         {status.metrics.map((metric) => (
                           <TableRow key={metric.id}>
                             <TableCell>
-                              {new Date(metric.date).toLocaleDateString('en-IN', {
-                                month: 'short',
-                                day: 'numeric',
-                              })}
+                              {formatChartDate(metric.date)}
                             </TableCell>
                             <TableCell align="right">
                               {formatCurrency(metric.dailyPnl)}

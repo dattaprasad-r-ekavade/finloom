@@ -29,10 +29,11 @@ import {
   Replay,
   ArrowForward,
 } from '@mui/icons-material';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 
 import Navbar from '@/components/Navbar';
 import { useAuthStore } from '@/store/authStore';
+import { formatDateTime, formatChartDate } from '@/lib/dateFormat';
 
 interface ViolationDetail {
   type: string;
@@ -324,7 +325,7 @@ function ChallengeResultContent() {
                       </Typography>
                       <Typography variant="body2">{violation.description}</Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {new Date(violation.date).toLocaleString()}
+                        {formatDateTime(violation.date)}
                       </Typography>
                     </Alert>
                   ))}
@@ -361,10 +362,7 @@ function ChallengeResultContent() {
                       {metrics.slice(-10).map((metric, index) => (
                         <TableRow key={index}>
                           <TableCell>
-                            {new Date(metric.date).toLocaleDateString('en-IN', {
-                              month: 'short',
-                              day: 'numeric',
-                            })}
+                            {formatChartDate(metric.date)}
                           </TableCell>
                           <TableCell
                             align="right"

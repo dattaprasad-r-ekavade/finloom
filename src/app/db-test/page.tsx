@@ -73,7 +73,13 @@ export default async function DatabaseTestPage() {
           <div style={{ marginTop: '0.75rem' }}>
             <p style={{ color: '#047857', fontWeight: 500 }}>Successfully connected to the database.</p>
             <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>
-              Last checked at {status.timestamp.toLocaleString()}.
+              Last checked at {status.timestamp.toLocaleString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}.
             </p>
           </div>
         ) : (

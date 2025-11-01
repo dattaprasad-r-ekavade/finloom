@@ -23,6 +23,9 @@ enum ChallengeStatus {
 }
 
 enum MockedKycStatus {
+  PENDING
+  APPROVED
+  REJECTED
   AUTO_APPROVED
 }
 
@@ -96,11 +99,21 @@ model MockedKYC {
   phoneNumber String
   idNumber    String
   address     String
-  status      MockedKycStatus @default(AUTO_APPROVED)
-  approvedAt  DateTime        @default(now())
+  status      MockedKycStatus @default(PENDING)
+  approvedAt  DateTime?
+  approvedBy  String?
+  rejectedAt  DateTime?
+  rejectedBy  String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AdminSettings {
+  id                String   @id @default(cuid())
+  autoApproveKyc    Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model MockedPayment {

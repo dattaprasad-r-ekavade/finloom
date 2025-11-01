@@ -84,13 +84,13 @@ export default function SignupPage() {
         return;
       }
 
-      // Store user data in Zustand store and redirect to dashboard
+      // Store user data in Zustand store and redirect appropriately
       if (data.user) {
         setUser(data.user);
         const isAdmin = data.user?.role === 'ADMIN';
-        const nextRoute = isAdmin ? '/dashboard/admin' : '/kyc';
+        const nextRoute = isAdmin ? '/dashboard/admin' : '/challenge-plans';
 
-        setSuccess(isAdmin ? 'Admin account created! Redirecting you to the command center.' : 'Account created! Let\'s wrap up your KYC.');
+        setSuccess(isAdmin ? 'Admin account created! Redirecting you to the command center.' : 'Account created! Choose your challenge to get started.');
 
         setTimeout(() => {
           router.push(nextRoute);

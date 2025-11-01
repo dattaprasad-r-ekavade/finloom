@@ -40,6 +40,7 @@ import {
 } from 'recharts';
 import Navbar from '@/components/Navbar';
 import { robotoMonoFontFamily } from '@/theme/theme';
+import { formatDate } from '@/lib/dateFormat';
 
 interface OverviewData {
   overview: {
@@ -432,8 +433,8 @@ export default function AdminDashboard() {
                           <TableCell>
                             <Typography variant="body2">
                               {challenge.startDate
-                                ? new Date(challenge.startDate).toLocaleDateString()
-                                : new Date(challenge.createdAt).toLocaleDateString()}
+                                ? formatDate(challenge.startDate)
+                                : formatDate(challenge.createdAt)}
                             </Typography>
                           </TableCell>
                         </TableRow>

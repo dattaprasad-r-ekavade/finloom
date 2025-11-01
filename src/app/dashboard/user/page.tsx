@@ -47,6 +47,7 @@ import { useRouter } from 'next/navigation';
 import { robotoMonoFontFamily } from '@/theme/theme';
 import { useAuthStore } from '@/store/authStore';
 import { parseChallengeCredentials } from '@/lib/challengeCredentials';
+import { formatDate, formatDateTime, formatChartDate } from '@/lib/dateFormat';
 
 interface ChallengeStatusPayload {
   challenge: {
@@ -124,12 +125,6 @@ const formatCurrency = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
-const formatDateTime = (value: string) =>
-  new Intl.DateTimeFormat('en-IN', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value));
-
 
 const FALLBACK_PERFORMANCE_DATA = [
   { date: 'Jan', pnl: 4000, cumulative: 4000 },
@@ -193,9 +188,8 @@ export default function UserDashboard() {
     }
 
     const fetchSelection = async () => {
-      if (!hasCompletedKyc) {
-        return;
-      }
+      // Allow viewing challenges even without KYC completion
+      // Users can see their selected challenge immediately
 
       setSelectionLoading(true);
       setSelectionError(null);
@@ -220,7 +214,7 @@ export default function UserDashboard() {
     };
 
     fetchSelection();
-  }, [hasCompletedKyc, router, user]);
+  }, [router, user]);
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -327,27 +321,18 @@ export default function UserDashboard() {
       challengeStatus?.plan.accountSize ?? selection?.plan.accountSize ?? 0;
 
     const cumulative = metrics.map((metric) => ({
-      date: new Date(metric.date).toLocaleDateString('en-IN', {
-        month: 'short',
-        day: 'numeric',
-      }),
+      date: formatChartDate(metric.date),
       value: accountSize + metric.cumulativePnl,
     }));
 
     const daily = metrics.map((metric) => ({
-      date: new Date(metric.date).toLocaleDateString('en-IN', {
-        month: 'short',
-        day: 'numeric',
-      }),
+      date: formatChartDate(metric.date),
       pnl: metric.dailyPnl,
       cumulative: metric.cumulativePnl,
     }));
 
     const trades = metrics.map((metric) => ({
-      date: new Date(metric.date).toLocaleDateString('en-IN', {
-        month: 'short',
-        day: 'numeric',
-      }),
+      date: formatChartDate(metric.date),
       trades: metric.tradesCount,
       winRate: metric.winRate,
     }));
@@ -873,10 +858,7 @@ export default function UserDashboard() {
                   {challengeStatus.metrics.slice(-7).map((metric) => (
                     <TableRow key={metric.id}>
                       <TableCell>
-                        {new Date(metric.date).toLocaleDateString('en-IN', {
-                          month: 'short',
-                          day: 'numeric',
-                        })}
+                        {formatChartDate(metric.date)}
                       </TableCell>
                       <TableCell align="right">
                         {formatCurrency(metric.dailyPnl)}

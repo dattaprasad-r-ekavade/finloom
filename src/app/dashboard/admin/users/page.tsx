@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { formatDate } from '@/lib/dateFormat';
 import {
   Box,
   Container,
@@ -25,8 +26,25 @@ import {
   CircularProgress,
   Alert,
   Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+  Menu,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
-import { Search, Refresh } from '@mui/icons-material';
+import { 
+  Search, 
+  Refresh, 
+  MoreVert, 
+  Edit, 
+  Delete, 
+  CheckCircle, 
+  Cancel,
+  Person,
+} from '@mui/icons-material';
 import Navbar from '@/components/Navbar';
 import { robotoMonoFontFamily } from '@/theme/theme';
 
@@ -61,6 +79,7 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [kycFilter, setKycFilter] = useState('');
@@ -71,6 +90,14 @@ export default function AdminUsersPage() {
     total: 0,
     totalPages: 1,
   });
+
+  // Dialog states
+  const [editDialog, setEditDialog] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [editFormData, setEditFormData] = useState({ name: '', email: '', role: 'TRADER' });
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [menuUserId, setMenuUserId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -120,6 +147,121 @@ export default function AdminUsersPage() {
       currency: 'INR',
       maximumFractionDigits: 0,
     }).format(value);
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, userId: string) => {
+    setAnchorEl(event.currentTarget);
+    setMenuUserId(userId);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setMenuUserId(null);
+  };
+
+  const handleEditClick = (user: User) => {
+    setSelectedUser(user);
+    setEditFormData({
+      name: user.name || '',
+      email: user.email,
+      role: user.role,
+    });
+    setEditDialog(true);
+    handleMenuClose();
+  };
+
+  const handleDeleteClick = (user: User) => {
+    setSelectedUser(user);
+    setDeleteDialog(true);
+    handleMenuClose();
+  };
+
+  const handleEditSubmit = async () => {
+    if (!selectedUser) return;
+
+    try {
+      setLoading(true);
+      const response = await fetch('/api/admin/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          ...editFormData,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSuccess('User updated successfully');
+        setEditDialog(false);
+        fetchUsers();
+      } else {
+        setError(result.error || 'Failed to update user');
+      }
+    } catch (err) {
+      setError('Failed to update user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedUser) return;
+
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/admin/users?userId=${selectedUser.id}`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSuccess('User deleted successfully');
+        setDeleteDialog(false);
+        fetchUsers();
+      } else {
+        setError(result.error || 'Failed to delete user');
+      }
+    } catch (err) {
+      setError('Failed to delete user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKycApproval = async (user: User, action: 'APPROVE' | 'REJECT') => {
+    try {
+      // First, get the KYC ID for this user
+      const kycResponse = await fetch(`/api/admin/kyc?userId=${user.id}`);
+      const kycData = await kycResponse.json();
+      
+      if (!kycData.success || !kycData.data) {
+        setError('KYC record not found for this user');
+        return;
+      }
+
+      const response = await fetch('/api/admin/kyc', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kycId: kycData.data.id,
+          action,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSuccess(`KYC ${action === 'APPROVE' ? 'approved' : 'rejected'} successfully`);
+        fetchUsers();
+      } else {
+        setError(result.error || 'Failed to update KYC status');
+      }
+    } catch (err) {
+      setError('Failed to update KYC status');
+    }
   };
 
   return (
@@ -205,10 +347,20 @@ export default function AdminUsersPage() {
             </CardContent>
           </Card>
 
+          {/* Alerts */}
+          {error && (
+            <Alert severity="error" onClose={() => setError(null)}>
+              {error}
+            </Alert>
+          )}
+          {success && (
+            <Alert severity="success" onClose={() => setSuccess(null)}>
+              {success}
+            </Alert>
+          )}
+
           {/* Users Table */}
-          {error ? (
-            <Alert severity="error">{error}</Alert>
-          ) : loading ? (
+          {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
               <CircularProgress />
             </Box>
@@ -224,12 +376,13 @@ export default function AdminUsersPage() {
                       <TableCell><strong>Challenges</strong></TableCell>
                       <TableCell><strong>Total Spent</strong></TableCell>
                       <TableCell><strong>Joined</strong></TableCell>
+                      <TableCell align="center"><strong>Actions</strong></TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {users.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} align="center">
+                        <TableCell colSpan={7} align="center">
                           <Typography color="text.secondary" py={4}>
                             No users found
                           </Typography>
@@ -256,11 +409,33 @@ export default function AdminUsersPage() {
                             />
                           </TableCell>
                           <TableCell>
-                            <Chip
-                              label={user.kycStatus}
-                              size="small"
-                              color={user.kycStatus === 'APPROVED' ? 'success' : 'warning'}
-                            />
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <Chip
+                                label={user.kycStatus}
+                                size="small"
+                                color={user.kycStatus === 'APPROVED' ? 'success' : 'warning'}
+                              />
+                              {user.kycStatus === 'PENDING' && (
+                                <Stack direction="row" spacing={0.5}>
+                                  <IconButton
+                                    size="small"
+                                    color="success"
+                                    onClick={() => handleKycApproval(user, 'APPROVE')}
+                                    title="Approve KYC"
+                                  >
+                                    <CheckCircle fontSize="small" />
+                                  </IconButton>
+                                  <IconButton
+                                    size="small"
+                                    color="error"
+                                    onClick={() => handleKycApproval(user, 'REJECT')}
+                                    title="Reject KYC"
+                                  >
+                                    <Cancel fontSize="small" />
+                                  </IconButton>
+                                </Stack>
+                              )}
+                            </Stack>
                           </TableCell>
                           <TableCell>
                             <Stack direction="row" spacing={1} alignItems="center">
@@ -296,8 +471,34 @@ export default function AdminUsersPage() {
                           </TableCell>
                           <TableCell>
                             <Typography variant="body2">
-                              {new Date(user.createdAt).toLocaleDateString()}
+                              {formatDate(user.createdAt)}
                             </Typography>
+                          </TableCell>
+                          <TableCell align="center">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => handleMenuOpen(e, user.id)}
+                            >
+                              <MoreVert />
+                            </IconButton>
+                            <Menu
+                              anchorEl={anchorEl}
+                              open={Boolean(anchorEl) && menuUserId === user.id}
+                              onClose={handleMenuClose}
+                            >
+                              <MenuItem onClick={() => handleEditClick(user)}>
+                                <ListItemIcon>
+                                  <Edit fontSize="small" />
+                                </ListItemIcon>
+                                <ListItemText>Edit User</ListItemText>
+                              </MenuItem>
+                              <MenuItem onClick={() => handleDeleteClick(user)}>
+                                <ListItemIcon>
+                                  <Delete fontSize="small" color="error" />
+                                </ListItemIcon>
+                                <ListItemText sx={{ color: 'error.main' }}>Delete User</ListItemText>
+                              </MenuItem>
+                            </Menu>
                           </TableCell>
                         </TableRow>
                       ))
@@ -332,6 +533,76 @@ export default function AdminUsersPage() {
           )}
         </Stack>
       </Container>
+
+      {/* Edit User Dialog */}
+      <Dialog open={editDialog} onClose={() => setEditDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Person />
+            <Typography variant="h6">Edit User</Typography>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              label="Name"
+              value={editFormData.name}
+              onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+            />
+            <TextField
+              fullWidth
+              label="Email"
+              type="email"
+              value={editFormData.email}
+              onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+            />
+            <FormControl fullWidth>
+              <InputLabel>Role</InputLabel>
+              <Select
+                value={editFormData.role}
+                label="Role"
+                onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
+              >
+                <MenuItem value="TRADER">Trader</MenuItem>
+                <MenuItem value="ADMIN">Admin</MenuItem>
+              </Select>
+            </FormControl>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditDialog(false)}>Cancel</Button>
+          <Button onClick={handleEditSubmit} variant="contained" disabled={loading}>
+            Save Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete User Dialog */}
+      <Dialog open={deleteDialog} onClose={() => setDeleteDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Delete color="error" />
+            <Typography variant="h6">Delete User</Typography>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            This action cannot be undone. All user data including challenges, payments, and KYC information will be permanently deleted.
+          </Alert>
+          {selectedUser && (
+            <Typography variant="body1">
+              Are you sure you want to delete user <strong>{selectedUser.name || selectedUser.email}</strong>?
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialog(false)}>Cancel</Button>
+          <Button onClick={handleDeleteConfirm} variant="contained" color="error" disabled={loading}>
+            Delete User
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

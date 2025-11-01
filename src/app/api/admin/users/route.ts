@@ -1,5 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyToken } from '@/lib/jwt';
+
+// Helper to verify admin access
+async function verifyAdmin(request: NextRequest) {
+  const token = request.cookies.get('auth-token')?.value;
+  if (!token) {
+    return null;
+  }
+  
+  const decoded = verifyToken(token);
+  if (!decoded || decoded.role !== 'ADMIN') {
+    return null;
+  }
+  
+  return decoded;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -96,7 +112,7 @@ export async function GET(request: NextRequest) {
 
     // Transform data
     const transformedUsers = users.map((user) => {
-      const kycApproved = user.mockedKyc !== null && user.mockedKyc.status === 'AUTO_APPROVED';
+      const kycApproved = user.mockedKyc !== null && (user.mockedKyc.status === 'AUTO_APPROVED' || user.mockedKyc.status === 'APPROVED');
       const activeChallenges = user.challenges.filter((c) => c.status === 'ACTIVE');
       const passedChallenges = user.challenges.filter((c) => c.status === 'PASSED');
       const failedChallenges = user.challenges.filter((c) => c.status === 'FAILED');
@@ -139,6 +155,121 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching users:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch users' },
+      { status: 500 }
+    );
+  }
+}
+
+// UPDATE user
+export async function PUT(request: NextRequest) {
+  try {
+    const admin = await verifyAdmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { userId, name, role, email } = body;
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (role !== undefined) updateData.role = role;
+    if (email !== undefined) {
+      // Check if email is already taken by another user
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          email: email.toLowerCase().trim(),
+          NOT: { id: userId }
+        }
+      });
+      
+      if (existingUser) {
+        return NextResponse.json(
+          { success: false, error: 'Email already in use' },
+          { status: 400 }
+        );
+      }
+      
+      updateData.email = email.toLowerCase().trim();
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'User updated successfully',
+      data: updatedUser,
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to update user' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE user
+export async function DELETE(request: NextRequest) {
+  try {
+    const admin = await verifyAdmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Prevent admin from deleting themselves
+    if (userId === admin.userId) {
+      return NextResponse.json(
+        { success: false, error: 'Cannot delete your own account' },
+        { status: 400 }
+      );
+    }
+
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'User deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete user' },
       { status: 500 }
     );
   }

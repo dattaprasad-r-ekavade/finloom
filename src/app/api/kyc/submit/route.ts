@@ -38,6 +38,19 @@ export async function POST(request: Request) {
     const trimmedIdNumber = idNumber.trim();
     const trimmedAddress = address.trim();
 
+    // Check if auto-approve is enabled in settings
+    let settings = await prisma.adminSettings.findFirst();
+    if (!settings) {
+      // Create default settings if none exist
+      settings = await prisma.adminSettings.create({
+        data: { autoApproveKyc: false },
+      });
+    }
+
+    const shouldAutoApprove = settings.autoApproveKyc;
+    const kycStatus = shouldAutoApprove ? 'AUTO_APPROVED' : 'PENDING';
+    const approvalDate = shouldAutoApprove ? new Date() : null;
+
     const kycRecord = await prisma.mockedKYC.upsert({
       where: { userId },
       update: {
@@ -45,8 +58,8 @@ export async function POST(request: Request) {
         phoneNumber: trimmedPhoneNumber,
         idNumber: trimmedIdNumber,
         address: trimmedAddress,
-        status: 'AUTO_APPROVED',
-        approvedAt: new Date(),
+        status: kycStatus,
+        approvedAt: approvalDate,
       },
       create: {
         userId,
@@ -54,7 +67,8 @@ export async function POST(request: Request) {
         phoneNumber: trimmedPhoneNumber,
         idNumber: trimmedIdNumber,
         address: trimmedAddress,
-        status: 'AUTO_APPROVED',
+        status: kycStatus,
+        approvedAt: approvalDate,
       },
     });
 
@@ -66,7 +80,9 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      message: 'KYC submitted and auto-approved.',
+      message: shouldAutoApprove 
+        ? 'KYC submitted and auto-approved.' 
+        : 'KYC submitted successfully. Pending admin approval.',
       kyc: {
         id: kycRecord.id,
         status: kycRecord.status,

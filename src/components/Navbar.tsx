@@ -12,6 +12,7 @@ import {
   Menu,
   MenuItem,
   Chip,
+  Tooltip,
 } from '@mui/material';
 import { 
   Brightness4, 
@@ -19,6 +20,8 @@ import {
   Person,
   Logout,
   Dashboard,
+  Settings,
+  People,
 } from '@mui/icons-material';
 import { useThemeMode } from '@/theme/ThemeProvider';
 import { useRouter } from 'next/navigation';
@@ -118,14 +121,29 @@ export default function Navbar() {
                   size="small"
                   sx={{ fontWeight: 600 }}
                 />
-                <Button
-                  color="inherit"
-                  startIcon={<Person />}
-                  onClick={handleMenuOpen}
-                  sx={{ fontWeight: 500 }}
-                >
-                  {user.name || user.email}
-                </Button>
+                <Tooltip title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} arrow>
+                  <IconButton
+                    onClick={toggleTheme}
+                    color="inherit"
+                    size="small"
+                    sx={{
+                      border: (theme) => `1px solid ${theme.palette.divider}`,
+                      borderRadius: 2,
+                    }}
+                  >
+                    {mode === 'dark' ? <Brightness7 fontSize="small" /> : <Brightness4 fontSize="small" />}
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Account menu" arrow>
+                  <Button
+                    color="inherit"
+                    startIcon={<Person />}
+                    onClick={handleMenuOpen}
+                    sx={{ fontWeight: 500 }}
+                  >
+                    {user.name || user.email}
+                  </Button>
+                </Tooltip>
                 <Menu
                   anchorEl={anchorEl}
                   open={Boolean(anchorEl)}
@@ -143,6 +161,18 @@ export default function Navbar() {
                     <Dashboard sx={{ mr: 1 }} fontSize="small" />
                     Dashboard
                   </MenuItem>
+                  {user.role === 'ADMIN' && (
+                    <MenuItem onClick={() => { router.push('/dashboard/admin/users'); handleMenuClose(); }}>
+                      <People sx={{ mr: 1 }} fontSize="small" />
+                      Manage Users
+                    </MenuItem>
+                  )}
+                  {user.role === 'ADMIN' && (
+                    <MenuItem onClick={() => { router.push('/dashboard/admin/settings'); handleMenuClose(); }}>
+                      <Settings sx={{ mr: 1 }} fontSize="small" />
+                      Settings
+                    </MenuItem>
+                  )}
                   <MenuItem onClick={handleLogout}>
                     <Logout sx={{ mr: 1 }} fontSize="small" />
                     Logout
@@ -151,6 +181,19 @@ export default function Navbar() {
               </>
             ) : (
               <>
+                <Tooltip title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} arrow>
+                  <IconButton
+                    onClick={toggleTheme}
+                    color="inherit"
+                    size="small"
+                    sx={{
+                      border: (theme) => `1px solid ${theme.palette.divider}`,
+                      borderRadius: 2,
+                    }}
+                  >
+                    {mode === 'dark' ? <Brightness7 fontSize="small" /> : <Brightness4 fontSize="small" />}
+                  </IconButton>
+                </Tooltip>
                 <Button
                   color="inherit"
                   onClick={() => router.push('/')}
@@ -214,16 +257,6 @@ export default function Navbar() {
                 </Menu>
               </>
             )}
-            <IconButton
-              onClick={toggleTheme}
-              color="inherit"
-              sx={{
-                border: (theme) => `1px solid ${theme.palette.divider}`,
-                borderRadius: 2,
-              }}
-            >
-              {mode === 'dark' ? <Brightness7 fontSize="small" /> : <Brightness4 fontSize="small" />}
-            </IconButton>
           </Box>
         </Toolbar>
       </Container>

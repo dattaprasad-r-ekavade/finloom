@@ -31,6 +31,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 import Navbar from '@/components/Navbar';
 import { useAuthStore } from '@/store/authStore';
+import { formatDateTime } from '@/lib/dateFormat';
 
 type ChallengeSelection = {
   id: string;
@@ -78,12 +79,6 @@ const formatCurrency = (value: number) =>
     currency: 'INR',
     maximumFractionDigits: 0,
   }).format(value);
-
-const formatDateTime = (value: string) =>
-  new Intl.DateTimeFormat('en-IN', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value));
 
 const parseCredentials = (
   value: string | null
@@ -139,10 +134,8 @@ function MockPaymentContent() {
       return;
     }
 
-    if (!user.hasCompletedKyc) {
-      router.replace('/kyc');
-      return;
-    }
+    // Allow payment without KYC completion
+    // Users can complete KYC later
 
     const fetchSelection = async () => {
       setLoading(true);

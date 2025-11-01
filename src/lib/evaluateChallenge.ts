@@ -1,4 +1,5 @@
 import { ChallengePlan, ChallengeMetrics, ChallengeStatus } from '@prisma/client';
+import { formatDate } from './dateFormat';
 
 export interface ViolationDetail {
   type: 'DAILY_LOSS' | 'MAX_LOSS' | 'DURATION_EXPIRED' | 'OTHER';
@@ -114,7 +115,7 @@ export const evaluateChallenge = (challenge: ChallengeData): EvaluationResult =>
         
         if (!failed) {
           failed = true;
-          reason = `Daily loss limit of ${plan.dailyLossPct}% exceeded on ${metric.date.toLocaleDateString()}`;
+          reason = `Daily loss limit of ${plan.dailyLossPct}% exceeded on ${formatDate(metric.date)}`;
         }
       }
     });

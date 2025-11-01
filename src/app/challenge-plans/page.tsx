@@ -79,10 +79,8 @@ export default function ChallengePlansPage() {
       return;
     }
 
-    if (!user.hasCompletedKyc) {
-      router.replace('/kyc');
-      return;
-    }
+    // Allow users to browse challenges even without KYC
+    // KYC will be required later in the flow
 
     const fetchPlans = async () => {
       setLoadingPlans(true);
