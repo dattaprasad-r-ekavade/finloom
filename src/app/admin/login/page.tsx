@@ -38,28 +38,32 @@ export default function AdminLoginPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, expectedRole: 'ADMIN' }),
+        credentials: 'include', // Ensure cookies are sent and received
       });
 
       const data = await response.json();
 
       if (!response.ok) {
         setError(data.error ?? 'Unable to sign in.');
+        setLoading(false);
         return;
       }
 
       // Verify that user is actually an admin
       if (data.user?.role !== 'ADMIN') {
         setError('Access denied. This portal is for administrators only.');
+        setLoading(false);
         return;
       }
 
       // Store user data in Zustand store
       setUser(data.user);
-      router.push('/dashboard/admin');
+      
+      // Navigate to dashboard
+      window.location.assign('/dashboard/admin');
     } catch (err) {
       console.error(err);
       setError('Unexpected error. Please try again.');
-    } finally {
       setLoading(false);
     }
   };

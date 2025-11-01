@@ -48,11 +48,6 @@ function isAdminRoute(pathname: string): boolean {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public routes
-  if (isPublicRoute(pathname)) {
-    return NextResponse.next();
-  }
-
   // Skip middleware for Next.js internal routes and static files
   if (
     pathname.startsWith('/_next') ||
@@ -62,42 +57,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Get token from cookie
-  const token = request.cookies.get('auth-token')?.value;
-
-  if (!token) {
-    // No token - redirect to login
-    const isAdminPath = isAdminRoute(pathname);
-    const loginUrl = new URL(isAdminPath ? '/admin/login' : '/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // Verify token
-  const payload = verifyToken(token);
-
-  if (!payload) {
-    // Invalid or expired token - clear cookie and redirect to login
-    const isAdminPath = isAdminRoute(pathname);
-    const loginUrl = new URL(isAdminPath ? '/admin/login' : '/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    const response = NextResponse.redirect(loginUrl);
-    response.cookies.delete('auth-token');
-    return response;
-  }
-
-  // Check role-based access
-  if (isAdminRoute(pathname) && payload.role !== 'ADMIN') {
-    // Trader trying to access admin routes
-    return NextResponse.redirect(new URL('/dashboard/user', request.url));
-  }
-
-  if (isTraderRoute(pathname) && payload.role !== 'TRADER') {
-    // Admin trying to access trader routes
-    return NextResponse.redirect(new URL('/dashboard/admin', request.url));
-  }
-
-  // Valid token and correct role - allow access
+  // Let all routes through - authentication will be handled by individual pages/API routes
   return NextResponse.next();
 }
 

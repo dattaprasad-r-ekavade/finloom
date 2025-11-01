@@ -38,28 +38,32 @@ export default function TraderLoginPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, expectedRole: 'TRADER' }),
+        credentials: 'include', // Ensure cookies are sent and received
       });
 
       const data = await response.json();
 
       if (!response.ok) {
         setError(data.error ?? 'Unable to sign in.');
+        setLoading(false);
         return;
       }
 
       // Verify that user is actually a trader
       if (data.user?.role !== 'TRADER') {
         setError('Access denied. This portal is for traders only.');
+        setLoading(false);
         return;
       }
 
       // Store user data in Zustand store
       setUser(data.user);
-      router.push('/dashboard/user');
+      
+      // Navigate to dashboard
+      window.location.assign('/dashboard/user');
     } catch (err) {
       console.error(err);
       setError('Unexpected error. Please try again.');
-    } finally {
       setLoading(false);
     }
   };

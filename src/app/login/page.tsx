@@ -58,12 +58,14 @@ export default function LoginPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        credentials: 'include', // Ensure cookies are sent and received
       });
 
       const data = await response.json();
 
       if (!response.ok) {
         setError(data.error ?? 'Unable to sign in.');
+        setLoading(false);
         return;
       }
 
@@ -73,11 +75,12 @@ export default function LoginPage() {
       }
 
       const destination = data.user?.role === 'ADMIN' ? '/dashboard/admin' : '/dashboard/user';
-      router.push(destination);
+      
+      // Navigate to dashboard
+      window.location.assign(destination);
     } catch (err) {
       console.error(err);
       setError('Unexpected error. Please try again.');
-    } finally {
       setLoading(false);
     }
   };

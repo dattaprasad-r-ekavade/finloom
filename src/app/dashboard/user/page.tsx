@@ -163,7 +163,7 @@ const FALLBACK_TRADE_VOLUME_DATA = [
 
 export default function UserDashboard() {
   const router = useRouter();
-  const user = useAuthStore((state) => state.user);
+  const { user, isLoading, checkAuth } = useAuthStore();
   const hasCompletedKyc = user?.hasCompletedKyc ?? false;
   const kycStatusText = hasCompletedKyc ? 'KYC approved' : 'KYC pending';
   const kycChipColor = hasCompletedKyc ? 'success' : 'warning';
@@ -176,7 +176,17 @@ export default function UserDashboard() {
   const [challengeStatus, setChallengeStatus] =
     useState<ChallengeStatusPayload | null>(null);
 
+  // Check authentication on mount
   useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  useEffect(() => {
+    // Wait for auth check to complete before redirecting
+    if (isLoading) {
+      return;
+    }
+
     if (!user) {
       router.replace('/login');
       return;

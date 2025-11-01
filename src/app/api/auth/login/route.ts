@@ -70,13 +70,14 @@ export async function POST(request: Request) {
       name: user.name,
     });
 
-    // Create response with cookie
+    // Create response using NextResponse
     const response = NextResponse.json({
       message: 'Signed in successfully.',
       user: responseUser,
+      success: true,
     });
 
-    // Set HTTP-only cookie with JWT token
+    // Set cookie using NextResponse cookies API
     response.cookies.set('auth-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
