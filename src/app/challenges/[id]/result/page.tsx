@@ -29,7 +29,7 @@ import {
   Replay,
   ArrowForward,
 } from '@mui/icons-material';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import Navbar from '@/components/Navbar';
 import { useAuthStore } from '@/store/authStore';
