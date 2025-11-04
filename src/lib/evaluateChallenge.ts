@@ -168,11 +168,11 @@ export const evaluateChallenge = (challenge: ChallengeData): EvaluationResult =>
  */
 export const getEvaluationSummary = (result: EvaluationResult): string => {
   if (result.passed) {
-    return `🎉 Congratulations! ${result.reason}`;
+    return ` Congratulations! ${result.reason}`;
   } else if (result.failed) {
-    return `❌ Challenge Failed: ${result.reason}`;
+    return ` Challenge Failed: ${result.reason}`;
   } else {
-    return `⏳ Challenge Active: ${result.reason}`;
+    return ` Challenge Active: ${result.reason}`;
   }
 };
 

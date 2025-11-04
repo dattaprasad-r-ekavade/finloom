@@ -363,7 +363,7 @@ export default function ChallengePlansPage() {
                       )}
                       {isLocked && (
                         <Chip
-                          label="🔒 Locked"
+                          label=" Locked"
                           size="small"
                           sx={{ 
                             position: 'absolute', 
@@ -452,7 +452,7 @@ export default function ChallengePlansPage() {
                         sx={{ mt: 1.5, fontWeight: 600 }}
                       >
                         {isLocked
-                          ? `🔒 Complete Level ${(progressionData?.highestPassedLevel || 0) + 1} first`
+                          ? ` Complete Level ${(progressionData?.highestPassedLevel || 0) + 1} first`
                           : isSelected
                           ? isActivePlan
                             ? 'Challenge live'

@@ -527,41 +527,6 @@ export default function UserDashboard() {
                 </Stack>
               )}
 
-              {credentials && (
-                <Alert
-                  severity="success"
-                  sx={{
-                    borderRadius: 2,
-                    border: (theme) => `1px solid ${theme.palette.success.light}`,
-                  }}
-                  action={
-                    <Button
-                      color="inherit"
-                      size="small"
-                      startIcon={<ContentCopy fontSize="small" />}
-                      onClick={handleCopyCredentials}
-                    >
-                      Copy
-                    </Button>
-                  }
-                >
-                  Demo credentials ready — Username: <strong>{credentials.username}</strong>, Password:{' '}
-                  <strong>{credentials.password}</strong>
-                </Alert>
-              )}
-
-              {copyFeedback && (
-                <Alert
-                  severity="info"
-                  sx={{
-                    borderRadius: 2,
-                    border: (theme) => `1px solid ${theme.palette.info.light}`,
-                  }}
-                >
-                  {copyFeedback}
-                </Alert>
-              )}
-
               {!isActiveChallenge && (
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
                   <Button
@@ -586,6 +551,27 @@ export default function UserDashboard() {
 
               {isActiveChallenge && (
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    onClick={() => router.push('/dashboard/user/trading')}
+                    sx={{ 
+                      fontWeight: 700,
+                      fontSize: '1.1rem',
+                      py: 1.75,
+                      px: 4,
+                      background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                      boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+                      '&:hover': {
+                        background: 'linear-gradient(45deg, #1976D2 30%, #00BCD4 90%)',
+                        boxShadow: '0 4px 8px 3px rgba(33, 203, 243, .4)',
+                        transform: 'scale(1.02)',
+                      },
+                      transition: 'all 0.3s ease-in-out',
+                    }}
+                  >
+                     Start Trading
+                  </Button>
                   <Button
                     variant="contained"
                     size="large"

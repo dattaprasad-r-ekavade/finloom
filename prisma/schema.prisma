@@ -33,6 +33,16 @@ enum MockedPaymentStatus {
   SUCCESS
 }
 
+enum TradeType {
+  BUY
+  SELL
+}
+
+enum TradeStatus {
+  OPEN
+  CLOSED
+}
+
 model User {
   id             String          @id @default(cuid())
   email          String          @unique
@@ -86,6 +96,8 @@ model UserChallenge {
   plan                   ChallengePlan      @relation(fields: [planId], references: [id], onDelete: Cascade)
   mockedPayments         MockedPayment[]
   metrics                ChallengeMetrics[]
+  trades                 Trade[]
+  dailySummaries         DailyTradeSummary[]
 
   @@index([userId])
   @@index([status])
@@ -150,4 +162,67 @@ model ChallengeMetrics {
 
   @@index([challengeId])
   @@index([challengeId, date])
+}
+
+model Trade {
+  id             String        @id @default(cuid())
+  challengeId    String
+  scrip          String
+  scripFullName  String
+  quantity       Int
+  entryPrice     Float
+  exitPrice      Float?
+  tradeType      TradeType
+  status         TradeStatus
+  pnl            Float         @default(0)
+  entryTime      DateTime      @default(now())
+  exitTime       DateTime?
+  autoSquaredOff Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  challenge      UserChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId])
+  @@index([status])
+  @@index([challengeId, status])
+  @@index([entryTime])
+}
+
+model MockedMarketData {
+  id             String   @id @default(cuid())
+  scrip          String   @unique
+  scripFullName  String
+  ltp            Float
+  open           Float
+  high           Float
+  low            Float
+  close          Float
+  volume         Int
+  lastUpdated    DateTime @default(now())
+  exchange       String
+  instrumentType String
+
+  @@index([scrip])
+  @@index([exchange])
+}
+
+model DailyTradeSummary {
+  id               String        @id @default(cuid())
+  challengeId      String
+  date             DateTime
+  totalTrades      Int           @default(0)
+  openTrades       Int           @default(0)
+  closedTrades     Int           @default(0)
+  realizedPnl      Float         @default(0)
+  unrealizedPnl    Float         @default(0)
+  capitalUsed      Float         @default(0)
+  capitalAvailable Float
+  dayPnlPct        Float         @default(0)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  challenge        UserChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, date])
+  @@index([challengeId])
+  @@index([date])
 }
