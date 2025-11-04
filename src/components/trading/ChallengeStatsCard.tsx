@@ -6,7 +6,6 @@ import {
   Card,
   CardContent,
   Divider,
-  Grid,
   Stack,
   Typography,
 } from '@mui/material';
@@ -144,61 +143,47 @@ export const ChallengeStatsCard: React.FC<ChallengeStatsCardProps> = ({
             </Typography>
           </Stack>
 
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
-              <StatItem
-                label="Capital Used"
-                value={currencyFormatter.format(capitalUsed)}
-                hint={`Exposure ${decimalFormatter(totalExposurePct)}%`}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <StatItem
-                label="Capital Available"
-                value={currencyFormatter.format(Math.max(0, capitalAvailable))}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <StatItem
-                label="Realized P&L (Total)"
-                value={currencyFormatter.format(realizedPnl)}
-                tone={realizedPnl >= 0 ? 'positive' : 'negative'}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <StatItem
-                label="Unrealized P&L"
-                value={currencyFormatter.format(unrealizedPnl)}
-                tone={unrealizedPnl >= 0 ? 'positive' : 'negative'}
-              />
-            </Grid>
-          </Grid>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+            <StatItem
+              label="Capital Used"
+              value={currencyFormatter.format(capitalUsed)}
+              hint={`Exposure ${decimalFormatter(totalExposurePct)}%`}
+            />
+            <StatItem
+              label="Capital Available"
+              value={currencyFormatter.format(Math.max(0, capitalAvailable))}
+            />
+            <StatItem
+              label="Realized P&L (Total)"
+              value={currencyFormatter.format(realizedPnl)}
+              tone={realizedPnl >= 0 ? 'positive' : 'negative'}
+            />
+            <StatItem
+              label="Unrealized P&L"
+              value={currencyFormatter.format(unrealizedPnl)}
+              tone={unrealizedPnl >= 0 ? 'positive' : 'negative'}
+            />
+          </Box>
 
           <Divider flexItem />
 
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={4}>
-              <StatItem
-                label="P&L Today"
-                value={currencyFormatter.format(realizedPnlToday + unrealizedPnl)}
-                hint={`Realized: ${currencyFormatter.format(realizedPnlToday)}`}
-                tone={realizedPnlToday + unrealizedPnl >= 0 ? 'positive' : 'negative'}
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <StatItem
-                label="Day P&L %"
-                value={`${decimalFormatter(dayPnlPct, 2)}%`}
-                tone={dayPnlPct >= 0 ? 'positive' : 'negative'}
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <StatItem
-                label="Open / Closed (Today)"
-                value={`${openTrades} / ${closedTradesToday}`}
-              />
-            </Grid>
-          </Grid>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3 }}>
+            <StatItem
+              label="P&L Today"
+              value={currencyFormatter.format(realizedPnlToday + unrealizedPnl)}
+              hint={`Realized: ${currencyFormatter.format(realizedPnlToday)}`}
+              tone={realizedPnlToday + unrealizedPnl >= 0 ? 'positive' : 'negative'}
+            />
+            <StatItem
+              label="Day P&L %"
+              value={`${decimalFormatter(dayPnlPct, 2)}%`}
+              tone={dayPnlPct >= 0 ? 'positive' : 'negative'}
+            />
+            <StatItem
+              label="Open / Closed (Today)"
+              value={`${openTrades} / ${closedTradesToday}`}
+            />
+          </Box>
         </Stack>
       </CardContent>
     </Card>
