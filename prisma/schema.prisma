@@ -226,3 +226,18 @@ model DailyTradeSummary {
   @@index([challengeId])
   @@index([date])
 }
+
+model AngelOneCredentials {
+  id                String    @id @default("singleton")
+  apiKey            String
+  clientCode        String
+  mpin              String
+  totpSecret        String
+  jwtToken          String?
+  refreshToken      String?
+  feedToken         String?
+  tokenGeneratedAt  DateTime?
+  tokenExpiresAt    DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}

@@ -24,7 +24,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import Navbar from '@/components/Navbar';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
-import { TradingViewChart } from '@/components/trading/TradingViewChart';
+import { AngelOneChart } from '@/components/trading/AngelOneChart';
 import {
   OrderForm,
   OrderPayload,
@@ -91,7 +91,7 @@ interface TradingSummaryResponse {
 }
 
 const DEFAULT_SYMBOL: ScripOption = {
-  scrip: 'RELIANCE',
+  scrip: 'RELIANCE-EQ',
   scripFullName: 'Reliance Industries Ltd',
   ltp: 2450,
   exchange: 'NSE',
@@ -111,6 +111,9 @@ export default function TradingTerminalPage() {
   const [processingTrades, setProcessingTrades] = useState<Set<string>>(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showRiskModal, setShowRiskModal] = useState(false);
+  const [historicalData, setHistoricalData] = useState<any[]>([]);
+  const [chartInterval, setChartInterval] = useState('FIVE_MINUTE');
+  const [isLoadingChart, setIsLoadingChart] = useState(false);
 
   useEffect(() => {
     // Show risk guardrails modal on first load
@@ -219,6 +222,87 @@ export default function TradingTerminalPage() {
     }
   }, [challengeId, selectedScrip]);
 
+  const fetchHistoricalData = useCallback(async (scrip: string) => {
+    if (!scrip) return;
+    setIsLoadingChart(true);
+    try {
+      // Strip suffix to get base symbol for search (INFY-EQ -> INFY)
+      const baseSymbol = scrip.split('-')[0];
+      const chartSymbol = scrip.includes('-') ? scrip : `${scrip}-EQ`;
+      
+      const now = new Date();
+      const toDate = now.toISOString().slice(0, 16).replace('T', ' ');
+      
+      let daysBack = 3;
+      switch (chartInterval) {
+        case 'ONE_MINUTE': daysBack = 1; break;
+        case 'THREE_MINUTE': daysBack = 2; break;
+        case 'FIVE_MINUTE': daysBack = 3; break;
+        case 'FIFTEEN_MINUTE': daysBack = 7; break;
+        case 'THIRTY_MINUTE': daysBack = 15; break;
+        case 'ONE_HOUR': daysBack = 30; break;
+        case 'ONE_DAY': daysBack = 365; break;
+      }
+      
+      const fromDateObj = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
+      const fromDate = fromDateObj.toISOString().slice(0, 16).replace('T', ' ');
+
+      // Search using base symbol (without -EQ suffix)
+      const searchRes = await fetch('/api/angelone-live/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          exchange: 'NSE',
+          searchScrip: baseSymbol,
+        }),
+      });
+
+      const searchData = await searchRes.json();
+      if (!searchRes.ok || !searchData.data || searchData.data.length === 0) {
+        console.error('Failed to find scrip:', baseSymbol);
+        return;
+      }
+
+      // Find the -EQ variant (or use first result if -EQ not found)
+      const eqScrip = searchData.data.find((s: any) => s.tradingsymbol.endsWith('-EQ'));
+      const symbolToken = eqScrip?.symboltoken || searchData.data[0]?.symboltoken;
+
+      if (!symbolToken) {
+        console.error('No symbol token found');
+        return;
+      }
+
+      const res = await fetch('/api/angelone-live/historical', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          exchange: 'NSE',
+          symbolToken: symbolToken,
+          interval: chartInterval,
+          fromDate: fromDate,
+          toDate: toDate,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.data && data.data.length > 0) {
+        const candleData = data.data.map((candle: any[]) => ({
+          time: Math.floor(new Date(candle[0]).getTime() / 1000),
+          open: candle[1],
+          high: candle[2],
+          low: candle[3],
+          close: candle[4],
+          volume: candle[5],
+        }));
+        setHistoricalData(candleData);
+      }
+    } catch (err) {
+      console.error('Error fetching historical data:', err);
+    } finally {
+      setIsLoadingChart(false);
+    }
+  }, [chartInterval]);
+
   const refreshAll = useCallback(async () => {
     if (!challengeId) return;
     setIsRefreshing(true);
@@ -257,6 +341,12 @@ export default function TradingTerminalPage() {
     refreshAll();
   }, [challengeId, refreshAll]);
 
+  useEffect(() => {
+    if (selectedScrip) {
+      fetchHistoricalData(selectedScrip.scrip);
+    }
+  }, [selectedScrip, chartInterval, fetchHistoricalData]);
+
   const handlePlaceOrder = useCallback(
     async (payload: OrderPayload) => {
       if (!challengeId) return;
@@ -265,12 +355,15 @@ export default function TradingTerminalPage() {
         setError(null);
         setInfo(null);
 
+        // Strip -EQ suffix for trading (only used for charting)
+        const tradingScrip = payload.scrip.scrip.split('-')[0];
+
         const response = await fetch('/api/trading/execute', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             challengeId,
-            scrip: payload.scrip.scrip,
+            scrip: tradingScrip,
             quantity: payload.quantity,
             tradeType: payload.tradeType,
           }),
@@ -476,34 +569,74 @@ export default function TradingTerminalPage() {
                           <ScripSearchAutocomplete
                             value={selectedScrip}
                             onChange={(option) => {
-                              setSelectedScrip(option ?? DEFAULT_SYMBOL);
-                              if (option) {
-                                fetch(`/api/trading/market-data/${option.scrip}`)
-                                  .then((res) => res.json())
-                                  .then((json) => {
-                                    if (json?.success && json.data?.marketData) {
-                                      setSelectedScrip({
-                                        scrip: json.data.marketData.scrip,
-                                        scripFullName: json.data.marketData.scripFullName,
-                                        ltp: json.data.marketData.ltp,
-                                        exchange: json.data.marketData.exchange,
-                                      });
-                                    }
-                                  })
-                                  .catch((err) =>
-                                    console.error('Failed to load scrip details', err),
-                                  );
+                              if (!option) {
+                                setSelectedScrip(DEFAULT_SYMBOL);
+                                return;
                               }
+                              
+                              // Always use -EQ variant for NSE stocks in charts
+                              const scripForChart = option.scrip.includes('-') 
+                                ? option.scrip 
+                                : `${option.scrip}-EQ`;
+                              
+                              setSelectedScrip({
+                                ...option,
+                                scrip: scripForChart,
+                              });
+                              
+                              fetch(`/api/trading/market-data/${option.scrip}`)
+                                .then((res) => res.json())
+                                .then((json) => {
+                                  if (json?.success && json.data?.marketData) {
+                                    setSelectedScrip({
+                                      scrip: scripForChart,
+                                      scripFullName: json.data.marketData.scripFullName,
+                                      ltp: json.data.marketData.ltp,
+                                      exchange: json.data.marketData.exchange,
+                                    });
+                                  }
+                                })
+                                .catch((err) =>
+                                  console.error('Failed to load scrip details', err),
+                                );
                             }}
                           />
                         </Box>
                         <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
                           LTP: <Box component="span" sx={{ fontWeight: 600 }}>₹{selectedScrip?.ltp.toFixed(2) ?? '--'}</Box>
                         </Typography>
+                        <select
+                          value={chartInterval}
+                          onChange={(e) => setChartInterval(e.target.value)}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            border: '1px solid #ccc',
+                            fontSize: '12px',
+                          }}
+                        >
+                          <option value="ONE_MINUTE">1m</option>
+                          <option value="THREE_MINUTE">3m</option>
+                          <option value="FIVE_MINUTE">5m</option>
+                          <option value="FIFTEEN_MINUTE">15m</option>
+                          <option value="THIRTY_MINUTE">30m</option>
+                          <option value="ONE_HOUR">1h</option>
+                          <option value="ONE_DAY">1D</option>
+                        </select>
                       </Stack>
                     </Box>
                     <Box sx={{ flex: 1, minHeight: 0 }}>
-                      <TradingViewChart symbol={tradingSymbol} height={500} />
+                      {isLoadingChart ? (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 500 }}>
+                          <CircularProgress size={30} />
+                        </Box>
+                      ) : historicalData.length > 0 ? (
+                        <AngelOneChart data={historicalData} height={500} />
+                      ) : (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 500 }}>
+                          <Typography color="text.secondary">No chart data available</Typography>
+                        </Box>
+                      )}
                     </Box>
                   </Paper>
 
