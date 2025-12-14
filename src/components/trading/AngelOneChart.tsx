@@ -113,7 +113,7 @@ export const AngelOneChart: React.FC<AngelOneChartProps> = ({ data, height = 600
 
     // Set candle data
     const candleData = data.map(d => ({
-      time: d.time,
+      time: d.time as any,
       open: d.open,
       high: d.high,
       low: d.low,
@@ -125,7 +125,7 @@ export const AngelOneChart: React.FC<AngelOneChartProps> = ({ data, height = 600
     // Set volume data
     if (data[0].volume !== undefined) {
       const volumeData = data.map(d => ({
-        time: d.time,
+        time: d.time as any,
         value: d.volume || 0,
         color: d.close >= d.open ? '#26a69a80' : '#ef535080',
       }));

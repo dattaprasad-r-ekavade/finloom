@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
         apiKey: session.apiKey,
         clientCode: session.clientCode,
         hasTokens: !!session.jwtToken,
-        tokenExpiresAt: session.tokenExpiresAt,
+        tokenExpiresAt: session.tokenExpiresAt || null,
       },
     });
   } catch (error: any) {

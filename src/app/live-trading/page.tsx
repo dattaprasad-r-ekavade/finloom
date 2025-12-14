@@ -333,7 +333,7 @@ export default function LiveTradingPage() {
       )}
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={3}>
+        <Grid size={{ xs: 12, md: 3 }}>
           <TextField
             fullWidth
             size="small"
@@ -343,7 +343,7 @@ export default function LiveTradingPage() {
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
           />
         </Grid>
-        <Grid item xs={12} md={2}>
+        <Grid size={{ xs: 12, md: 2 }}>
           <FormControl fullWidth size="small">
             <InputLabel>Exchange</InputLabel>
             <Select
@@ -358,12 +358,12 @@ export default function LiveTradingPage() {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} md={2}>
+        <Grid size={{ xs: 12, md: 2 }}>
           <Button fullWidth variant="contained" onClick={handleSearch}>
             Search
           </Button>
         </Grid>
-        <Grid item xs={12} md={2}>
+        <Grid size={{ xs: 12, md: 2 }}>
           <FormControl fullWidth size="small">
             <InputLabel>Interval</InputLabel>
             <Select
@@ -381,7 +381,7 @@ export default function LiveTradingPage() {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} md={3} sx={{ display: 'flex', alignItems: 'center' }}>
+        <Grid size={{ xs: 12, md: 3 }} sx={{ display: 'flex', alignItems: 'center' }}>
           <Chip
             label={isConnected ? 'Connected' : 'Disconnected'}
             color={isConnected ? 'success' : 'error'}
@@ -413,7 +413,7 @@ export default function LiveTradingPage() {
 
       {marketData && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={6} md={2}>
+          <Grid size={{ xs: 6, md: 2 }}>
             <Card>
               <CardContent>
                 <Typography color="text.secondary" variant="caption">
@@ -430,7 +430,7 @@ export default function LiveTradingPage() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={6} md={2}>
+          <Grid size={{ xs: 6, md: 2 }}>
             <Card>
               <CardContent>
                 <Typography color="text.secondary" variant="caption">
@@ -440,7 +440,7 @@ export default function LiveTradingPage() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={6} md={2}>
+          <Grid size={{ xs: 6, md: 2 }}>
             <Card>
               <CardContent>
                 <Typography color="text.secondary" variant="caption">
@@ -452,7 +452,7 @@ export default function LiveTradingPage() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={6} md={2}>
+          <Grid size={{ xs: 6, md: 2 }}>
             <Card>
               <CardContent>
                 <Typography color="text.secondary" variant="caption">
@@ -464,7 +464,7 @@ export default function LiveTradingPage() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={6} md={2}>
+          <Grid size={{ xs: 6, md: 2 }}>
             <Card>
               <CardContent>
                 <Typography color="text.secondary" variant="caption">
@@ -474,7 +474,7 @@ export default function LiveTradingPage() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={6} md={2}>
+          <Grid size={{ xs: 6, md: 2 }}>
             <Card>
               <CardContent>
                 <Typography color="text.secondary" variant="caption">
@@ -503,3 +503,4 @@ export default function LiveTradingPage() {
     </Box>
   );
 }
+

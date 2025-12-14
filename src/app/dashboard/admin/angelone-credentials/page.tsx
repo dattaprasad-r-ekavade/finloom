@@ -12,8 +12,9 @@ import {
   CircularProgress,
   Card,
   CardContent,
-  Grid,
+  Stack,
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 
 interface CredentialsInfo {
   apiKey: string;
@@ -130,32 +131,32 @@ export default function AngelOneCredentialsPage() {
                 <Typography variant="h6" gutterBottom>
                   Current Credentials Status
                 </Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                  <Box sx={{ flex: '1 1 45%', minWidth: '200px' }}>
                     <Typography variant="body2" color="text.secondary">
                       API Key:
                     </Typography>
                     <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
                       {credentialsInfo.apiKey ? `${credentialsInfo.apiKey.substring(0, 10)}...` : 'Not set'}
                     </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
+                  </Box>
+                  <Box sx={{ flex: '1 1 45%', minWidth: '200px' }}>
                     <Typography variant="body2" color="text.secondary">
                       Client Code:
                     </Typography>
                     <Typography variant="body1">
                       {credentialsInfo.clientCode || 'Not set'}
                     </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
+                  </Box>
+                  <Box sx={{ flex: '1 1 45%', minWidth: '200px' }}>
                     <Typography variant="body2" color="text.secondary">
                       Token Status:
                     </Typography>
                     <Typography variant="body1" color={credentialsInfo.hasTokens ? 'success.main' : 'error.main'}>
                       {credentialsInfo.hasTokens ? 'Active' : 'Not Generated'}
                     </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
+                  </Box>
+                  <Box sx={{ flex: '1 1 45%', minWidth: '200px' }}>
                     <Typography variant="body2" color="text.secondary">
                       Token Expires At:
                     </Typography>
@@ -164,8 +165,8 @@ export default function AngelOneCredentialsPage() {
                         ? new Date(credentialsInfo.tokenExpiresAt).toLocaleString()
                         : 'N/A'}
                     </Typography>
-                  </Grid>
-                </Grid>
+                  </Box>
+                </Box>
               </CardContent>
             </Card>
           )}
@@ -254,3 +255,4 @@ export default function AngelOneCredentialsPage() {
     </Container>
   );
 }
+

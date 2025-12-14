@@ -8,7 +8,6 @@ import {
   Typography,
   TextField,
   Button,
-  Grid,
   Alert,
   Tabs,
   Tab,
@@ -20,6 +19,7 @@ import {
   Card,
   CardContent,
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -243,7 +243,7 @@ export default function AngelOneTestPage() {
           API Credentials
         </Typography>
         <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
               label="API Key"
@@ -252,7 +252,7 @@ export default function AngelOneTestPage() {
               helperText="Your AngelOne API Key"
             />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               fullWidth
               label="Client Code"
@@ -283,7 +283,7 @@ export default function AngelOneTestPage() {
         {/* Authentication Tab */}
         <TabPanel value={tabValue} index={0}>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="MPIN"
@@ -293,7 +293,7 @@ export default function AngelOneTestPage() {
                 helperText="Your 4-digit AngelOne MPIN"
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="TOTP Secret Key"
@@ -307,7 +307,7 @@ export default function AngelOneTestPage() {
                 </Alert>
               )}
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Button
                 variant="contained"
                 onClick={handleLogin}
@@ -316,7 +316,7 @@ export default function AngelOneTestPage() {
                 {loading ? 'Logging in...' : 'Login / Generate Session'}
               </Button>
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Button
                 variant="outlined"
                 onClick={handleGetProfile}
@@ -334,7 +334,7 @@ export default function AngelOneTestPage() {
             Search Scrip
           </Typography>
           <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <FormControl fullWidth>
                 <InputLabel>Exchange</InputLabel>
                 <Select
@@ -349,7 +349,7 @@ export default function AngelOneTestPage() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Search Scrip Name"
@@ -358,7 +358,7 @@ export default function AngelOneTestPage() {
                 placeholder="e.g., SBIN, RELIANCE, INFY"
               />
             </Grid>
-            <Grid item xs={12} md={2}>
+            <Grid size={{ xs: 12, md: 2 }}>
               <Button
                 variant="contained"
                 fullWidth
@@ -370,7 +370,7 @@ export default function AngelOneTestPage() {
               </Button>
             </Grid>
             {searchResults.length > 0 && (
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Card variant="outlined">
                   <CardContent>
                     <Typography variant="subtitle2" gutterBottom>
@@ -411,7 +411,7 @@ export default function AngelOneTestPage() {
             Get Market Data
           </Typography>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <FormControl fullWidth>
                 <InputLabel>Mode</InputLabel>
                 <Select
@@ -425,7 +425,7 @@ export default function AngelOneTestPage() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Exchange Tokens"
@@ -436,7 +436,7 @@ export default function AngelOneTestPage() {
                 rows={2}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Button
                 variant="contained"
                 onClick={handleGetMarketData}
@@ -451,7 +451,7 @@ export default function AngelOneTestPage() {
         {/* Orders Tab */}
         <TabPanel value={tabValue} index={2}>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <FormControl fullWidth>
                 <InputLabel>Variety</InputLabel>
                 <Select
@@ -465,7 +465,7 @@ export default function AngelOneTestPage() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <FormControl fullWidth>
                 <InputLabel>Transaction Type</InputLabel>
                 <Select
@@ -478,7 +478,7 @@ export default function AngelOneTestPage() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Trading Symbol"
@@ -487,7 +487,7 @@ export default function AngelOneTestPage() {
                 helperText="e.g., SBIN-EQ"
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Symbol Token"
@@ -496,7 +496,7 @@ export default function AngelOneTestPage() {
                 helperText="e.g., 3045"
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <FormControl fullWidth>
                 <InputLabel>Exchange</InputLabel>
                 <Select
@@ -511,7 +511,7 @@ export default function AngelOneTestPage() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <FormControl fullWidth>
                 <InputLabel>Order Type</InputLabel>
                 <Select
@@ -526,7 +526,7 @@ export default function AngelOneTestPage() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <FormControl fullWidth>
                 <InputLabel>Product Type</InputLabel>
                 <Select
@@ -541,7 +541,7 @@ export default function AngelOneTestPage() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <FormControl fullWidth>
                 <InputLabel>Duration</InputLabel>
                 <Select
@@ -554,7 +554,7 @@ export default function AngelOneTestPage() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Price"
@@ -564,7 +564,7 @@ export default function AngelOneTestPage() {
                 helperText="0 for MARKET orders"
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Quantity"
@@ -573,7 +573,7 @@ export default function AngelOneTestPage() {
                 onChange={(e) => setQuantity(e.target.value)}
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Button
                 variant="contained"
                 color="primary"
@@ -597,7 +597,7 @@ export default function AngelOneTestPage() {
         {/* Portfolio Tab */}
         <TabPanel value={tabValue} index={3}>
           <Grid container spacing={2}>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Button
                 variant="contained"
                 onClick={handleGetPositions}
@@ -650,3 +650,4 @@ export default function AngelOneTestPage() {
     </Box>
   );
 }
+

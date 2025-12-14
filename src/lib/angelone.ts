@@ -9,6 +9,7 @@ interface AngelOneSession {
   jwtToken: string;
   refreshToken: string;
   feedToken: string;
+  tokenExpiresAt?: Date | null;
 }
 
 /**
@@ -113,6 +114,7 @@ export async function getAngelOneSession(): Promise<AngelOneSession> {
     jwtToken: credentials.jwtToken!,
     refreshToken: credentials.refreshToken!,
     feedToken: credentials.feedToken!,
+    tokenExpiresAt: credentials.tokenExpiresAt,
   };
 }
 
