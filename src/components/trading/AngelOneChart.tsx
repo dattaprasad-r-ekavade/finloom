@@ -106,12 +106,24 @@ export const AngelOneChart: React.FC<AngelOneChartProps> = ({ data, height = 600
     };
   }, [height]);
 
+  const dataRef = useRef<string>('');
+
   useEffect(() => {
     if (!candleSeriesRef.current || !volumeSeriesRef.current || !data || data.length === 0) {
       return;
     }
 
-    // Set candle data
+    // Create a hash of the data to check if it has changed
+    const dataHash = JSON.stringify(data.map(d => ({ t: d.time, c: d.close })));
+    
+    // Skip update if data hasn't changed
+    if (dataRef.current === dataHash) {
+      return;
+    }
+    
+    dataRef.current = dataHash;
+
+    // Update candle data (using update for smooth transition)
     const candleData = data.map(d => ({
       time: d.time as any,
       open: d.open,
@@ -122,7 +134,7 @@ export const AngelOneChart: React.FC<AngelOneChartProps> = ({ data, height = 600
 
     candleSeriesRef.current.setData(candleData);
 
-    // Set volume data
+    // Update volume data
     if (data[0].volume !== undefined) {
       const volumeData = data.map(d => ({
         time: d.time as any,
@@ -133,8 +145,8 @@ export const AngelOneChart: React.FC<AngelOneChartProps> = ({ data, height = 600
       volumeSeriesRef.current.setData(volumeData);
     }
 
-    // Fit content
-    if (chartRef.current) {
+    // Fit content only on first load
+    if (chartRef.current && !dataRef.current) {
       chartRef.current.timeScale().fitContent();
     }
   }, [data]);

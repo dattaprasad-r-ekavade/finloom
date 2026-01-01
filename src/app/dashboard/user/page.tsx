@@ -346,14 +346,14 @@ export default function UserDashboard() {
   const stats = [
     {
       title: 'Total Balance',
-      value: '$54,200',
+      value: '₹54,200',
       change: '+8.2%',
       isPositive: true,
       icon: <AccountBalance sx={{ fontSize: 40 }} />,
     },
     {
       title: 'Today\'s P&L',
-      value: '$1,680',
+      value: '₹1,680',
       change: '+3.1%',
       isPositive: true,
       icon: <TrendingUp sx={{ fontSize: 40 }} />,

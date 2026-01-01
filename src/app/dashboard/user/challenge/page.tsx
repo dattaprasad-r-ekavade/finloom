@@ -294,19 +294,7 @@ export default function ChallengeMonitorPage() {
                       </Card>
                     </Stack>
 
-                    {credentials && (
-                      <Alert
-                        severity="success"
-                        sx={{
-                          borderRadius: 2,
-                          border: (theme) => `1px solid ${theme.palette.success.light}`,
-                        }}
-                      >
-                        Demo credentials — Username:{' '}
-                        <strong>{credentials.username}</strong>, Password:{' '}
-                        <strong>{credentials.password}</strong>
-                      </Alert>
-                    )}
+
 
                     {payment && (
                       <Alert

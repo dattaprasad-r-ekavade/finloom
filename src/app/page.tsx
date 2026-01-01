@@ -53,13 +53,13 @@ const formatCurrency = (value: number) =>
 const heroStats = [
   {
     label: 'Live Profit',
-    value: '+$2.8M',
+    value: '+₹2.8M',
     caption: 'Firm-wide P&L today',
     tone: 'success.main',
   },
   {
     label: 'Drawdown Watch',
-    value: '-$320K',
+    value: '-₹320K',
     caption: 'Across 4 accounts',
     tone: 'error.main',
   },
