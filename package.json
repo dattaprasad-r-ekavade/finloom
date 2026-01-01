@@ -19,6 +19,7 @@
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
     "bcryptjs": "^3.0.2",
+    "framer-motion": "^11.18.2",
     "jsonwebtoken": "^9.0.2",
     "lightweight-charts": "^5.0.9",
     "next": "16.0.7",

@@ -48,6 +48,7 @@ import { robotoMonoFontFamily } from '@/theme/theme';
 import { useAuthStore } from '@/store/authStore';
 import { parseChallengeCredentials } from '@/lib/challengeCredentials';
 import { formatDate, formatDateTime, formatChartDate } from '@/lib/dateFormat';
+import { ToastNotification } from '@/components/AnimatedComponents';
 
 interface ChallengeStatusPayload {
   challenge: {
@@ -165,11 +166,15 @@ export default function UserDashboard() {
   const [selection, setSelection] = useState<ChallengeSelection | null>(null);
   const [selectionLoading, setSelectionLoading] = useState(false);
   const [selectionError, setSelectionError] = useState<string | null>(null);
-  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [challengeStatus, setChallengeStatus] =
     useState<ChallengeStatusPayload | null>(null);
+  const [toast, setToast] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info' | 'warning';
+  }>({ open: false, message: '', severity: 'info' });
 
   // Check authentication on mount
   useEffect(() => {
@@ -267,12 +272,10 @@ export default function UserDashboard() {
       await navigator.clipboard.writeText(
         `Username: ${credentials.username}\nPassword: ${credentials.password}`
       );
-      setCopyFeedback('Credentials copied to clipboard.');
-      setTimeout(() => setCopyFeedback(null), 2500);
+      setToast({ open: true, message: 'Credentials copied to clipboard', severity: 'success' });
     } catch (error) {
       console.error('Clipboard copy failed', error);
-      setCopyFeedback('Unable to copy credentials. Please copy them manually.');
-      setTimeout(() => setCopyFeedback(null), 3000);
+      setToast({ open: true, message: 'Unable to copy credentials', severity: 'error' });
     }
   }, [credentials]);
 
@@ -652,6 +655,11 @@ export default function UserDashboard() {
                   theme.palette.mode === 'light'
                     ? 'linear-gradient(135deg, rgba(0,97,168,0.04) 0%, rgba(0,168,107,0.08) 100%)'
                     : 'linear-gradient(135deg, rgba(79,195,247,0.12) 0%, rgba(76,175,80,0.12) 100%)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: 4,
+                },
               }}
             >
               <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -866,6 +874,14 @@ export default function UserDashboard() {
             </TableContainer>
           </Paper>
         )}
+
+        {/* Toast Notifications */}
+        <ToastNotification
+          open={toast.open}
+          message={toast.message}
+          severity={toast.severity}
+          onClose={() => setToast({ ...toast, open: false })}
+        />
       </Container>
     </Box>
   );

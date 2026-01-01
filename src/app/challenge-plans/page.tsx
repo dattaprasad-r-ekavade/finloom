@@ -220,9 +220,16 @@ export default function ChallengePlansPage() {
         setSuccessMessage(data.message ?? 'Challenge plan secured.');
         setSelection(data.selection ?? null);
 
-        setTimeout(() => {
-          router.push(`/payments/mock?planId=${encodeURIComponent(plan.id)}`);
-        }, 1200);
+        // Check if user has completed KYC before proceeding to payment
+        if (!user.hasCompletedKyc) {
+          setTimeout(() => {
+            router.push('/kyc');
+          }, 1200);
+        } else {
+          setTimeout(() => {
+            router.push(`/payments/mock?planId=${encodeURIComponent(plan.id)}`);
+          }, 1200);
+        }
       } catch (selectError) {
         console.error(selectError);
         setError('Unexpected error while reserving this plan.');

@@ -434,42 +434,11 @@ function MockPaymentContent() {
                     </Stack>
                   )}
 
-                  {credentials && (
-                    <Alert
-                      severity="success"
-                      sx={{
-                        borderRadius: 2,
-                        border: (theme) => `1px solid ${theme.palette.success.light}`,
-                      }}
-                      action={
-                        <Button
-                          color="inherit"
-                          size="small"
-                          startIcon={<ContentCopy fontSize="small" />}
-                          onClick={handleCopyCredentials}
-                        >
-                          Copy
-                        </Button>
-                      }
-                    >
-                      Demo credentials ready — Username: <strong>{credentials.username}</strong>, Password:{' '}
-                      <strong>{credentials.password}</strong>
-                    </Alert>
-                  )}
-
                   <Alert
                     severity="info"
                     sx={{ borderRadius: 2, border: (theme) => `1px solid ${theme.palette.info.light}` }}
                   >
-                    Access the mock trading terminal here:{' '}
-                    <Link
-                      href="https://mocktrading.finloom.in"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      sx={{ fontWeight: 600 }}
-                    >
-                      mocktrading.finloom.in
-                    </Link>
+                    Your challenge is now active. Proceed to the dashboard to access your trading terminal.
                   </Alert>
 
                   <Stack

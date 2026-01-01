@@ -19,6 +19,14 @@ export interface OrderPayload {
   scrip: ScripOption;
   quantity: number;
   tradeType: 'BUY' | 'SELL';
+  orderDetails?: {
+    scrip: string;
+    scripFullName: string;
+    quantity: number;
+    tradeType: 'BUY' | 'SELL';
+    estimatedValue: number;
+    capitalPercentage: number;
+  };
 }
 
 interface OrderFormProps {
@@ -141,6 +149,32 @@ export const OrderForm: React.FC<OrderFormProps> = ({
         />
       </Stack>
 
+      {/* Preset Quantity Buttons */}
+      <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
+        {[10, 25, 50, 100].map((preset) => (
+          <Button
+            key={preset}
+            size="small"
+            variant="outlined"
+            onClick={() => setQuantity(preset.toString())}
+            sx={{
+              minWidth: 'auto',
+              px: 1.5,
+              py: 0.5,
+              fontSize: '0.75rem',
+              borderRadius: 1,
+              transition: 'all 0.2s',
+              '&:hover': {
+                transform: 'translateY(-1px)',
+                boxShadow: 1,
+              },
+            }}
+          >
+            {preset}
+          </Button>
+        ))}
+      </Stack>
+
       {error && (
         <Typography color="error" variant="caption">
           {error}
@@ -155,6 +189,13 @@ export const OrderForm: React.FC<OrderFormProps> = ({
             setQuantity('1');
             setError(null);
           }}
+          sx={{
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: 2,
+            },
+          }}
         >
           Reset
         </Button>
@@ -163,7 +204,17 @@ export const OrderForm: React.FC<OrderFormProps> = ({
           size="small"
           onClick={handlePlaceOrder}
           disabled={!selectedScrip || isSubmitting}
-          sx={{ flex: 1 }}
+          sx={{ 
+            flex: 1,
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: 4,
+            },
+            '&:active': {
+              transform: 'scale(0.95)',
+            },
+          }}
         >
           {isSubmitting ? (
             <CircularProgress size={16} color="inherit" />
