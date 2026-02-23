@@ -154,6 +154,7 @@ export default function TradingTerminalPage() {
   }>({ open: false, payload: null });
   const [squaringOffAll, setSquaringOffAll] = useState(false);
   const isInitialChartLoadRef = React.useRef(true);
+  const symbolTokenCacheRef = React.useRef<Record<string, string>>({});
 
   useEffect(() => {
     const hasSeenRiskModal = sessionStorage.getItem('hasSeenRiskModal');
@@ -247,6 +248,36 @@ export default function TradingTerminalPage() {
     }
   }, [challengeId, selectedScrip]);
 
+  // Resolve symbol token from AngelOne (only caches successes; failures retry)
+  const resolveSymbolToken = useCallback(async (baseSymbol: string): Promise<string | null> => {
+    const cached = symbolTokenCacheRef.current[baseSymbol];
+    if (cached) return cached;
+
+    try {
+      const searchRes = await fetch('/api/angelone-live/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ exchange: 'NSE', searchScrip: baseSymbol }),
+      });
+
+      const searchData = await searchRes.json();
+      if (!searchRes.ok || !searchData.data || searchData.data.length === 0) {
+        return null;
+      }
+
+      const eqScrip = searchData.data.find((s: any) => s.tradingsymbol.endsWith('-EQ'));
+      const token = eqScrip?.symboltoken || searchData.data[0]?.symboltoken;
+      if (token) {
+        symbolTokenCacheRef.current[baseSymbol] = token;
+        return token;
+      }
+      return null;
+    } catch (err) {
+      console.error('[chart] AngelOne search fetch failed:', err);
+      return null;
+    }
+  }, []);
+
   const fetchHistoricalData = useCallback(async (scrip: string) => {
     if (!scrip) return;
 
@@ -256,6 +287,12 @@ export default function TradingTerminalPage() {
 
     try {
       const baseSymbol = scrip.split('-')[0];
+      const symbolToken = await resolveSymbolToken(baseSymbol);
+
+      if (!symbolToken) {
+        return;
+      }
+
       const now = new Date();
       const toDate = now.toISOString().slice(0, 16).replace('T', ' ');
 
@@ -272,29 +309,6 @@ export default function TradingTerminalPage() {
 
       const fromDateObj = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
       const fromDate = fromDateObj.toISOString().slice(0, 16).replace('T', ' ');
-
-      const searchRes = await fetch('/api/angelone-live/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          exchange: 'NSE',
-          searchScrip: baseSymbol,
-        }),
-      });
-
-      const searchData = await searchRes.json();
-      if (!searchRes.ok || !searchData.data || searchData.data.length === 0) {
-        console.error('Failed to find scrip:', baseSymbol);
-        return;
-      }
-
-      const eqScrip = searchData.data.find((s: any) => s.tradingsymbol.endsWith('-EQ'));
-      const symbolToken = eqScrip?.symboltoken || searchData.data[0]?.symboltoken;
-
-      if (!symbolToken) {
-        console.error('No symbol token found');
-        return;
-      }
 
       const res = await fetch('/api/angelone-live/historical', {
         method: 'POST',
@@ -326,7 +340,7 @@ export default function TradingTerminalPage() {
       setIsLoadingChart(false);
       isInitialChartLoadRef.current = false;
     }
-  }, [chartInterval]);
+  }, [chartInterval, resolveSymbolToken]);
 
   const refreshAll = useCallback(async () => {
     if (!challengeId) return;

@@ -59,11 +59,22 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       return NextResponse.json(
-        { 
+        {
           error: data.message || 'Failed to search scrip',
-          details: data 
+          details: data
         },
         { status: response.status }
+      );
+    }
+
+    // AngelOne may return HTTP 200 but with status:false or empty data on session issues
+    if (data.status === false || (typeof data.data === 'string' && !data.data)) {
+      return NextResponse.json(
+        {
+          error: data.message || 'AngelOne returned no results (session may be expired)',
+          details: data
+        },
+        { status: 502 }
       );
     }
 
