@@ -57,9 +57,20 @@ export async function POST(request: NextRequest) {
 
     let result = await doSearchScrip(exchange, searchScrip);
 
-    // If AngelOne rejected the session token, force re-login and retry once
-    if (!result.parseError && result.ok && result.data?.status === false) {
-      console.log('AngelOne search returned status:false — refreshing session and retrying...');
+    // Retry with a fresh login if session is stale.
+    // AngelOne uses both "status: false" and "success: false" depending on endpoint.
+    const sessionStale =
+      !result.parseError &&
+      (
+        result.status === 401 ||
+        result.status === 403 ||
+        (result.ok && result.data?.status === false) ||
+        (result.ok && result.data?.success === false) ||
+        (result.ok && (result.data?.errorCode === 'AG8001' || result.data?.errorcode === 'AG8001'))
+      );
+
+    if (sessionStale) {
+      console.log(`AngelOne search session stale (httpStatus=${result.status}, data.status=${result.data?.status}, data.success=${result.data?.success}, errorCode=${result.data?.errorCode || result.data?.errorcode}) — refreshing and retrying...`);
       result = await doSearchScrip(exchange, searchScrip, true);
     }
 

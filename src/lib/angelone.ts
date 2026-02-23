@@ -129,8 +129,10 @@ export async function getAngelOneSession(options?: { forceRefresh?: boolean }): 
   const decrypted = toDecryptedCredentials(credentialsRecord);
 
   const now = new Date();
+  // Expire at midnight minus 30 minutes to avoid clock-skew edge cases where
+  // AngelOne invalidates the token before our stored expiry is reached.
   const midnight = new Date(now);
-  midnight.setHours(23, 59, 59, 999);
+  midnight.setHours(23, 29, 59, 999);
 
   const needsNewToken =
     !decrypted.jwtToken ||
@@ -166,16 +168,26 @@ export async function getAngelOneSession(options?: { forceRefresh?: boolean }): 
 
     const loginData = await loginResponse.json();
 
-    if (!loginResponse.ok) {
-      throw new Error(`AngelOne login failed: ${loginData.message || 'Unknown error'}`);
+    if (!loginResponse.ok || loginData.status === false || !loginData.data) {
+      const errMsg = loginData?.message || loginData?.errorMessage || 'Unknown login error';
+      const errCode = loginData?.errorcode || loginData?.errorCode || '';
+      throw new Error(
+        `AngelOne login failed [${errCode || loginResponse.status}]: ${errMsg}`,
+      );
+    }
+
+    const { jwtToken: newJwt, refreshToken: newRefresh, feedToken: newFeed } = loginData.data;
+
+    if (!newJwt) {
+      throw new Error('AngelOne login response missing jwtToken. Full response: ' + JSON.stringify(loginData));
     }
 
     await prisma.angelOneCredentials.update({
       where: { id: 'singleton' },
       data: {
-        jwtToken: encryptSecret(loginData.data.jwtToken),
-        refreshToken: encryptSecret(loginData.data.refreshToken),
-        feedToken: encryptSecret(loginData.data.feedToken),
+        jwtToken: encryptSecret(newJwt),
+        refreshToken: encryptSecret(newRefresh),
+        feedToken: encryptSecret(newFeed),
         tokenGeneratedAt: now,
         tokenExpiresAt: midnight,
       },
@@ -186,9 +198,9 @@ export async function getAngelOneSession(options?: { forceRefresh?: boolean }): 
     return {
       apiKey: decrypted.apiKey,
       clientCode: decrypted.clientCode,
-      jwtToken: loginData.data.jwtToken,
-      refreshToken: loginData.data.refreshToken,
-      feedToken: loginData.data.feedToken,
+      jwtToken: newJwt,
+      refreshToken: newRefresh,
+      feedToken: newFeed,
       tokenExpiresAt: midnight,
     };
   }
