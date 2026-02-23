@@ -4,7 +4,8 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { ensureDatabase } from '@/lib/ensureDatabase';
 import { signToken } from '@/lib/jwt';
-import { ErrorHandlers, successResponse, validateRequiredFields, isValidEmail } from '@/lib/apiResponse';
+import { ErrorHandlers, isValidEmail } from '@/lib/apiResponse';
+import { ensurePrimaryAdminUser } from '@/lib/adminAccount';
 
 interface LoginRequestBody {
   email?: string;
@@ -30,6 +31,10 @@ export async function POST(request: Request) {
     }
 
     const normalisedEmail = email.trim().toLowerCase();
+
+    if (expectedRole === 'ADMIN') {
+      await ensurePrimaryAdminUser();
+    }
 
     const user = await prisma.user.findUnique({
       where: { email: normalisedEmail },

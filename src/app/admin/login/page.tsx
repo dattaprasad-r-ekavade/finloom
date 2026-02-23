@@ -181,10 +181,10 @@ export default function AdminLoginPage() {
                   variant="outlined"
                   size="large"
                   color="secondary"
-                  onClick={() => router.push('/admin/signup')}
+                  onClick={() => router.push('/admin/local-credentials')}
                   sx={{ py: 1.6, fontWeight: 600 }}
                 >
-                  Request Admin Access
+                  Edit Local Admin Credentials
                 </Button>
               </Box>
             </Stack>

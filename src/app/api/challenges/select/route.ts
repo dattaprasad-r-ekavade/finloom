@@ -1,27 +1,32 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { ChallengeStatus } from '@prisma/client';
 
 import { prisma } from '@/lib/prisma';
 import { ErrorHandlers } from '@/lib/apiResponse';
+import { requireRole } from '@/lib/apiAuth';
 
 interface SelectChallengeRequest {
-  userId?: string;
   planId?: string;
 }
 
 const ACTIVE_STATUSES: ChallengeStatus[] = ['PENDING', 'ACTIVE'];
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as SelectChallengeRequest;
-    const { userId, planId } = body;
+    const session = await requireRole(request, 'TRADER');
+    if (!session) {
+      return ErrorHandlers.unauthorized('Trader authentication required.');
+    }
 
-    if (!userId || !planId) {
-      return ErrorHandlers.badRequest('User ID and plan ID are required.');
+    const body = (await request.json()) as SelectChallengeRequest;
+    const { planId } = body;
+
+    if (!planId) {
+      return ErrorHandlers.badRequest('Plan ID is required.');
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: session.userId },
       include: { mockedKyc: true },
     });
 
@@ -29,8 +34,8 @@ export async function POST(request: Request) {
       return ErrorHandlers.notFound('User not found.');
     }
 
-    if (!user.mockedKyc) {
-      return ErrorHandlers.forbidden('KYC must be completed before selecting a challenge plan.');
+    if (!user.mockedKyc || !['APPROVED', 'AUTO_APPROVED'].includes(user.mockedKyc.status)) {
+      return ErrorHandlers.forbidden('KYC must be approved before selecting a challenge plan.');
     }
 
     const plan = await prisma.challengePlan.findUnique({
@@ -43,7 +48,7 @@ export async function POST(request: Request) {
 
     const existingChallenge = await prisma.userChallenge.findFirst({
       where: {
-        userId,
+        userId: session.userId,
         status: { in: ACTIVE_STATUSES },
       },
       include: {
@@ -83,7 +88,7 @@ export async function POST(request: Request) {
       updatedChallenge ??
       (await prisma.userChallenge.create({
         data: {
-          userId,
+          userId: session.userId,
           planId,
           status: 'PENDING',
         },

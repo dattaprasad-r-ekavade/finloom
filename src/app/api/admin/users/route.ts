@@ -1,29 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { verifyToken } from '@/lib/jwt';
-
-// Helper to verify admin access
-async function verifyAdmin(request: NextRequest) {
-  const token = request.cookies.get('auth-token')?.value;
-  if (!token) {
-    return null;
-  }
-  
-  const decoded = verifyToken(token);
-  if (!decoded || decoded.role !== 'ADMIN') {
-    return null;
-  }
-  
-  return decoded;
-}
+import { requireRole } from '@/lib/apiAuth';
 
 export async function GET(request: NextRequest) {
   try {
+    const admin = await requireRole(request, 'ADMIN');
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     
     // Pagination
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const page = Math.max(parseInt(searchParams.get('page') || '1', 10), 1);
+    const limit = Math.min(
+      Math.max(parseInt(searchParams.get('limit') || '10', 10), 1),
+      100
+    );
     const skip = (page - 1) * limit;
     
     // Filters
@@ -33,9 +30,9 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
 
     // Build where clause
-    const where: any = {};
+    const where: Prisma.UserWhereInput = {};
     
-    if (role) {
+    if (role === 'TRADER' || role === 'ADMIN') {
       where.role = role;
     }
     
@@ -49,12 +46,36 @@ export async function GET(request: NextRequest) {
     // KYC filter
     if (kycStatus === 'APPROVED') {
       where.mockedKyc = {
-        isNot: null,
+        is: {
+          status: {
+            in: ['APPROVED', 'AUTO_APPROVED'],
+          },
+        },
       };
     } else if (kycStatus === 'PENDING') {
-      where.mockedKyc = {
-        is: null,
-      };
+      const currentAnd = Array.isArray(where.AND)
+        ? where.AND
+        : where.AND
+          ? [where.AND]
+          : [];
+
+      where.AND = [
+        ...currentAnd,
+        {
+          OR: [
+            { mockedKyc: { is: null } },
+            {
+              mockedKyc: {
+                is: {
+                  status: {
+                    in: ['PENDING', 'REJECTED'],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      ];
     }
 
     // Active challenge filter
@@ -163,7 +184,7 @@ export async function GET(request: NextRequest) {
 // UPDATE user
 export async function PUT(request: NextRequest) {
   try {
-    const admin = await verifyAdmin(request);
+    const admin = await requireRole(request, 'ADMIN');
     if (!admin) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
@@ -181,7 +202,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const updateData: any = {};
+    const updateData: Prisma.UserUpdateInput = {};
     if (name !== undefined) updateData.name = name;
     if (role !== undefined) updateData.role = role;
     if (email !== undefined) {
@@ -232,7 +253,7 @@ export async function PUT(request: NextRequest) {
 // DELETE user
 export async function DELETE(request: NextRequest) {
   try {
-    const admin = await verifyAdmin(request);
+    const admin = await requireRole(request, 'ADMIN');
     if (!admin) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },

@@ -74,10 +74,10 @@ export interface TradeRecord {
 }
 
 interface UseTradingDataProps {
-  userId: string | undefined;
+  isAuthenticated: boolean;
 }
 
-export const useTradingData = ({ userId }: UseTradingDataProps) => {
+export const useTradingData = ({ isAuthenticated }: UseTradingDataProps) => {
   const router = useRouter();
   const [selection, setSelection] = useState<ChallengeSelection | null>(null);
   const [summary, setSummary] = useState<TradingSummaryResponse['data'] | null>(null);
@@ -90,7 +90,7 @@ export const useTradingData = ({ userId }: UseTradingDataProps) => {
    * Load challenge selection for the user
    */
   const loadSelection = useCallback(async () => {
-    if (!userId) {
+    if (!isAuthenticated) {
       router.replace('/login');
       return;
     }
@@ -99,9 +99,7 @@ export const useTradingData = ({ userId }: UseTradingDataProps) => {
       setInitializing(true);
       setError(null);
       
-      const response = await fetch(
-        `/api/challenges/selection?userId=${encodeURIComponent(userId)}`,
-      );
+      const response = await fetch('/api/challenges/selection');
       const payload = await response.json();
       
       if (!response.ok) {
@@ -127,7 +125,7 @@ export const useTradingData = ({ userId }: UseTradingDataProps) => {
     } finally {
       setInitializing(false);
     }
-  }, [userId, router]);
+  }, [isAuthenticated, router]);
 
   /**
    * Load trading summary data

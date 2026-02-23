@@ -61,7 +61,7 @@ export default function ForbiddenPage() {
             Access Forbidden
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: 500, mx: 'auto' }}>
-            You don't have permission to access this resource. 
+            You don&apos;t have permission to access this resource.
             If you believe this is an error, please contact support.
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">

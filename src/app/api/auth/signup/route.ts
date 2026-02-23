@@ -32,6 +32,13 @@ export async function POST(request: Request) {
       return ErrorHandlers.badRequest('Password must be at least 8 characters long.');
     }
 
+    const resolvedRole: 'TRADER' | 'ADMIN' = 'TRADER';
+    if (role === 'ADMIN') {
+      return ErrorHandlers.forbidden(
+        'Admin self-signup is disabled. Use local admin credential manager.',
+      );
+    }
+
     const normalisedEmail = email.trim().toLowerCase();
 
     const existingUser = await prisma.user.findUnique({
@@ -49,7 +56,7 @@ export async function POST(request: Request) {
         email: normalisedEmail,
         passwordHash,
         name,
-        role: role === 'ADMIN' ? 'ADMIN' : 'TRADER',
+        role: resolvedRole,
       },
       select: {
         id: true,

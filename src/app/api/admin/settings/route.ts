@@ -1,26 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyToken } from '@/lib/jwt';
-
-// Helper to verify admin access
-async function verifyAdmin(request: NextRequest) {
-  const token = request.cookies.get('auth-token')?.value;
-  if (!token) {
-    return null;
-  }
-  
-  const decoded = verifyToken(token);
-  if (!decoded || decoded.role !== 'ADMIN') {
-    return null;
-  }
-  
-  return decoded;
-}
+import { requireRole } from '@/lib/apiAuth';
 
 // Get admin settings
 export async function GET(request: NextRequest) {
   try {
-    const admin = await verifyAdmin(request);
+    const admin = await requireRole(request, 'ADMIN');
     if (!admin) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
@@ -55,7 +40,7 @@ export async function GET(request: NextRequest) {
 // Update admin settings
 export async function PUT(request: NextRequest) {
   try {
-    const admin = await verifyAdmin(request);
+    const admin = await requireRole(request, 'ADMIN');
     if (!admin) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },

@@ -1,9 +1,15 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ErrorHandlers, successResponse } from '@/lib/apiResponse';
+import { requireOneOfRoles } from '@/lib/apiAuth';
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await requireOneOfRoles(request, ['TRADER', 'ADMIN']);
+    if (!session) {
+      return ErrorHandlers.unauthorized('Unauthorized');
+    }
+
     const search = request.nextUrl.searchParams.get('search')?.trim();
 
     const marketData = await prisma.mockedMarketData.findMany({

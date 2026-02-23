@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireRole } from '@/lib/apiAuth';
 
 const ANGELONE_BASE_URL = 'https://apiconnect.angelone.in';
 
 export async function POST(request: NextRequest) {
   try {
+    const admin = await requireRole(request, 'ADMIN');
+    if (!admin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       apiKey,
@@ -27,7 +33,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const orderData: any = {
+    const orderData: Record<string, string> = {
       variety: variety || 'NORMAL',
       tradingsymbol: tradingSymbol,
       symboltoken: symbolToken,
@@ -75,10 +81,11 @@ export async function POST(request: NextRequest) {
       data: data.data,
       message: 'Order placed successfully',
     });
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Internal server error';
     console.error('AngelOne place order error:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: message },
       { status: 500 }
     );
   }

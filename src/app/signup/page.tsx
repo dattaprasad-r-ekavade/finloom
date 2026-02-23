@@ -13,8 +13,6 @@ import {
   Chip,
   Stack,
   Alert,
-  ToggleButton,
-  ToggleButtonGroup,
   Link,
 } from '@mui/material';
 import { PersonAdd } from '@mui/icons-material';
@@ -29,7 +27,6 @@ export default function SignupPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'TRADER' | 'ADMIN'>('TRADER');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -74,7 +71,7 @@ export default function SignupPage() {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role }),
+        body: JSON.stringify({ name, email, password }),
       });
 
       const data = await response.json();
@@ -87,10 +84,9 @@ export default function SignupPage() {
       // Store user data in Zustand store and redirect appropriately
       if (data.user) {
         setUser(data.user);
-        const isAdmin = data.user?.role === 'ADMIN';
-        const nextRoute = isAdmin ? '/dashboard/admin' : '/challenge-plans';
+        const nextRoute = '/challenge-plans';
 
-        setSuccess(isAdmin ? 'Admin account created! Redirecting you to the command center.' : 'Account created! Choose your challenge to get started.');
+        setSuccess('Account created! Choose your challenge to get started.');
 
         setTimeout(() => {
           router.push(nextRoute);
@@ -167,7 +163,7 @@ export default function SignupPage() {
                   Join the Finloom network
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
-                  Register to unlock trading workspaces or administrative dashboards tailored to your role.
+                  Register to unlock your trading workspace. Admin accounts are provisioned from the dedicated admin signup flow.
                 </Typography>
               </Box>
               <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -221,24 +217,12 @@ export default function SignupPage() {
                   error={!!passwordError}
                   helperText={passwordError || 'Minimum 8 characters'}
                 />
-                <ToggleButtonGroup
-                  exclusive
-                  value={role}
+                <Chip
+                  label="Trader workspace account"
                   color="primary"
-                  onChange={(_, newRole: 'TRADER' | 'ADMIN' | null) => {
-                    if (newRole) {
-                      setRole(newRole);
-                    }
-                  }}
-                  sx={{ display: 'flex', flexWrap: 'wrap' }}
-                >
-                  <ToggleButton value="TRADER" sx={{ flex: 1, textTransform: 'none', fontWeight: 600 }}>
-                    Trader workspace
-                  </ToggleButton>
-                  <ToggleButton value="ADMIN" sx={{ flex: 1, textTransform: 'none', fontWeight: 600 }}>
-                    Admin command center
-                  </ToggleButton>
-                </ToggleButtonGroup>
+                  variant="outlined"
+                  sx={{ alignSelf: 'flex-start', fontWeight: 600 }}
+                />
                 <Button
                   fullWidth
                   type="submit"
@@ -280,8 +264,8 @@ export default function SignupPage() {
                 Choose your operating cockpit
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Traders get high-tempo analytics, instant funding signals, and execution tooling. Admins unlock
-                compliance overviews, firm-wide reporting, and capital allocator dashboards.
+                Traders get high-tempo analytics, instant funding signals, and execution tooling.
+                Use the dedicated admin registration flow if you need administrative access.
               </Typography>
               <Divider flexItem>
                 <Typography variant="caption" color="text.secondary">
@@ -301,8 +285,7 @@ export default function SignupPage() {
                 .
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Accounts are provisioned instantly. Role-based routing takes you straight to the right dashboard
-                after sign-in.
+                Trader accounts are provisioned instantly and redirected into the challenge selection flow.
               </Typography>
             </Stack>
           </CardContent>

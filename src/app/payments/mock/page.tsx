@@ -18,13 +18,11 @@ import {
   CircularProgress,
   Container,
   Divider,
-  Link,
   Stack,
   Typography,
 } from '@mui/material';
 import {
   CheckCircleOutline,
-  ContentCopy,
   Payment,
 } from '@mui/icons-material';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -134,17 +132,17 @@ function MockPaymentContent() {
       return;
     }
 
-    // Allow payment without KYC completion
-    // Users can complete KYC later
+    if (!user.hasCompletedKyc) {
+      router.replace('/kyc');
+      return;
+    }
 
     const fetchSelection = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const response = await fetch(
-          `/api/challenges/selection?userId=${encodeURIComponent(user.id)}`
-        );
+        const response = await fetch('/api/challenges/selection');
         const data = await response.json();
 
         if (!response.ok) {
@@ -196,7 +194,6 @@ function MockPaymentContent() {
       const response = await fetch('/api/payment/mock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
       });
 
       const data = (await response.json()) as MockPaymentResponse & { error?: string };

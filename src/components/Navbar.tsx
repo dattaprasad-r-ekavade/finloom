@@ -35,7 +35,6 @@ import {
   Close,
   Home,
   Login,
-  PersonAdd,
   AdminPanelSettings,
 } from '@mui/icons-material';
 import { useThemeMode } from '@/theme/ThemeProvider';
@@ -171,7 +170,7 @@ export default function Navbar() {
             <ListItemText primary="Trader Login" />
           </ListItemButton>
           <ListItemButton onClick={() => navigateAndClose('/trader/signup')}>
-            <ListItemIcon><PersonAdd /></ListItemIcon>
+            <ListItemIcon><Login /></ListItemIcon>
             <ListItemText primary="Trader Sign Up" />
           </ListItemButton>
           <Divider sx={{ my: 1 }} />
@@ -183,10 +182,6 @@ export default function Navbar() {
           <ListItemButton onClick={() => navigateAndClose('/admin/login')}>
             <ListItemIcon><AdminPanelSettings /></ListItemIcon>
             <ListItemText primary="Admin Login" />
-          </ListItemButton>
-          <ListItemButton onClick={() => navigateAndClose('/admin/signup')}>
-            <ListItemIcon><PersonAdd /></ListItemIcon>
-            <ListItemText primary="Admin Sign Up" />
           </ListItemButton>
         </List>
       )}
@@ -416,9 +411,6 @@ export default function Navbar() {
                   >
                     <MenuItem onClick={() => { router.push('/admin/login'); handleAdminMenuClose(); }}>
                       Admin Login
-                    </MenuItem>
-                    <MenuItem onClick={() => { router.push('/admin/signup'); handleAdminMenuClose(); }}>
-                      Admin Sign Up
                     </MenuItem>
                   </Menu>
                 </>

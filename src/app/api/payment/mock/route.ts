@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { ChallengeStatus } from '@prisma/client';
 
 import { prisma } from '@/lib/prisma';
@@ -7,10 +7,7 @@ import {
   serialiseChallengeCredentials,
   ChallengeCredentials,
 } from '@/lib/challengeCredentials';
-
-interface MockPaymentRequest {
-  userId?: string;
-}
+import { requireRole } from '@/lib/apiAuth';
 
 const ELIGIBLE_CHALLENGE_STATUSES: ChallengeStatus[] = ['PENDING', 'ACTIVE'];
 
@@ -22,20 +19,15 @@ const generateCredentials = (): ChallengeCredentials => ({
   password: `Pass@${Math.random().toString(36).slice(2, 10)}`,
 });
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as MockPaymentRequest;
-    const { userId } = body;
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID is required.' },
-        { status: 400 }
-      );
+    const session = await requireRole(request, 'TRADER');
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: session.userId },
       include: { mockedKyc: true },
     });
 
@@ -46,7 +38,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!user.mockedKyc) {
+    if (!user.mockedKyc || !['APPROVED', 'AUTO_APPROVED'].includes(user.mockedKyc.status)) {
       return NextResponse.json(
         { error: 'KYC must be approved before processing payment.' },
         { status: 403 }
@@ -55,7 +47,7 @@ export async function POST(request: Request) {
 
     const challenge = await prisma.userChallenge.findFirst({
       where: {
-        userId,
+        userId: session.userId,
         status: { in: ELIGIBLE_CHALLENGE_STATUSES },
       },
       include: {
@@ -105,7 +97,7 @@ export async function POST(request: Request) {
       ? existingPayment
       : await prisma.mockedPayment.create({
           data: {
-            userId,
+            userId: session.userId,
             challengeId: challenge.id,
             amount: plan.fee,
             mockTransactionId: transactionId,

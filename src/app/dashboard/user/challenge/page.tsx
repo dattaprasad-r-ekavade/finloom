@@ -104,7 +104,7 @@ export default function ChallengeMonitorPage() {
         setError(null);
 
         const selectionResponse = await fetch(
-          `/api/challenges/selection?userId=${encodeURIComponent(user.id)}`
+          '/api/challenges/selection'
         );
         const selectionData = await selectionResponse.json();
 

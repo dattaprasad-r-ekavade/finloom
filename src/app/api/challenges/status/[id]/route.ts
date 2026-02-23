@@ -1,13 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { ChallengeStatus } from '@prisma/client';
 
 import { prisma } from '@/lib/prisma';
-import { buildMockMetrics } from '@/lib/mockMetrics';
 import {
   ChallengeCredentials,
   parseChallengeCredentials,
-  serialiseChallengeCredentials,
 } from '@/lib/challengeCredentials';
+import { requireOneOfRoles } from '@/lib/apiAuth';
 
 interface ChallengeStatusSummary {
   cumulativePnl: number;
@@ -60,9 +59,14 @@ interface ChallengeStatusResponse {
 }
 
 export async function GET(
-  _request: Request,
+  request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const session = await requireOneOfRoles(request, ['TRADER', 'ADMIN']);
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const params = await context.params;
   const challengeId = params.id;
 
@@ -94,6 +98,13 @@ export async function GET(
       );
     }
 
+    if (session.role === 'TRADER' && challenge.userId !== session.userId) {
+      return NextResponse.json(
+        { error: 'You are not authorized to view this challenge.' },
+        { status: 403 }
+      );
+    }
+
     if (!challenge.plan) {
       return NextResponse.json(
         { error: 'Challenge plan missing from record.' },
@@ -101,31 +112,7 @@ export async function GET(
       );
     }
 
-    let metrics = challenge.metrics;
-
-    if (metrics.length === 0) {
-      const startDate = challenge.startDate ?? new Date();
-      const generated = buildMockMetrics(challenge.plan, startDate);
-
-      await prisma.challengeMetrics.createMany({
-        data: generated.map((metric) => ({
-          challengeId,
-          date: metric.date,
-          dailyPnl: metric.dailyPnl,
-          cumulativePnl: metric.cumulativePnl,
-          tradesCount: metric.tradesCount,
-          winRate: metric.winRate,
-          maxDrawdown: metric.maxDrawdown,
-          profitTarget: metric.profitTarget,
-          violations: metric.violations,
-        })),
-      });
-
-      metrics = await prisma.challengeMetrics.findMany({
-        where: { challengeId },
-        orderBy: { date: 'asc' },
-      });
-    }
+    const metrics = challenge.metrics;
 
     const latestMetric = metrics[metrics.length - 1];
     const profitTarget = latestMetric?.profitTarget ?? 0;
@@ -195,24 +182,6 @@ export async function GET(
       summary,
       credentials,
     };
-
-    if (!credentials && metrics.length > 0) {
-      const fallbackCredentials = {
-        username: `demo_trader_${challenge.id.slice(0, 6)}`,
-        password: `Pass@${challenge.id.slice(-6)}`,
-      };
-
-      await prisma.userChallenge.update({
-        where: { id: challenge.id },
-        data: {
-          demoAccountCredentials: serialiseChallengeCredentials(
-            fallbackCredentials
-          ),
-        },
-      });
-
-      response.credentials = fallbackCredentials;
-    }
 
     return NextResponse.json(response);
   } catch (error) {

@@ -168,7 +168,7 @@ export default function TradingTerminalPage() {
         setInitializing(true);
         setError(null);
         const selectionResponse = await fetch(
-          `/api/challenges/selection?userId=${encodeURIComponent(user.id)}`,
+          '/api/challenges/selection',
         );
         const selectionPayload = await selectionResponse.json();
         if (!selectionResponse.ok) {

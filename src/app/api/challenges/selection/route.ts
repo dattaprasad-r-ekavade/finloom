@@ -1,23 +1,22 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { ChallengeStatus } from '@prisma/client';
 
 import { prisma } from '@/lib/prisma';
 import { ErrorHandlers } from '@/lib/apiResponse';
+import { requireRole } from '@/lib/apiAuth';
 
 const TRACKED_STATUSES: ChallengeStatus[] = ['PENDING', 'ACTIVE'];
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-
-    if (!userId) {
-      return ErrorHandlers.badRequest('User ID is required.');
+    const session = await requireRole(request, 'TRADER');
+    if (!session) {
+      return ErrorHandlers.unauthorized('Trader authentication required.');
     }
 
     const selection = await prisma.userChallenge.findFirst({
       where: {
-        userId,
+        userId: session.userId,
         status: { in: TRACKED_STATUSES },
       },
       include: {

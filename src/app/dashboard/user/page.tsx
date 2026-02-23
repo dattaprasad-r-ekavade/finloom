@@ -201,7 +201,7 @@ export default function UserDashboard() {
 
       try {
         const response = await fetch(
-          `/api/challenges/selection?userId=${encodeURIComponent(user.id)}`
+          '/api/challenges/selection'
         );
         const data = await response.json();
 

@@ -1,33 +1,41 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/prisma';
 import { ensureDatabase } from '@/lib/ensureDatabase';
 import { ErrorHandlers } from '@/lib/apiResponse';
+import { requireRole } from '@/lib/apiAuth';
 
 interface KycRequestBody {
-  userId?: string;
   fullName?: string;
   phoneNumber?: string;
   idNumber?: string;
   address?: string;
 }
 
-export async function POST(request: Request) {
+function maskSensitive(value: string): string {
+  if (value.length <= 4) {
+    return '****';
+  }
+  return `${'*'.repeat(Math.max(0, value.length - 4))}${value.slice(-4)}`;
+}
+
+export async function POST(request: NextRequest) {
   try {
+    const session = await requireRole(request, 'TRADER');
+    if (!session) {
+      return ErrorHandlers.unauthorized('Trader authentication required.');
+    }
+
     await ensureDatabase();
 
     const body = (await request.json()) as KycRequestBody;
-    const { userId, fullName, phoneNumber, idNumber, address } = body;
-
-    if (!userId) {
-      return ErrorHandlers.badRequest('User ID is required.');
-    }
+    const { fullName, phoneNumber, idNumber, address } = body;
 
     if (!fullName || !phoneNumber || !idNumber || !address) {
       return ErrorHandlers.badRequest('All KYC fields are required.');
     }
 
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({ where: { id: session.userId } });
 
     if (!user) {
       return ErrorHandlers.notFound('User not found.');
@@ -52,7 +60,7 @@ export async function POST(request: Request) {
     const approvalDate = shouldAutoApprove ? new Date() : null;
 
     const kycRecord = await prisma.mockedKYC.upsert({
-      where: { userId },
+      where: { userId: session.userId },
       update: {
         fullName: trimmedFullName,
         phoneNumber: trimmedPhoneNumber,
@@ -62,7 +70,7 @@ export async function POST(request: Request) {
         approvedAt: approvalDate,
       },
       create: {
-        userId,
+        userId: session.userId,
         fullName: trimmedFullName,
         phoneNumber: trimmedPhoneNumber,
         idNumber: trimmedIdNumber,
@@ -74,7 +82,7 @@ export async function POST(request: Request) {
 
     if (!user.name) {
       await prisma.user.update({
-        where: { id: userId },
+        where: { id: session.userId },
         data: { name: trimmedFullName },
       });
     }
@@ -88,8 +96,8 @@ export async function POST(request: Request) {
         status: kycRecord.status,
         approvedAt: kycRecord.approvedAt,
         fullName: kycRecord.fullName,
-        phoneNumber: kycRecord.phoneNumber,
-        idNumber: kycRecord.idNumber,
+        phoneNumber: maskSensitive(kycRecord.phoneNumber),
+        idNumber: maskSensitive(kycRecord.idNumber),
         address: kycRecord.address,
       },
     });

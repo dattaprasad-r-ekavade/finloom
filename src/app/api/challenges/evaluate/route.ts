@@ -1,66 +1,176 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { evaluateChallenge, getEvaluationSummary } from '@/lib/evaluateChallenge';
+import { requireOneOfRoles, AuthenticatedSession } from '@/lib/apiAuth';
+
+interface EvaluateRequestBody {
+  challengeId?: string;
+  userId?: string;
+}
+
+interface LoadedChallenge {
+  id: string;
+  userId: string;
+  status: 'PENDING' | 'ACTIVE' | 'PASSED' | 'FAILED';
+  startDate: Date | null;
+  endDate: Date | null;
+  currentPnl: number;
+  maxDrawdown: number | null;
+  violationCount: number;
+  plan: {
+    id: string;
+    name: string;
+    description: string | null;
+    accountSize: number;
+    profitTargetPct: number;
+    maxLossPct: number;
+    dailyLossPct: number;
+    fee: number;
+    durationDays: number;
+    allowedInstruments: string[];
+    profitSplit: number;
+    level: number;
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+  metrics: Array<{
+    id: string;
+    challengeId: string;
+    date: Date;
+    dailyPnl: number;
+    cumulativePnl: number;
+    tradesCount: number;
+    winRate: number;
+    maxDrawdown: number;
+    profitTarget: number;
+    violations: number;
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
+}
+
+class EvaluateApiError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
+function parsePayload(body: EvaluateRequestBody) {
+  return {
+    challengeId: body.challengeId?.trim(),
+    userId: body.userId?.trim(),
+  };
+}
+
+async function loadSingleChallenge(challengeId: string): Promise<LoadedChallenge | null> {
+  return prisma.userChallenge.findUnique({
+    where: { id: challengeId },
+    include: {
+      plan: true,
+      metrics: {
+        orderBy: { date: 'asc' },
+      },
+    },
+  }) as Promise<LoadedChallenge | null>;
+}
+
+async function loadChallengesForRequest(
+  session: AuthenticatedSession,
+  { challengeId, userId }: { challengeId?: string; userId?: string },
+): Promise<LoadedChallenge[]> {
+  if (session.role === 'TRADER') {
+    if (userId && userId !== session.userId) {
+      throw new EvaluateApiError(403, 'Forbidden');
+    }
+
+    if (challengeId) {
+      const challenge = await loadSingleChallenge(challengeId);
+      if (!challenge) {
+        throw new EvaluateApiError(404, 'Challenge not found.');
+      }
+
+      if (challenge.userId !== session.userId) {
+        throw new EvaluateApiError(403, 'Forbidden');
+      }
+
+      return [challenge];
+    }
+
+    return (await prisma.userChallenge.findMany({
+      where: {
+        userId: session.userId,
+        status: 'ACTIVE',
+      },
+      include: {
+        plan: true,
+        metrics: {
+          orderBy: { date: 'asc' },
+        },
+      },
+    })) as LoadedChallenge[];
+  }
+
+  if (challengeId) {
+    const challenge = await loadSingleChallenge(challengeId);
+    if (!challenge) {
+      throw new EvaluateApiError(404, 'Challenge not found.');
+    }
+
+    return [challenge];
+  }
+
+  if (userId) {
+    return (await prisma.userChallenge.findMany({
+      where: {
+        userId,
+        status: 'ACTIVE',
+      },
+      include: {
+        plan: true,
+        metrics: {
+          orderBy: { date: 'asc' },
+        },
+      },
+    })) as LoadedChallenge[];
+  }
+
+  return (await prisma.userChallenge.findMany({
+    where: {
+      status: 'ACTIVE',
+    },
+    include: {
+      plan: true,
+      metrics: {
+        orderBy: { date: 'asc' },
+      },
+    },
+  })) as LoadedChallenge[];
+}
 
 /**
  * POST /api/challenges/evaluate
- * Evaluates all active challenges or a specific challenge by ID
+ * Evaluates all active challenges scoped to the authenticated user/session.
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { challengeId, userId } = body;
-
-    let challenges;
-
-    if (challengeId) {
-      // Evaluate specific challenge
-      const challenge = await prisma.userChallenge.findUnique({
-        where: { id: challengeId },
-        include: {
-          plan: true,
-          metrics: {
-            orderBy: { date: 'asc' },
-          },
-        },
-      });
-
-      if (!challenge) {
-        return NextResponse.json(
-          { error: 'Challenge not found.' },
-          { status: 404 }
-        );
-      }
-
-      challenges = [challenge];
-    } else if (userId) {
-      // Evaluate all active challenges for a user
-      challenges = await prisma.userChallenge.findMany({
-        where: {
-          userId,
-          status: 'ACTIVE',
-        },
-        include: {
-          plan: true,
-          metrics: {
-            orderBy: { date: 'asc' },
-          },
-        },
-      });
-    } else {
-      // Evaluate all active challenges
-      challenges = await prisma.userChallenge.findMany({
-        where: {
-          status: 'ACTIVE',
-        },
-        include: {
-          plan: true,
-          metrics: {
-            orderBy: { date: 'asc' },
-          },
-        },
-      });
+    const session = await requireOneOfRoles(request, ['TRADER', 'ADMIN']);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    let body: EvaluateRequestBody = {};
+    try {
+      body = (await request.json()) as EvaluateRequestBody;
+    } catch {
+      body = {};
+    }
+
+    const { challengeId, userId } = parsePayload(body);
+    const challenges = await loadChallengesForRequest(session, { challengeId, userId });
 
     if (challenges.length === 0) {
       return NextResponse.json({
@@ -72,7 +182,6 @@ export async function POST(request: Request) {
     const evaluations = [];
 
     for (const challenge of challenges) {
-      // Run evaluation
       const result = evaluateChallenge({
         id: challenge.id,
         status: challenge.status,
@@ -85,28 +194,34 @@ export async function POST(request: Request) {
         metrics: challenge.metrics,
       });
 
-      // Update challenge if status changed
       if (result.status !== challenge.status) {
-        const updateData: any = {
+        const updateData: {
+          status: 'ACTIVE' | 'PASSED' | 'FAILED' | 'PENDING';
+          currentPnl: number;
+          endDate?: Date;
+          violationCount?: number;
+          violationDetails?: string;
+        } = {
           status: result.status,
-          currentPnl: result.progressPct > 0 ? challenge.metrics[challenge.metrics.length - 1]?.cumulativePnl ?? 0 : 0,
+          currentPnl:
+            result.progressPct > 0
+              ? challenge.metrics[challenge.metrics.length - 1]?.cumulativePnl ?? 0
+              : 0,
         };
 
-        // Set end date if passed or failed
         if (result.passed || result.failed) {
           updateData.endDate = new Date();
         }
 
-        // Update violation count and details
         if (result.violations.length > 0) {
           updateData.violationCount = result.violations.length;
           updateData.violationDetails = JSON.stringify(
-            result.violations.map((v) => ({
-              type: v.type,
-              date: v.date,
-              description: v.description,
-              severity: v.severity,
-            }))
+            result.violations.map((violation) => ({
+              type: violation.type,
+              date: violation.date,
+              description: violation.description,
+              severity: violation.severity,
+            })),
           );
         }
 
@@ -134,11 +249,10 @@ export async function POST(request: Request) {
       });
     }
 
-    const passedCount = evaluations.filter((e) => e.passed).length;
-    const failedCount = evaluations.filter((e) => e.failed).length;
-    const activeCount = evaluations.filter(
-      (e) => !e.passed && !e.failed
-    ).length;
+    const passedCount = evaluations.filter((evaluation) => evaluation.passed).length;
+    const failedCount = evaluations.filter((evaluation) => evaluation.failed).length;
+    const activeCount = evaluations.filter((evaluation) => !evaluation.passed && !evaluation.failed)
+      .length;
 
     return NextResponse.json({
       message: `Evaluated ${challenges.length} challenge(s)`,
@@ -151,71 +265,33 @@ export async function POST(request: Request) {
       evaluations,
     });
   } catch (error) {
+    if (error instanceof EvaluateApiError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+
     console.error('Challenge evaluation error:', error);
     return NextResponse.json(
       { error: 'Unable to evaluate challenges.' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 /**
  * GET /api/challenges/evaluate
- * Returns evaluation summary without making changes
+ * Returns evaluation summary without making changes.
  */
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const url = new URL(request.url);
-    const challengeId = url.searchParams.get('challengeId');
-    const userId = url.searchParams.get('userId');
-
-    let challenges;
-
-    if (challengeId) {
-      const challenge = await prisma.userChallenge.findUnique({
-        where: { id: challengeId },
-        include: {
-          plan: true,
-          metrics: {
-            orderBy: { date: 'asc' },
-          },
-        },
-      });
-
-      if (!challenge) {
-        return NextResponse.json(
-          { error: 'Challenge not found.' },
-          { status: 404 }
-        );
-      }
-
-      challenges = [challenge];
-    } else if (userId) {
-      challenges = await prisma.userChallenge.findMany({
-        where: {
-          userId,
-          status: 'ACTIVE',
-        },
-        include: {
-          plan: true,
-          metrics: {
-            orderBy: { date: 'asc' },
-          },
-        },
-      });
-    } else {
-      challenges = await prisma.userChallenge.findMany({
-        where: {
-          status: 'ACTIVE',
-        },
-        include: {
-          plan: true,
-          metrics: {
-            orderBy: { date: 'asc' },
-          },
-        },
-      });
+    const session = await requireOneOfRoles(request, ['TRADER', 'ADMIN']);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const challengeId = request.nextUrl.searchParams.get('challengeId')?.trim() || undefined;
+    const userId = request.nextUrl.searchParams.get('userId')?.trim() || undefined;
+
+    const challenges = await loadChallengesForRequest(session, { challengeId, userId });
 
     const evaluations = challenges.map((challenge) => {
       const result = evaluateChallenge({
@@ -252,10 +328,14 @@ export async function GET(request: Request) {
       evaluations,
     });
   } catch (error) {
+    if (error instanceof EvaluateApiError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+
     console.error('Challenge evaluation preview error:', error);
     return NextResponse.json(
       { error: 'Unable to preview evaluations.' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

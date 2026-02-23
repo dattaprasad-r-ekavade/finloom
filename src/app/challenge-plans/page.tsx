@@ -108,9 +108,7 @@ export default function ChallengePlansPage() {
 
       setLoadingSelection(true);
       try {
-        const response = await fetch(
-          `/api/challenges/selection?userId=${encodeURIComponent(user.id)}`
-        );
+        const response = await fetch('/api/challenges/selection');
         const data = await response.json();
 
         if (response.ok) {
@@ -129,9 +127,7 @@ export default function ChallengePlansPage() {
       }
 
       try {
-        const response = await fetch(
-          `/api/challenges/next-level?userId=${encodeURIComponent(user.id)}`
-        );
+        const response = await fetch('/api/challenges/next-level');
         const data = await response.json();
 
         if (response.ok) {
@@ -199,6 +195,11 @@ export default function ChallengePlansPage() {
         return;
       }
 
+      if (!user.hasCompletedKyc) {
+        router.push('/kyc');
+        return;
+      }
+
       setIsSubmitting(true);
       setError(null);
       setSuccessMessage(null);
@@ -207,7 +208,7 @@ export default function ChallengePlansPage() {
         const response = await fetch('/api/challenges/select', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user.id, planId: plan.id }),
+          body: JSON.stringify({ planId: plan.id }),
         });
 
         const data = await response.json();
@@ -220,16 +221,9 @@ export default function ChallengePlansPage() {
         setSuccessMessage(data.message ?? 'Challenge plan secured.');
         setSelection(data.selection ?? null);
 
-        // Check if user has completed KYC before proceeding to payment
-        if (!user.hasCompletedKyc) {
-          setTimeout(() => {
-            router.push('/kyc');
-          }, 1200);
-        } else {
-          setTimeout(() => {
-            router.push(`/payments/mock?planId=${encodeURIComponent(plan.id)}`);
-          }, 1200);
-        }
+        setTimeout(() => {
+          router.push(`/payments/mock?planId=${encodeURIComponent(plan.id)}`);
+        }, 1200);
       } catch (selectError) {
         console.error(selectError);
         setError('Unexpected error while reserving this plan.');

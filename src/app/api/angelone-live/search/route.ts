@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAngelOneSession } from '@/lib/angelone';
+import { requireOneOfRoles } from '@/lib/apiAuth';
 
 const ANGELONE_BASE_URL = 'https://apiconnect.angelone.in';
 
 export async function POST(request: NextRequest) {
   try {
+    const sessionUser = await requireOneOfRoles(request, ['TRADER', 'ADMIN']);
+    if (!sessionUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { exchange, searchScrip } = body;
 
@@ -65,10 +71,11 @@ export async function POST(request: NextRequest) {
       success: true,
       data: data.data,
     });
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Internal server error';
     console.error('Search scrip error:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: message },
       { status: 500 }
     );
   }

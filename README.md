@@ -6,8 +6,8 @@ A modern, full-stack prop trading firm challenge platform built with Next.js 16,
 
 **Current Version:** 0.1.0 MVP Complete   
 **Last Updated:** November 4, 2025  
-**Build Status:** Production Ready (32 API routes + pages compiled)  
-**Overall Progress:** 100% Complete (All MVP features implemented)
+**Build Status:** Active Development (MVP + security hardening)  
+**Overall Progress:** Core MVP implemented and operational
 
 ###  Completed Features
 All MVP development phases are complete:
@@ -22,7 +22,7 @@ All MVP development phases are complete:
 -  **Automated Challenge Evaluation** - Rule-based pass/fail system
 -  **Challenge Progression System** - Sequential level unlocking
 -  **Admin Dashboard Enhancements** - User management and analytics
--  **Authentication & Authorization** - Next.js middleware with role-based access
+-  **Authentication & Authorization** - Next.js proxy with role-based access
 -  **Error Handling & Validation** - Standardized API responses and custom error pages
 -  **UI/UX Polish** - Material-UI theming and responsive design
 
@@ -30,12 +30,12 @@ All MVP development phases are complete:
 -  Zero TypeScript compilation errors
 -  32 API routes fully implemented and tested
 -  JWT-based authentication with HTTP-only cookies (7-day expiration)
--  Role-based access control with Next.js middleware
+-  Role-based access control with Next.js proxy
 -  Automated challenge evaluation with rule engine
 -  Sequential challenge progression (Level 1 → 2 → 3)
 -  Comprehensive admin analytics dashboard with Recharts
 -  7 database models with proper relationships and indexes
--  4 database migrations successfully applied
+-  6 database migrations successfully applied
 -  Material-UI v7 with custom gradient theme
 -  Production-ready deployment configuration for Vercel
 
@@ -76,7 +76,7 @@ All MVP development phases are complete:
   - Recent challenges feed with user context
   - Challenge status distribution (pie chart)
   - Revenue analytics (bar chart)
-- **Role-Based Access Control** - Secure admin-only routes with middleware protection
+- **Role-Based Access Control** - Secure admin-only routes with proxy protection
 
 ## ️ Tech Stack
 
@@ -207,11 +207,13 @@ Three progressive challenge levels are pre-seeded in the database:
 
 ### Migrations
 
-Four database migrations manage schema evolution:
+Six database migrations manage schema evolution:
 1. `20251030093702_phase1_challenge_models` - Initial challenge system models
 2. `20251031050256_add_performance_indexes` - Performance optimization indexes
 3. `20251101191024_add_kyc_approval_and_settings` - KYC and settings enhancement
 4. `20251102000000_update_kyc_table` - KYC table refinements
+5. `20251105090000_add_trading_system` - Trading data and order tracking
+6. `20251214_add_angelone_credentials` - Broker credential storage
 
 ##  Testing & Verification
 
@@ -364,7 +366,7 @@ finloom/
 │   ├── theme/
 │   │   ├── theme.ts                     # MUI theme configuration
 │   │   └── ThemeProvider.tsx            # Theme provider component
-│   └── middleware.ts                    # Next.js middleware (route protection)
+│   └── proxy.ts                         # Next.js proxy (route protection)
 ├── public/                              # Static assets
 ├── .env                                 # Environment variables (gitignored)
 ├── next.config.ts                       # Next.js configuration
@@ -394,7 +396,7 @@ finloom/
 - **Secret Key** - Configurable via `JWT_SECRET` environment variable
 
 ### Route Protection
-- **Next.js Middleware** - Automatic authentication on all protected routes
+- **Next.js Proxy** - Automatic authentication on all protected routes
 - **Role-Based Access** - TRADER and ADMIN roles with separate dashboards
 - **Session Validation** - `/api/auth/me` endpoint checks token validity and user existence
 - **Redirect Handling** - Preserves intended destination via `?redirect=/path` query parameter
@@ -498,6 +500,14 @@ Create a `.env` file in the root directory with the following variables:
 
 **Security Note:** Never commit `.env` to version control. Use `.env.example` as a template.
 
+### Admin Credential Model
+- Admin self-signup via `/api/auth/signup` is disabled.
+- The app keeps a single primary admin account.
+- On first admin login attempt, a fallback admin is auto-created if no admin exists:
+  - Email: `admin@finloom.local`
+  - Password: `Admin@12345678`
+- In local development only (`localhost` and non-production), credentials can be changed at `/admin/local-credentials`.
+
 ## � Deployment
 
 ### Vercel Deployment (Recommended)
@@ -531,7 +541,7 @@ See detailed deployment instructions in production documentation.
 -  Automated challenge evaluation (pass/fail system)
 -  Admin dashboard with user management
 -  Challenge level progression (sequential unlocking)
--  Role-based access control with middleware
+-  Role-based access control with proxy
 -  Comprehensive error handling and validation
 
 ###  Not Included in MVP (Future Enhancements)

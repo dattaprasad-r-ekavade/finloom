@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-type KycStatus = 'NOT_SUBMITTED' | 'AUTO_APPROVED';
+type KycStatus = 'NOT_SUBMITTED' | 'PENDING' | 'APPROVED' | 'AUTO_APPROVED' | 'REJECTED';
 
 interface User {
   id: string;
