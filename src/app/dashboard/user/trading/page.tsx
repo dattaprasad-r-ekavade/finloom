@@ -335,7 +335,7 @@ export default function TradingTerminalPage() {
     if (selectedScrip) {
       try {
         const detailResponse = await fetch(
-          `/api/trading/market-data/${encodeURIComponent(selectedScrip.scrip)}`,
+          `/api/trading/market-data/${encodeURIComponent(selectedScrip.scrip.split('-')[0])}`,
           { cache: 'no-store' },
         );
         const detailJson = await detailResponse.json();
@@ -577,7 +577,7 @@ export default function TradingTerminalPage() {
               if (!option) { setSelectedScrip(DEFAULT_SYMBOL); return; }
               const scripForChart = option.scrip.includes('-') ? option.scrip : `${option.scrip}-EQ`;
               setSelectedScrip({ ...option, scrip: scripForChart });
-              fetch(`/api/trading/market-data/${option.scrip}`)
+              fetch(`/api/trading/market-data/${option.scrip.split('-')[0]}`)
                 .then((res) => res.json())
                 .then((json) => {
                   if (json?.success && json.data?.marketData) {
