@@ -99,10 +99,32 @@ async function ensureCredentialsExist() {
 }
 
 /**
+ * Invalidate the stored AngelOne session tokens, forcing re-login on next call.
+ */
+export async function invalidateAngelOneSession(): Promise<void> {
+  await prisma.angelOneCredentials.update({
+    where: { id: 'singleton' },
+    data: {
+      jwtToken: null,
+      refreshToken: null,
+      feedToken: null,
+      tokenGeneratedAt: null,
+      tokenExpiresAt: null,
+    },
+  });
+}
+
+/**
  * Get or refresh AngelOne session from database.
  * Automatically generates a new token when current one is missing/expired.
+ * Pass { forceRefresh: true } to invalidate the stored token and re-login immediately.
  */
-export async function getAngelOneSession(): Promise<AngelOneSession> {
+export async function getAngelOneSession(options?: { forceRefresh?: boolean }): Promise<AngelOneSession> {
+  if (options?.forceRefresh) {
+    await invalidateAngelOneSession();
+    console.log('AngelOne session invalidated, forcing re-login...');
+  }
+
   const credentialsRecord = await ensureCredentialsExist();
   const decrypted = toDecryptedCredentials(credentialsRecord);
 
