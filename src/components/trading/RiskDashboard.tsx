@@ -18,11 +18,12 @@ interface RiskDashboardProps {
   accountSize: number;
   dailyPnl: number;
   dailyPnlPct: number;
-  dailyLossLimit: number; // percentage
-  maxLossLimit: number; // percentage
+  dailyLossLimit: number;
+  maxLossLimit: number;
   cumulativePnl: number;
   openPositionsCount: number;
   maxPositions?: number;
+  compact?: boolean;
 }
 
 const formatCurrency = (value: number) =>
@@ -41,27 +42,27 @@ const getRiskLevel = (percentage: number): {
     return {
       level: 'critical',
       color: '#d32f2f',
-      icon: <ErrorIcon sx={{ fontSize: 18, animation: 'pulse 1s infinite' }} />,
+      icon: <ErrorIcon sx={{ fontSize: 16, animation: 'pulse 1s infinite' }} />,
     };
   }
   if (percentage >= 80) {
     return {
       level: 'danger',
       color: '#f44336',
-      icon: <WarningIcon sx={{ fontSize: 18 }} />,
+      icon: <WarningIcon sx={{ fontSize: 16 }} />,
     };
   }
   if (percentage >= 50) {
     return {
       level: 'caution',
       color: '#ff9800',
-      icon: <WarningIcon sx={{ fontSize: 18 }} />,
+      icon: <WarningIcon sx={{ fontSize: 16 }} />,
     };
   }
   return {
     level: 'safe',
     color: '#4caf50',
-    icon: <CheckCircleIcon sx={{ fontSize: 18 }} />,
+    icon: <CheckCircleIcon sx={{ fontSize: 16 }} />,
   };
 };
 
@@ -74,8 +75,8 @@ export const RiskDashboard: React.FC<RiskDashboardProps> = ({
   cumulativePnl,
   openPositionsCount,
   maxPositions = 10,
+  compact = false,
 }) => {
-  // Calculate usage percentages (absolute value for losses)
   const dailyLossUsage = Math.abs((dailyPnlPct / dailyLossLimit) * 100);
   const maxLossUsage = Math.abs((cumulativePnl / accountSize / maxLossLimit) * 100);
   const positionsUsage = (openPositionsCount / maxPositions) * 100;
@@ -85,6 +86,95 @@ export const RiskDashboard: React.FC<RiskDashboardProps> = ({
 
   const dailyLossAmount = (accountSize * dailyLossLimit) / 100;
   const maxLossAmount = (accountSize * maxLossLimit) / 100;
+
+  if (compact) {
+    return (
+      <Paper
+        elevation={0}
+        sx={{
+          p: 1.5,
+          borderRadius: 2,
+          border: (theme) => `1px solid ${theme.palette.divider}`,
+        }}
+      >
+        <Stack spacing={1}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="caption" sx={{ fontWeight: 600 }}>
+              Risk Monitor
+            </Typography>
+            <Chip
+              size="small"
+              label={dailyRisk.level.toUpperCase()}
+              sx={{
+                backgroundColor: dailyRisk.color,
+                color: 'white',
+                fontWeight: 600,
+                fontSize: '0.65rem',
+                height: 20,
+              }}
+            />
+          </Stack>
+
+          <Box>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.25}>
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                {dailyRisk.icon}
+                <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>Daily P&L</Typography>
+              </Stack>
+              <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem', color: dailyPnl >= 0 ? 'success.main' : dailyRisk.color }}>
+                {formatCurrency(dailyPnl)} / {formatCurrency(dailyLossAmount)}
+              </Typography>
+            </Stack>
+            <LinearProgress
+              variant="determinate"
+              value={Math.min(dailyLossUsage, 100)}
+              sx={{
+                height: 5,
+                borderRadius: 3,
+                backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                '& .MuiLinearProgress-bar': { backgroundColor: dailyRisk.color, borderRadius: 3 },
+              }}
+            />
+          </Box>
+
+          <Box>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.25}>
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                {maxRisk.icon}
+                <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>Max Drawdown</Typography>
+              </Stack>
+              <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem', color: cumulativePnl >= 0 ? 'success.main' : maxRisk.color }}>
+                {formatCurrency(cumulativePnl)} / {formatCurrency(maxLossAmount)}
+              </Typography>
+            </Stack>
+            <LinearProgress
+              variant="determinate"
+              value={Math.min(maxLossUsage, 100)}
+              sx={{
+                height: 5,
+                borderRadius: 3,
+                backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                '& .MuiLinearProgress-bar': { backgroundColor: maxRisk.color, borderRadius: 3 },
+              }}
+            />
+          </Box>
+
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>Positions</Typography>
+            <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
+              {openPositionsCount} / {maxPositions}
+            </Typography>
+          </Stack>
+
+          {(dailyLossUsage >= 80 || maxLossUsage >= 80) && (
+            <Typography variant="caption" sx={{ fontWeight: 600, color: 'error.main', fontSize: '0.7rem' }}>
+              Approaching risk limits!
+            </Typography>
+          )}
+        </Stack>
+      </Paper>
+    );
+  }
 
   return (
     <Paper
@@ -117,7 +207,6 @@ export const RiskDashboard: React.FC<RiskDashboardProps> = ({
           />
         </Stack>
 
-        {/* Daily P&L */}
         <Box>
           <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.5}>
             <Stack direction="row" spacing={0.5} alignItems="center">
@@ -156,7 +245,6 @@ export const RiskDashboard: React.FC<RiskDashboardProps> = ({
           </Typography>
         </Box>
 
-        {/* Max Drawdown */}
         <Box>
           <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.5}>
             <Stack direction="row" spacing={0.5} alignItems="center">
@@ -195,7 +283,6 @@ export const RiskDashboard: React.FC<RiskDashboardProps> = ({
           </Typography>
         </Box>
 
-        {/* Open Positions */}
         <Box>
           <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.5}>
             <Typography variant="caption" sx={{ fontWeight: 500 }}>
@@ -220,7 +307,6 @@ export const RiskDashboard: React.FC<RiskDashboardProps> = ({
           />
         </Box>
 
-        {/* Warning if approaching limits */}
         {(dailyLossUsage >= 80 || maxLossUsage >= 80) && (
           <Box
             sx={{
@@ -232,7 +318,7 @@ export const RiskDashboard: React.FC<RiskDashboardProps> = ({
             }}
           >
             <Typography variant="caption" sx={{ fontWeight: 600, color: 'error.dark' }}>
-              ⚠️ WARNING: Approaching risk limits!
+              WARNING: Approaching risk limits!
             </Typography>
           </Box>
         )}

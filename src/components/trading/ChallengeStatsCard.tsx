@@ -41,6 +41,7 @@ interface ChallengeStatsCardProps {
   portfolio: PortfolioSnapshot | null;
   metrics: MetricsSnapshot | null;
   summary: SummarySnapshot | null;
+  compact?: boolean;
 }
 
 const currencyFormatter = new Intl.NumberFormat('en-IN', {
@@ -57,7 +58,8 @@ const StatItem: React.FC<{
   value: string;
   hint?: string;
   tone?: 'positive' | 'negative' | 'neutral';
-}> = ({ label, value, hint, tone = 'neutral' }) => {
+  small?: boolean;
+}> = ({ label, value, hint, tone = 'neutral', small = false }) => {
   const color =
     tone === 'positive'
       ? 'success.main'
@@ -66,15 +68,18 @@ const StatItem: React.FC<{
         : 'text.primary';
 
   return (
-    <Stack spacing={0.5}>
-      <Typography variant="body2" color="text.secondary">
+    <Stack spacing={0}>
+      <Typography variant="caption" color="text.secondary" sx={{ fontSize: small ? '0.65rem' : undefined }}>
         {label}
       </Typography>
-      <Typography variant="h6" sx={{ fontWeight: 600, color }}>
+      <Typography
+        variant={small ? 'body2' : 'h6'}
+        sx={{ fontWeight: 600, color, lineHeight: 1.3 }}
+      >
         {value}
       </Typography>
       {hint && (
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: small ? '0.6rem' : undefined }}>
           {hint}
         </Typography>
       )}
@@ -87,6 +92,7 @@ export const ChallengeStatsCard: React.FC<ChallengeStatsCardProps> = ({
   portfolio,
   metrics,
   summary,
+  compact = false,
 }) => {
   const capitalUsed =
     portfolio?.capitalUsed ?? summary?.capitalUsed ?? 0;
@@ -106,6 +112,62 @@ export const ChallengeStatsCard: React.FC<ChallengeStatsCardProps> = ({
 
   const totalExposurePct =
     accountSize > 0 ? (capitalUsed / accountSize) * 100 : 0;
+
+  if (compact) {
+    return (
+      <Card
+        elevation={0}
+        sx={{
+          borderRadius: 2,
+          border: (theme) => `1px solid ${theme.palette.divider}`,
+        }}
+      >
+        <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+          <Stack spacing={1}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                Account: {currencyFormatter.format(accountSize)}
+              </Typography>
+              <Typography
+                variant="caption"
+                color={portfolio?.isMarketOpen ? 'success.main' : 'text.secondary'}
+                sx={{ fontWeight: 500 }}
+              >
+                {portfolio?.isMarketOpen ? 'Market Open' : 'Market Closed'}
+              </Typography>
+            </Stack>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+              <StatItem
+                label="Capital Available"
+                value={currencyFormatter.format(Math.max(0, capitalAvailable))}
+                hint={`Used: ${decimalFormatter(totalExposurePct)}%`}
+                small
+              />
+              <StatItem
+                label="Day P&L"
+                value={currencyFormatter.format(realizedPnlToday + unrealizedPnl)}
+                hint={`${decimalFormatter(dayPnlPct, 2)}%`}
+                tone={realizedPnlToday + unrealizedPnl >= 0 ? 'positive' : 'negative'}
+                small
+              />
+              <StatItem
+                label="Realized P&L"
+                value={currencyFormatter.format(realizedPnl)}
+                tone={realizedPnl >= 0 ? 'positive' : 'negative'}
+                small
+              />
+              <StatItem
+                label="Open / Closed"
+                value={`${openTrades} / ${closedTradesToday}`}
+                small
+              />
+            </Box>
+          </Stack>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card

@@ -116,49 +116,121 @@ export const AngelOneChart: React.FC<AngelOneChartProps> = ({ data, height = 600
     };
   }, [height, isDark]);
 
-  const dataRef = useRef<string>('');
+  const prevDataRef = useRef<CandleData[]>([]);
 
   useEffect(() => {
     if (!candleSeriesRef.current || !volumeSeriesRef.current || !data || data.length === 0) {
       return;
     }
 
-    // Create a hash of the data to check if it has changed
-    const dataHash = JSON.stringify(data.map(d => ({ t: d.time, c: d.close })));
+    const prevData = prevDataRef.current;
+    const isInitialLoad = prevData.length === 0;
 
-    // Skip update if data hasn't changed
-    if (dataRef.current === dataHash) {
-      return;
-    }
+    // Check if this is a full dataset change (symbol/interval switch)
+    // by comparing the first candle's timestamp
+    const isFullChange = !isInitialLoad && (
+      prevData[0]?.time !== data[0]?.time ||
+      Math.abs(prevData.length - data.length) > 2
+    );
 
-    dataRef.current = dataHash;
-
-    // Update candle data (using update for smooth transition)
-    const candleData = data.map(d => ({
-      time: d.time as any,
-      open: d.open,
-      high: d.high,
-      low: d.low,
-      close: d.close,
-    }));
-
-    candleSeriesRef.current.setData(candleData);
-
-    // Update volume data
-    if (data[0].volume !== undefined) {
-      const volumeData = data.map(d => ({
+    if (isInitialLoad || isFullChange) {
+      // Full setData — only on first load or symbol/interval change
+      const candleData = data.map(d => ({
         time: d.time as any,
-        value: d.volume || 0,
-        color: d.close >= d.open ? '#26a69a80' : '#ef535080',
+        open: d.open,
+        high: d.high,
+        low: d.low,
+        close: d.close,
       }));
+      candleSeriesRef.current.setData(candleData);
 
-      volumeSeriesRef.current.setData(volumeData);
+      if (data[0]?.volume !== undefined) {
+        const volumeData = data.map(d => ({
+          time: d.time as any,
+          value: d.volume || 0,
+          color: d.close >= d.open ? '#26a69a80' : '#ef535080',
+        }));
+        volumeSeriesRef.current.setData(volumeData);
+      }
+
+      if (isInitialLoad && chartRef.current) {
+        chartRef.current.timeScale().fitContent();
+      }
+    } else {
+      // Incremental update — only update the last candle(s)
+      // Find where new data diverges from previous data
+      const lastPrev = prevData[prevData.length - 1];
+      const lastNew = data[data.length - 1];
+
+      if (!lastNew) {
+        prevDataRef.current = data;
+        return;
+      }
+
+      // If there's a new candle (new timestamp), update it
+      if (data.length > prevData.length) {
+        // New candle appeared — update the previous last candle first (it may have finalized),
+        // then add the new one
+        const secondToLast = data[data.length - 2];
+        if (secondToLast) {
+          candleSeriesRef.current.update({
+            time: secondToLast.time as any,
+            open: secondToLast.open,
+            high: secondToLast.high,
+            low: secondToLast.low,
+            close: secondToLast.close,
+          });
+          if (secondToLast.volume !== undefined) {
+            volumeSeriesRef.current.update({
+              time: secondToLast.time as any,
+              value: secondToLast.volume || 0,
+              color: secondToLast.close >= secondToLast.open ? '#26a69a80' : '#ef535080',
+            });
+          }
+        }
+
+        candleSeriesRef.current.update({
+          time: lastNew.time as any,
+          open: lastNew.open,
+          high: lastNew.high,
+          low: lastNew.low,
+          close: lastNew.close,
+        });
+        if (lastNew.volume !== undefined) {
+          volumeSeriesRef.current.update({
+            time: lastNew.time as any,
+            value: lastNew.volume || 0,
+            color: lastNew.close >= lastNew.open ? '#26a69a80' : '#ef535080',
+          });
+        }
+      } else {
+        // Same number of candles — the last candle is still forming, just update it
+        if (
+          lastPrev.time === lastNew.time &&
+          (lastPrev.open !== lastNew.open ||
+            lastPrev.high !== lastNew.high ||
+            lastPrev.low !== lastNew.low ||
+            lastPrev.close !== lastNew.close)
+        ) {
+          candleSeriesRef.current.update({
+            time: lastNew.time as any,
+            open: lastNew.open,
+            high: lastNew.high,
+            low: lastNew.low,
+            close: lastNew.close,
+          });
+          if (lastNew.volume !== undefined) {
+            volumeSeriesRef.current.update({
+              time: lastNew.time as any,
+              value: lastNew.volume || 0,
+              color: lastNew.close >= lastNew.open ? '#26a69a80' : '#ef535080',
+            });
+          }
+        }
+      }
     }
 
-    // Fit content only on first load
-    if (chartRef.current && !dataRef.current) {
-      chartRef.current.timeScale().fitContent();
-    }
+    prevDataRef.current = data;
   }, [data]);
 
   return <div ref={chartContainerRef} style={{ position: 'relative', width: '100%', height: '100%' }} />;

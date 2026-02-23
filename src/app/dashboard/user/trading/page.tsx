@@ -7,32 +7,35 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Container,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControl,
-  Grid,
   IconButton,
   MenuItem,
   Paper,
   Select,
   Stack,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Tabs,
   Typography,
-  Fade,
-  Slide,
   Tooltip,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import InfoIcon from '@mui/icons-material/Info';
 import CloseIcon from '@mui/icons-material/Close';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 import Navbar from '@/components/Navbar';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
@@ -116,6 +119,8 @@ const DEFAULT_SYMBOL: ScripOption = {
 
 export default function TradingTerminalPage() {
   const router = useRouter();
+  const muiTheme = useTheme();
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('lg'));
   const user = useAuthStore((state) => state.user);
   const [selection, setSelection] = useState<ChallengeSelection | null>(null);
   const [selectedScrip, setSelectedScrip] = useState<ScripOption | null>(DEFAULT_SYMBOL);
@@ -132,6 +137,7 @@ export default function TradingTerminalPage() {
   const [chartInterval, setChartInterval] = useState('FIVE_MINUTE');
   const [isLoadingChart, setIsLoadingChart] = useState(false);
   const [showOpenTradesModal, setShowOpenTradesModal] = useState(false);
+  const [mobileTab, setMobileTab] = useState(0);
   const [toast, setToast] = useState<{
     open: boolean;
     message: string;
@@ -147,9 +153,9 @@ export default function TradingTerminalPage() {
     payload: OrderPayload | null;
   }>({ open: false, payload: null });
   const [squaringOffAll, setSquaringOffAll] = useState(false);
+  const isInitialChartLoadRef = React.useRef(true);
 
   useEffect(() => {
-    // Show risk guardrails modal on first load
     const hasSeenRiskModal = sessionStorage.getItem('hasSeenRiskModal');
     if (!hasSeenRiskModal) {
       setShowRiskModal(true);
@@ -167,32 +173,22 @@ export default function TradingTerminalPage() {
       try {
         setInitializing(true);
         setError(null);
-        const selectionResponse = await fetch(
-          '/api/challenges/selection',
-        );
+        const selectionResponse = await fetch('/api/challenges/selection');
         const selectionPayload = await selectionResponse.json();
         if (!selectionResponse.ok) {
-          throw new Error(
-            selectionPayload?.error ?? 'Unable to load challenge selection.',
-          );
+          throw new Error(selectionPayload?.error ?? 'Unable to load challenge selection.');
         }
 
         if (!selectionPayload?.selection) {
           setSelection(null);
-          setError(
-            'No active challenge found. Reserve and activate a challenge to access demo trading.',
-          );
+          setError('No active challenge found. Reserve and activate a challenge to access demo trading.');
           return;
         }
 
         setSelection(selectionPayload.selection as ChallengeSelection);
       } catch (err) {
         console.error(err);
-        setError(
-          err instanceof Error
-            ? err.message
-            : 'Unable to initialize trading workspace.',
-        );
+        setError(err instanceof Error ? err.message : 'Unable to initialize trading workspace.');
       } finally {
         setInitializing(false);
       }
@@ -218,9 +214,7 @@ export default function TradingTerminalPage() {
       setSummary(json.data ?? null);
     } catch (err) {
       console.error(err);
-      setError(
-        err instanceof Error ? err.message : 'Failed to load trading summary.',
-      );
+      setError(err instanceof Error ? err.message : 'Failed to load trading summary.');
     }
   }, [challengeId]);
 
@@ -249,23 +243,22 @@ export default function TradingTerminalPage() {
       }
     } catch (err) {
       console.error(err);
-      setError(
-        err instanceof Error ? err.message : 'Failed to load trades history.',
-      );
+      setError(err instanceof Error ? err.message : 'Failed to load trades history.');
     }
   }, [challengeId, selectedScrip]);
 
   const fetchHistoricalData = useCallback(async (scrip: string) => {
     if (!scrip) return;
-    setIsLoadingChart(true);
+
+    if (isInitialChartLoadRef.current) {
+      setIsLoadingChart(true);
+    }
+
     try {
-      // Strip suffix to get base symbol for search (INFY-EQ -> INFY)
       const baseSymbol = scrip.split('-')[0];
-      const chartSymbol = scrip.includes('-') ? scrip : `${scrip}-EQ`;
-      
       const now = new Date();
       const toDate = now.toISOString().slice(0, 16).replace('T', ' ');
-      
+
       let daysBack = 3;
       switch (chartInterval) {
         case 'ONE_MINUTE': daysBack = 1; break;
@@ -276,11 +269,10 @@ export default function TradingTerminalPage() {
         case 'ONE_HOUR': daysBack = 30; break;
         case 'ONE_DAY': daysBack = 365; break;
       }
-      
+
       const fromDateObj = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
       const fromDate = fromDateObj.toISOString().slice(0, 16).replace('T', ' ');
 
-      // Search using base symbol (without -EQ suffix)
       const searchRes = await fetch('/api/angelone-live/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -296,7 +288,6 @@ export default function TradingTerminalPage() {
         return;
       }
 
-      // Find the -EQ variant (or use first result if -EQ not found)
       const eqScrip = searchData.data.find((s: any) => s.tradingsymbol.endsWith('-EQ'));
       const symbolToken = eqScrip?.symboltoken || searchData.data[0]?.symboltoken;
 
@@ -333,6 +324,7 @@ export default function TradingTerminalPage() {
       console.error('Error fetching historical data:', err);
     } finally {
       setIsLoadingChart(false);
+      isInitialChartLoadRef.current = false;
     }
   }, [chartInterval]);
 
@@ -352,12 +344,7 @@ export default function TradingTerminalPage() {
           if (data) {
             setSelectedScrip((prev) =>
               prev && prev.scrip === data.scrip
-                ? {
-                    ...prev,
-                    ltp: data.ltp,
-                    scripFullName: data.scripFullName,
-                    exchange: data.exchange,
-                  }
+                ? { ...prev, ltp: data.ltp, scripFullName: data.scripFullName, exchange: data.exchange }
                 : prev,
             );
           }
@@ -376,17 +363,17 @@ export default function TradingTerminalPage() {
 
   useEffect(() => {
     if (selectedScrip) {
+      isInitialChartLoadRef.current = true;
       fetchHistoricalData(selectedScrip.scrip);
     }
   }, [selectedScrip, chartInterval, fetchHistoricalData]);
 
-  // Auto-refresh LTP and chart every 5 seconds
+  // Auto-refresh LTP and chart every 5 seconds (silent)
   useEffect(() => {
     if (!selectedScrip || !isChallengeActive) return;
 
     const refreshInterval = setInterval(async () => {
       try {
-        // Refresh LTP
         const detailResponse = await fetch(
           `/api/trading/market-data/${encodeURIComponent(selectedScrip.scrip.split('-')[0])}`,
           { cache: 'no-store' },
@@ -397,25 +384,18 @@ export default function TradingTerminalPage() {
           if (data) {
             setSelectedScrip((prev) =>
               prev && prev.scrip.startsWith(data.scrip)
-                ? {
-                    ...prev,
-                    ltp: data.ltp,
-                    scripFullName: data.scripFullName,
-                    exchange: data.exchange,
-                  }
+                ? { ...prev, ltp: data.ltp, scripFullName: data.scripFullName, exchange: data.exchange }
                 : prev,
             );
-            // Trigger price flash animation
             setPriceUpdateTrigger(prev => prev + 1);
           }
         }
 
-        // Refresh chart data
         await fetchHistoricalData(selectedScrip.scrip);
       } catch (error) {
         console.error('Auto-refresh failed:', error);
       }
-    }, 5000); // Refresh every 5 seconds
+    }, 5000);
 
     return () => clearInterval(refreshInterval);
   }, [selectedScrip, isChallengeActive, fetchHistoricalData]);
@@ -424,7 +404,6 @@ export default function TradingTerminalPage() {
     async (payload: OrderPayload) => {
       if (!challengeId) return;
 
-      // Calculate capital percentage
       const capitalAvailable =
         summary?.portfolio?.capitalAvailable ??
         summary?.summary?.capitalAvailable ??
@@ -433,7 +412,6 @@ export default function TradingTerminalPage() {
       const orderValue = payload.scrip.ltp * payload.quantity;
       const capitalPercentage = (orderValue / capitalAvailable) * 100;
 
-      // Show confirmation dialog for orders > 10% of capital
       if (capitalPercentage > 10) {
         const orderWithDetails: OrderPayload = {
           ...payload,
@@ -446,14 +424,10 @@ export default function TradingTerminalPage() {
             capitalPercentage,
           },
         };
-        setOrderConfirmation({
-          open: true,
-          payload: orderWithDetails,
-        });
+        setOrderConfirmation({ open: true, payload: orderWithDetails });
         return;
       }
 
-      // Execute order directly for small orders (<= 10%)
       await executeOrder(payload);
     },
     [challengeId, summary, selection],
@@ -467,7 +441,6 @@ export default function TradingTerminalPage() {
         setError(null);
         setInfo(null);
 
-        // Strip -EQ suffix for trading (only used for charting)
         const tradingScrip = payload.scrip.scrip.split('-')[0];
 
         const response = await fetch('/api/trading/execute', {
@@ -490,31 +463,19 @@ export default function TradingTerminalPage() {
         if (trade) {
           setSelectedScrip((prev) =>
             prev && prev.scrip === trade.scrip
-              ? {
-                  ...prev,
-                  ltp: trade.entryPrice,
-                  scripFullName: trade.scripFullName,
-                }
+              ? { ...prev, ltp: trade.entryPrice, scripFullName: trade.scripFullName }
               : prev,
           );
         }
 
         setInfo('Trade executed successfully.');
-        setToast({
-          open: true,
-          message: `${payload.tradeType} order executed successfully for ${tradingScrip}`,
-          severity: 'success',
-        });
+        setToast({ open: true, message: `${payload.tradeType} order executed for ${tradingScrip}`, severity: 'success' });
         await refreshAll();
       } catch (err) {
         console.error(err);
         const errorMsg = err instanceof Error ? err.message : 'Failed to execute trade.';
         setError(errorMsg);
-        setToast({
-          open: true,
-          message: errorMsg,
-          severity: 'error',
-        });
+        setToast({ open: true, message: errorMsg, severity: 'error' });
       } finally {
         setIsSubmitting(false);
         setOrderConfirmation({ open: false, payload: null });
@@ -526,11 +487,7 @@ export default function TradingTerminalPage() {
   const handleSquareOff = useCallback(
     async (tradeId: string) => {
       if (!challengeId) return;
-      setProcessingTrades((prev) => {
-        const next = new Set(prev);
-        next.add(tradeId);
-        return next;
-      });
+      setProcessingTrades((prev) => { const next = new Set(prev); next.add(tradeId); return next; });
       try {
         setError(null);
         const response = await fetch('/api/trading/square-off', {
@@ -543,27 +500,15 @@ export default function TradingTerminalPage() {
           throw new Error(json.error ?? 'Failed to square-off trade');
         }
         setInfo('Trade squared-off successfully.');
-        setToast({
-          open: true,
-          message: 'Trade squared-off successfully',
-          severity: 'success',
-        });
+        setToast({ open: true, message: 'Trade squared-off successfully', severity: 'success' });
         await refreshAll();
       } catch (err) {
         console.error(err);
         const errorMsg = err instanceof Error ? err.message : 'Failed to square-off trade.';
         setError(errorMsg);
-        setToast({
-          open: true,
-          message: errorMsg,
-          severity: 'error',
-        });
+        setToast({ open: true, message: errorMsg, severity: 'error' });
       } finally {
-        setProcessingTrades((prev) => {
-          const next = new Set(prev);
-          next.delete(tradeId);
-          return next;
-        });
+        setProcessingTrades((prev) => { const next = new Set(prev); next.delete(tradeId); return next; });
       }
     },
     [challengeId, refreshAll],
@@ -571,14 +516,10 @@ export default function TradingTerminalPage() {
 
   const handleSquareOffAll = useCallback(async () => {
     if (!challengeId) return;
-    
+
     const openTrades = trades.filter(t => !t.exitPrice);
     if (openTrades.length === 0) {
-      setToast({
-        open: true,
-        message: 'No open positions to square off',
-        severity: 'info',
-      });
+      setToast({ open: true, message: 'No open positions to square off', severity: 'info' });
       return;
     }
 
@@ -598,11 +539,8 @@ export default function TradingTerminalPage() {
           body: JSON.stringify({ tradeId: trade.id }),
         });
         const json = await response.json();
-        if (response.ok && json.success) {
-          successCount++;
-        } else {
-          errorCount++;
-        }
+        if (response.ok && json.success) successCount++;
+        else errorCount++;
       } catch (err) {
         console.error('Failed to square off trade:', trade.id, err);
         errorCount++;
@@ -613,558 +551,464 @@ export default function TradingTerminalPage() {
     await refreshAll();
 
     if (errorCount === 0) {
-      setToast({
-        open: true,
-        message: `Successfully squared off all ${successCount} positions`,
-        severity: 'success',
-      });
+      setToast({ open: true, message: `Squared off all ${successCount} positions`, severity: 'success' });
     } else {
-      setToast({
-        open: true,
-        message: `Squared off ${successCount} positions, ${errorCount} failed`,
-        severity: 'warning',
-      });
+      setToast({ open: true, message: `Squared off ${successCount}, ${errorCount} failed`, severity: 'warning' });
     }
   }, [challengeId, trades, refreshAll]);
 
-  // Setup keyboard shortcuts
   useKeyboardShortcuts({
-    onBuy: () => {
-      // Focus on order form and set to BUY
-      setToast({
-        open: true,
-        message: 'Quick Buy (B) - Select quantity and confirm',
-        severity: 'info',
-      });
-    },
-    onSell: () => {
-      // Focus on order form and set to SELL
-      setToast({
-        open: true,
-        message: 'Quick Sell (S) - Select quantity and confirm',
-        severity: 'info',
-      });
-    },
-    onEscape: () => {
-      // Close modals
-      setShowRiskModal(false);
-      setShowOpenTradesModal(false);
-      setOrderConfirmation({ open: false, payload: null });
-    },
+    onBuy: () => { setToast({ open: true, message: 'Quick Buy (B) - Select quantity and confirm', severity: 'info' }); },
+    onSell: () => { setToast({ open: true, message: 'Quick Sell (S) - Select quantity and confirm', severity: 'info' }); },
+    onEscape: () => { setShowRiskModal(false); setShowOpenTradesModal(false); setOrderConfirmation({ open: false, payload: null }); },
     onSquareOffAll: handleSquareOffAll,
     onRefresh: refreshAll,
     enabled: isChallengeActive,
   });
 
-  const tradingSymbol = useMemo(() => {
-    if (!selectedScrip) {
-      return 'NSE:RELIANCE';
+  // ── Chart header bar (shared between mobile and desktop) ──
+  const chartHeaderBar = (
+    <Box sx={{ p: 1, borderBottom: (theme) => `1px solid ${theme.palette.divider}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={{ width: { xs: 140, sm: 180 }, flexShrink: 0 }}>
+          <ScripSearchAutocomplete
+            value={selectedScrip}
+            onChange={(option) => {
+              if (!option) { setSelectedScrip(DEFAULT_SYMBOL); return; }
+              const scripForChart = option.scrip.includes('-') ? option.scrip : `${option.scrip}-EQ`;
+              setSelectedScrip({ ...option, scrip: scripForChart });
+              fetch(`/api/trading/market-data/${option.scrip}`)
+                .then((res) => res.json())
+                .then((json) => {
+                  if (json?.success && json.data?.marketData) {
+                    setSelectedScrip({
+                      scrip: scripForChart,
+                      scripFullName: json.data.marketData.scripFullName,
+                      ltp: json.data.marketData.ltp,
+                      exchange: json.data.marketData.exchange,
+                    });
+                  }
+                })
+                .catch((err) => console.error('Failed to load scrip details', err));
+            }}
+          />
+        </Box>
+        <PriceUpdateFlash trigger={priceUpdateTrigger}>
+          <Typography variant="body2" sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
+            ₹{selectedScrip?.ltp.toFixed(2) ?? '--'}
+          </Typography>
+        </PriceUpdateFlash>
+      </Stack>
+      <Stack direction="row" spacing={0.5} alignItems="center">
+        <FormControl size="small" sx={{ minWidth: 70 }}>
+          <Select
+            value={chartInterval}
+            onChange={(e) => setChartInterval(e.target.value as string)}
+            variant="outlined"
+            sx={{ fontSize: '0.7rem', height: 28 }}
+          >
+            <MenuItem value="ONE_MINUTE">1m</MenuItem>
+            <MenuItem value="THREE_MINUTE">3m</MenuItem>
+            <MenuItem value="FIVE_MINUTE">5m</MenuItem>
+            <MenuItem value="FIFTEEN_MINUTE">15m</MenuItem>
+            <MenuItem value="THIRTY_MINUTE">30m</MenuItem>
+            <MenuItem value="ONE_HOUR">1h</MenuItem>
+            <MenuItem value="ONE_DAY">1D</MenuItem>
+          </Select>
+        </FormControl>
+        <Tooltip title="Risk Guardrails">
+          <IconButton size="small" onClick={() => setShowRiskModal(true)} sx={{ color: 'primary.main' }}>
+            <InfoIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <IconButton
+          size="small"
+          onClick={refreshAll}
+          disabled={isRefreshing || !isChallengeActive}
+        >
+          {isRefreshing ? <CircularProgress size={16} /> : <RefreshIcon fontSize="small" />}
+        </IconButton>
+      </Stack>
+    </Box>
+  );
+
+  // ── Chart content ──
+  const chartContent = (
+    <Box sx={{ flex: 1, minHeight: 0, position: 'relative' }}>
+      {isLoadingChart && historicalData.length === 0 ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <CircularProgress size={28} />
+        </Box>
+      ) : historicalData.length > 0 ? (
+        <AngelOneChart data={historicalData} />
+      ) : (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <Typography variant="body2" color="text.secondary">No chart data</Typography>
+        </Box>
+      )}
+    </Box>
+  );
+
+  // ── Order + Risk + Stats sidebar content ──
+  const sidebarContent = (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, overflow: 'auto', p: { xs: 1.5, lg: 0 } }}>
+      {/* Order Form */}
+      <Paper elevation={0} sx={{ p: 1.5, borderRadius: 2, border: (theme) => `1px solid ${theme.palette.divider}` }}>
+        <OrderForm
+          challengeId={selection?.id ?? ''}
+          selectedScrip={selectedScrip}
+          onSelectScrip={setSelectedScrip}
+          capitalAvailable={
+            summary?.portfolio?.capitalAvailable ??
+            summary?.summary?.capitalAvailable ??
+            selection?.plan.accountSize ?? 0
+          }
+          onPlaceOrder={handlePlaceOrder}
+          isSubmitting={isSubmitting}
+        />
+      </Paper>
+
+      {/* Action Buttons */}
+      <Stack direction="row" spacing={0.5}>
+        <Button
+          variant="contained"
+          color="error"
+          size="small"
+          onClick={handleSquareOffAll}
+          disabled={!isChallengeActive || squaringOffAll || trades.filter(t => !t.exitPrice).length === 0}
+          sx={{ flex: 1, fontSize: '0.75rem', py: 0.5 }}
+        >
+          {squaringOffAll ? 'Squaring...' : 'Square Off All'}
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => setShowOpenTradesModal(true)}
+          disabled={!isChallengeActive}
+          sx={{ flex: 1, fontSize: '0.75rem', py: 0.5 }}
+        >
+          Open Trades
+        </Button>
+      </Stack>
+
+      {/* Risk Dashboard (compact) */}
+      <RiskDashboard
+        accountSize={selection?.plan.accountSize ?? 0}
+        dailyPnl={summary?.metrics?.realizedPnlToday ?? summary?.summary?.realizedPnl ?? 0}
+        dailyPnlPct={summary?.metrics?.dayPnlPct ?? summary?.summary?.dayPnlPct ?? 0}
+        dailyLossLimit={selection?.plan.dailyLossPct ?? 5}
+        maxLossLimit={selection?.plan.maxLossPct ?? 10}
+        cumulativePnl={summary?.portfolio?.realizedPnl ?? summary?.summary?.realizedPnl ?? 0}
+        openPositionsCount={summary?.metrics?.openTradesCount ?? summary?.summary?.openTrades ?? 0}
+        compact
+      />
+
+      {/* Stats (compact) */}
+      <ChallengeStatsCard
+        accountSize={selection?.plan.accountSize ?? 0}
+        portfolio={summary?.portfolio ?? null}
+        metrics={summary?.metrics ?? null}
+        summary={summary?.summary ?? null}
+        compact
+      />
+    </Box>
+  );
+
+  // ── Trades panel ──
+  const tradesPanel = (
+    <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+      <TradesList
+        trades={trades}
+        onSquareOff={handleSquareOff}
+        processingTrades={processingTrades}
+      />
+    </Box>
+  );
+
+  // ── Main content (active trading state) ──
+  const renderActiveTrading = () => {
+    if (isMobile) {
+      // Mobile: Tab-based layout filling viewport
+      return (
+        <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+          <Tabs
+            value={mobileTab}
+            onChange={(_, v) => setMobileTab(v)}
+            variant="fullWidth"
+            sx={{
+              minHeight: 36,
+              borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+              '& .MuiTab-root': { minHeight: 36, py: 0.5, fontSize: '0.8rem' },
+            }}
+          >
+            <Tab icon={<ShowChartIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Chart" />
+            <Tab icon={<ShoppingCartIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Trade" />
+            <Tab icon={<ListAltIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Positions" />
+          </Tabs>
+
+          <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            {mobileTab === 0 && (
+              <Paper elevation={0} sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, borderRadius: 0, border: 'none' }}>
+                {chartHeaderBar}
+                {chartContent}
+              </Paper>
+            )}
+            {mobileTab === 1 && sidebarContent}
+            {mobileTab === 2 && tradesPanel}
+          </Box>
+        </Box>
+      );
     }
-    const exchange = selectedScrip.exchange || 'NSE';
-    return `${exchange}:${selectedScrip.scrip}`;
-  }, [selectedScrip]);
+
+    // Desktop: Full viewport grid layout
+    return (
+      <Box sx={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 320px',
+        gap: 1.5,
+        flex: 1,
+        minHeight: 0,
+      }}>
+        {/* Left: Chart (fills all available space) */}
+        <Paper
+          elevation={0}
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+            borderRadius: 2,
+            border: (theme) => `1px solid ${theme.palette.divider}`,
+            overflow: 'hidden',
+          }}
+        >
+          {chartHeaderBar}
+          {chartContent}
+        </Paper>
+
+        {/* Right: Sidebar — order, risk, stats, trades */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, minHeight: 0, overflow: 'hidden' }}>
+          {sidebarContent}
+
+          {/* Trades list fills remaining space */}
+          <Paper
+            elevation={0}
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              borderRadius: 2,
+              border: (theme) => `1px solid ${theme.palette.divider}`,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <Box sx={{ p: 1, borderBottom: (theme) => `1px solid ${theme.palette.divider}` }}>
+              <Typography variant="caption" sx={{ fontWeight: 600 }}>Positions & Trades</Typography>
+            </Box>
+            <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+              <TradesList
+                trades={trades}
+                onSquareOff={handleSquareOff}
+                processingTrades={processingTrades}
+              />
+            </Box>
+          </Paper>
+        </Box>
+      </Box>
+    );
+  };
 
   return (
     <Box
       sx={{
-        minHeight: '100vh',
-        backgroundColor: 'background.default',
+        height: '100vh',
         display: 'flex',
         flexDirection: 'column',
+        overflow: 'hidden',
+        backgroundColor: 'background.default',
       }}
     >
       <Navbar />
-      <Container maxWidth="xl" sx={{ py: 2, flexGrow: 1 }}>
-        <Fade in timeout={500}>
-        <Stack spacing={2}>
-          <Slide direction="down" in timeout={400}>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between" sx={{ flexWrap: 'wrap', gap: 1 }}>
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap' }}>
-              <Chip
-                label="Demo Trading"
-                color="primary"
-                variant="outlined"
-                sx={{ fontWeight: 600 }}
-              />
-              <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                Trading Terminal
-              </Typography>
-              <Tooltip title="Keyboard Shortcuts: B=Buy, S=Sell, Ctrl+Q=Square Off All, R=Refresh, ESC=Close">
-                <Chip
-                  label="⌨️ Shortcuts Active"
-                  size="small"
-                  variant="outlined"
-                  color="success"
-                  sx={{ ml: 1 }}
-                />
-              </Tooltip>
-            </Stack>
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap', gap: 1 }}>
-              <Button
-                variant="contained"
-                color="error"
-                size="small"
-                onClick={handleSquareOffAll}
-                disabled={!isChallengeActive || squaringOffAll || trades.filter(t => !t.exitPrice).length === 0}
-                sx={{
-                  fontWeight: 600,
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: 4,
-                  },
-                }}
-              >
-                {squaringOffAll ? 'Squaring Off...' : 'Square Off All'}
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => setShowOpenTradesModal(true)}
-                disabled={!isChallengeActive}
-                sx={{
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: 2,
-                  },
-                }}
-              >
-                My Open Trades
-              </Button>
-              <IconButton
-                size="small"
-                onClick={() => setShowRiskModal(true)}
-                sx={{ 
-                  color: 'primary.main',
-                  transition: 'transform 0.2s',
-                  '&:hover': { transform: 'rotate(90deg)' },
-                }}
-              >
-                <InfoIcon />
-              </IconButton>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={
-                  isRefreshing ? <CircularProgress color="inherit" size={16} /> : <RefreshIcon />
-                }
-                onClick={refreshAll}
-                disabled={isRefreshing || !isChallengeActive}
-                sx={{
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: 2,
-                  },
-                }}
-              >
-                Refresh
-              </Button>
-            </Stack>
+
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, px: { xs: 1, md: 1.5 }, pb: 1 }}>
+        {/* Compact header */}
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ py: 0.75, flexWrap: 'wrap', gap: 0.5 }}
+        >
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            <Chip label="Demo" color="primary" variant="outlined" size="small" sx={{ fontWeight: 600, height: 22 }} />
+            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+              Trading Terminal
+            </Typography>
+            <Tooltip title="B=Buy, S=Sell, Ctrl+Q=Square Off All, R=Refresh, ESC=Close">
+              <Chip label="Shortcuts" size="small" variant="outlined" color="success" sx={{ height: 20, fontSize: '0.65rem' }} />
+            </Tooltip>
           </Stack>
-          </Slide>
-
-          {error && (
-            <Alert severity="error" onClose={() => setError(null)}>
-              {error}
-            </Alert>
-          )}
-
-          {info && (
-            <Alert severity="success" onClose={() => setInfo(null)}>
-              {info}
-            </Alert>
-          )}
-
-          {initializing ? (
-            <LoadingOverlay message="Initializing trading terminal..." />
-          ) : !selection ? (
-            <Paper
-              sx={{
-                p: 4,
-                borderRadius: 4,
-                border: (theme) => `1px solid ${theme.palette.divider}`,
-              }}
-            >
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                Activate a challenge to start trading
-              </Typography>
-              <Typography color="text.secondary">
-                You need an active challenge to access the demo trading terminal. Head to
-                the plans catalogue to reserve or activate a challenge first.
-              </Typography>
-              <Button
-                variant="contained"
-                sx={{ mt: 2 }}
-                onClick={() => router.push('/challenge-plans')}
-              >
-                Browse challenge plans
-              </Button>
-            </Paper>
-          ) : !isChallengeActive ? (
-            <Alert severity="warning">
-              Your challenge is currently <strong>{selection.status}</strong>. Demo
-              trading activates once the challenge status becomes ACTIVE.
-            </Alert>
-          ) : (
-            <>
-              {/* Risk Dashboard - Always visible */}
-              <RiskDashboard
-                accountSize={selection.plan.accountSize}
-                dailyPnl={summary?.metrics?.realizedPnlToday ?? summary?.summary?.realizedPnl ?? 0}
-                dailyPnlPct={summary?.metrics?.dayPnlPct ?? summary?.summary?.dayPnlPct ?? 0}
-                dailyLossLimit={selection.plan.dailyLossPct}
-                maxLossLimit={selection.plan.maxLossPct}
-                cumulativePnl={summary?.portfolio?.realizedPnl ?? summary?.summary?.realizedPnl ?? 0}
-                openPositionsCount={summary?.metrics?.openTradesCount ?? summary?.summary?.openTrades ?? 0}
-              />
-              
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 400px' }, gap: 2, height: { xs: 'auto', lg: 'calc(100vh - 280px)' } }}>
-                {/* Left Panel - Chart and Order Form */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                  {/* Chart */}
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      flex: 1,
-                      borderRadius: 2,
-                      border: (theme) => `1px solid ${theme.palette.divider}`,
-                      overflow: 'hidden',
-                      display: 'flex',
-                      flexDirection: 'column',
-                    }}
-                  >
-                    <Box sx={{ p: 1.5, borderBottom: (theme) => `1px solid ${theme.palette.divider}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        {selectedScrip
-                          ? `${selectedScrip.scrip} • ${selectedScrip.scripFullName}`
-                          : 'Trading Chart'}
-                      </Typography>
-                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ xs: 'stretch', sm: 'center' }} sx={{ flexWrap: 'wrap' }}>
-                        <Box sx={{ width: { xs: '100%', sm: 200 } }}>
-                          <ScripSearchAutocomplete
-                            value={selectedScrip}
-                            onChange={(option) => {
-                              if (!option) {
-                                setSelectedScrip(DEFAULT_SYMBOL);
-                                return;
-                              }
-                              
-                              // Always use -EQ variant for NSE stocks in charts
-                              const scripForChart = option.scrip.includes('-') 
-                                ? option.scrip 
-                                : `${option.scrip}-EQ`;
-                              
-                              setSelectedScrip({
-                                ...option,
-                                scrip: scripForChart,
-                              });
-                              
-                              fetch(`/api/trading/market-data/${option.scrip}`)
-                                .then((res) => res.json())
-                                .then((json) => {
-                                  if (json?.success && json.data?.marketData) {
-                                    setSelectedScrip({
-                                      scrip: scripForChart,
-                                      scripFullName: json.data.marketData.scripFullName,
-                                      ltp: json.data.marketData.ltp,
-                                      exchange: json.data.marketData.exchange,
-                                    });
-                                  }
-                                })
-                                .catch((err) =>
-                                  console.error('Failed to load scrip details', err),
-                                );
-                            }}
-                          />
-                        </Box>
-                        <PriceUpdateFlash trigger={priceUpdateTrigger}>
-                        <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
-                          LTP: <Box component="span" sx={{ fontWeight: 600 }}>₹{selectedScrip?.ltp.toFixed(2) ?? '--'}</Box>
-                        </Typography>
-                        </PriceUpdateFlash>
-                        <FormControl size="small" sx={{ minWidth: 80 }}>
-                          <Select
-                            value={chartInterval}
-                            onChange={(e) => setChartInterval(e.target.value as string)}
-                            variant="outlined"
-                            sx={{ fontSize: '0.75rem', height: 32 }}
-                          >
-                            <MenuItem value="ONE_MINUTE">1m</MenuItem>
-                            <MenuItem value="THREE_MINUTE">3m</MenuItem>
-                            <MenuItem value="FIVE_MINUTE">5m</MenuItem>
-                            <MenuItem value="FIFTEEN_MINUTE">15m</MenuItem>
-                            <MenuItem value="THIRTY_MINUTE">30m</MenuItem>
-                            <MenuItem value="ONE_HOUR">1h</MenuItem>
-                            <MenuItem value="ONE_DAY">1D</MenuItem>
-                          </Select>
-                        </FormControl>
-                      </Stack>
-                    </Box>
-                    <Box sx={{ flex: 1, minHeight: 0 }}>
-                      {isLoadingChart ? (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: { xs: 300, md: 400, lg: 500 } }}>
-                          <CircularProgress size={30} />
-                        </Box>
-                      ) : historicalData.length > 0 ? (
-                        <Box sx={{ height: { xs: 300, md: 400, lg: 500 } }}>
-                          <AngelOneChart data={historicalData} height={500} />
-                        </Box>
-                      ) : (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: { xs: 300, md: 400, lg: 500 } }}>
-                          <Typography color="text.secondary">No chart data available</Typography>
-                        </Box>
-                      )}
-                    </Box>
-                  </Paper>
-
-                  {/* Order Form - Compact */}
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 1.5,
-                      borderRadius: 2,
-                      border: (theme) => `1px solid ${theme.palette.divider}`,
-                    }}
-                  >
-                    <OrderForm
-                      challengeId={selection.id}
-                      selectedScrip={selectedScrip}
-                      onSelectScrip={setSelectedScrip}
-                      capitalAvailable={
-                        summary?.portfolio?.capitalAvailable ??
-                        summary?.summary?.capitalAvailable ??
-                        selection.plan.accountSize
-                      }
-                      onPlaceOrder={handlePlaceOrder}
-                      isSubmitting={isSubmitting}
-                    />
-                  </Paper>
-                </Box>
-
-                {/* Right Panel - Stats and Trades (Fixed width 400px) */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                  <ChallengeStatsCard
-                    accountSize={selection.plan.accountSize}
-                    portfolio={summary?.portfolio ?? null}
-                    metrics={summary?.metrics ?? null}
-                    summary={summary?.summary ?? null}
-                  />
-
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      flex: 1,
-                      borderRadius: 2,
-                      border: (theme) => `1px solid ${theme.palette.divider}`,
-                      overflow: 'hidden',
-                      display: 'flex',
-                      flexDirection: 'column',
-                    }}
-                  >
-                    <Box sx={{ p: 1.5, borderBottom: (theme) => `1px solid ${theme.palette.divider}` }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        Positions & Trades
-                      </Typography>
-                    </Box>
-                    <Box sx={{ flex: 1, overflow: 'auto' }}>
-                      <TradesList
-                        trades={trades}
-                        onSquareOff={handleSquareOff}
-                        processingTrades={processingTrades}
-                      />
-                    </Box>
-                  </Paper>
-                </Box>
-              </Box>
-
-              {/* Risk Guardrails Modal */}
-              <Dialog
-                open={showRiskModal}
-                onClose={() => setShowRiskModal(false)}
-                maxWidth="sm"
-                fullWidth
-              >
-                <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <InfoIcon color="primary" />
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      Risk Guardrails
-                    </Typography>
-                  </Box>
-                  <IconButton size="small" onClick={() => setShowRiskModal(false)}>
-                    <CloseIcon />
-                  </IconButton>
-                </DialogTitle>
-                <DialogContent dividers>
-                  <Stack spacing={2}>
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                        Profit Target
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {selection.plan.profitTargetPct}% of account size (₹{(selection.plan.accountSize * selection.plan.profitTargetPct / 100).toLocaleString('en-IN')})
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                        Maximum Loss
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Overall: {selection.plan.maxLossPct}% • Daily: {selection.plan.dailyLossPct}%
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                        Trading Hours
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        9:15 AM - 3:30 PM IST (Market Hours)
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                        Auto Square-Off
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        All open positions are automatically squared off at 3:30 PM IST daily
-                      </Typography>
-                    </Box>
-                    <Alert severity="warning" sx={{ mt: 1 }}>
-                      Violating daily loss or max drawdown limits will result in challenge failure
-                    </Alert>
-                  </Stack>
-                </DialogContent>
-                <DialogActions>
-                  <Button onClick={() => setShowRiskModal(false)} variant="contained">
-                    Got it
-                  </Button>
-                </DialogActions>
-              </Dialog>
-
-              {/* My Open Trades Modal */}
-              <Dialog
-                open={showOpenTradesModal}
-                onClose={() => setShowOpenTradesModal(false)}
-                maxWidth="md"
-                fullWidth
-              >
-                <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    My Open Trades
-                  </Typography>
-                  <IconButton size="small" onClick={() => setShowOpenTradesModal(false)}>
-                    <CloseIcon />
-                  </IconButton>
-                </DialogTitle>
-                <DialogContent dividers sx={{ p: 0 }}>
-                  {trades.filter(t => !t.exitPrice).length === 0 ? (
-                    <Box sx={{ p: 4, textAlign: 'center' }}>
-                      <Typography color="text.secondary">No open positions</Typography>
-                    </Box>
-                  ) : (
-                    <TableContainer>
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell><strong>Scrip</strong></TableCell>
-                            <TableCell><strong>Type</strong></TableCell>
-                            <TableCell align="right"><strong>Qty</strong></TableCell>
-                            <TableCell align="right"><strong>Entry</strong></TableCell>
-                            <TableCell align="right"><strong>LTP</strong></TableCell>
-                            <TableCell align="right"><strong>P&L</strong></TableCell>
-                            <TableCell align="center"><strong>Action</strong></TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {trades.filter(t => !t.exitPrice).map((trade) => {
-                            const currentLTP = selectedScrip?.scrip.startsWith(trade.scrip) ? selectedScrip.ltp : trade.entryPrice;
-                            const pnl = trade.tradeType === 'BUY' 
-                              ? (currentLTP - trade.entryPrice) * trade.quantity
-                              : (trade.entryPrice - currentLTP) * trade.quantity;
-                            const isProcessing = processingTrades.has(trade.id);
-
-                            return (
-                              <TableRow key={trade.id} hover>
-                                <TableCell>
-                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                    {trade.scrip}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {trade.scripFullName}
-                                  </Typography>
-                                </TableCell>
-                                <TableCell>
-                                  <Chip 
-                                    label={trade.tradeType} 
-                                    size="small"
-                                    color={trade.tradeType === 'BUY' ? 'success' : 'error'}
-                                    sx={{ fontWeight: 600 }}
-                                  />
-                                </TableCell>
-                                <TableCell align="right">{trade.quantity}</TableCell>
-                                <TableCell align="right">₹{trade.entryPrice.toFixed(2)}</TableCell>
-                                <TableCell align="right">₹{currentLTP.toFixed(2)}</TableCell>
-                                <TableCell align="right">
-                                  <Typography sx={{ color: pnl >= 0 ? 'success.main' : 'error.main', fontWeight: 600 }}>
-                                    {pnl >= 0 ? '+' : ''}₹{pnl.toFixed(2)}
-                                  </Typography>
-                                </TableCell>
-                                <TableCell align="center">
-                                  <Button
-                                    variant="outlined"
-                                    size="small"
-                                    color="error"
-                                    disabled={isProcessing}
-                                    onClick={() => handleSquareOff(trade.id)}
-                                  >
-                                    {isProcessing ? 'Squaring...' : 'Square Off'}
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  )}
-                </DialogContent>
-                <DialogActions>
-                  <Button onClick={() => setShowOpenTradesModal(false)} variant="contained">
-                    Close
-                  </Button>
-                </DialogActions>
-              </Dialog>
-            </>
-          )}
-
-          {/* Order Confirmation Dialog */}
-          {orderConfirmation.payload && (
-            <OrderConfirmationDialog
-              open={orderConfirmation.open}
-              orderDetails={
-                orderConfirmation.payload.orderDetails ?? null
-              }
-              onConfirm={() => {
-                if (orderConfirmation.payload) {
-                  executeOrder(orderConfirmation.payload);
-                }
-              }}
-              onCancel={() => setOrderConfirmation({ open: false, payload: null })}
-            />
-          )}
         </Stack>
-        </Fade>
 
-        {/* Toast Notifications */}
-        <ToastNotification
-          open={toast.open}
-          message={toast.message}
-          severity={toast.severity}
-          onClose={() => setToast({ ...toast, open: false })}
+        {error && (
+          <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 0.5, py: 0 }}>
+            {error}
+          </Alert>
+        )}
+        {info && (
+          <Alert severity="success" onClose={() => setInfo(null)} sx={{ mb: 0.5, py: 0 }}>
+            {info}
+          </Alert>
+        )}
+
+        {initializing ? (
+          <LoadingOverlay message="Initializing trading terminal..." />
+        ) : !selection ? (
+          <Paper sx={{ p: 3, borderRadius: 2, border: (theme) => `1px solid ${theme.palette.divider}` }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+              Activate a challenge to start trading
+            </Typography>
+            <Typography color="text.secondary" variant="body2">
+              You need an active challenge to access the demo trading terminal.
+            </Typography>
+            <Button variant="contained" sx={{ mt: 2 }} onClick={() => router.push('/challenge-plans')}>
+              Browse challenge plans
+            </Button>
+          </Paper>
+        ) : !isChallengeActive ? (
+          <Alert severity="warning">
+            Your challenge is currently <strong>{selection.status}</strong>. Demo trading activates once ACTIVE.
+          </Alert>
+        ) : (
+          renderActiveTrading()
+        )}
+      </Box>
+
+      {/* Risk Guardrails Modal */}
+      <Dialog open={showRiskModal} onClose={() => setShowRiskModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <InfoIcon color="primary" />
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>Risk Guardrails</Typography>
+          </Box>
+          <IconButton size="small" onClick={() => setShowRiskModal(false)}><CloseIcon /></IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2}>
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>Profit Target</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {selection?.plan.profitTargetPct}% of account size
+                {selection ? ` (₹${(selection.plan.accountSize * selection.plan.profitTargetPct / 100).toLocaleString('en-IN')})` : ''}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>Maximum Loss</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Overall: {selection?.plan.maxLossPct}% | Daily: {selection?.plan.dailyLossPct}%
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>Trading Hours</Typography>
+              <Typography variant="body2" color="text.secondary">9:15 AM - 3:30 PM IST</Typography>
+            </Box>
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>Auto Square-Off</Typography>
+              <Typography variant="body2" color="text.secondary">All open positions squared off at 3:30 PM IST daily</Typography>
+            </Box>
+            <Alert severity="warning" sx={{ mt: 1 }}>Violating daily loss or max drawdown limits will fail the challenge</Alert>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowRiskModal(false)} variant="contained">Got it</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* My Open Trades Modal */}
+      <Dialog open={showOpenTradesModal} onClose={() => setShowOpenTradesModal(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>My Open Trades</Typography>
+          <IconButton size="small" onClick={() => setShowOpenTradesModal(false)}><CloseIcon /></IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 0 }}>
+          {trades.filter(t => !t.exitPrice).length === 0 ? (
+            <Box sx={{ p: 4, textAlign: 'center' }}>
+              <Typography color="text.secondary">No open positions</Typography>
+            </Box>
+          ) : (
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell><strong>Scrip</strong></TableCell>
+                    <TableCell><strong>Type</strong></TableCell>
+                    <TableCell align="right"><strong>Qty</strong></TableCell>
+                    <TableCell align="right"><strong>Entry</strong></TableCell>
+                    <TableCell align="right"><strong>LTP</strong></TableCell>
+                    <TableCell align="right"><strong>P&L</strong></TableCell>
+                    <TableCell align="center"><strong>Action</strong></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {trades.filter(t => !t.exitPrice).map((trade) => {
+                    const currentLTP = selectedScrip?.scrip.startsWith(trade.scrip) ? selectedScrip.ltp : trade.entryPrice;
+                    const pnl = trade.tradeType === 'BUY'
+                      ? (currentLTP - trade.entryPrice) * trade.quantity
+                      : (trade.entryPrice - currentLTP) * trade.quantity;
+                    const isProcessing = processingTrades.has(trade.id);
+
+                    return (
+                      <TableRow key={trade.id} hover>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{trade.scrip}</Typography>
+                          <Typography variant="caption" color="text.secondary">{trade.scripFullName}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip label={trade.tradeType} size="small" color={trade.tradeType === 'BUY' ? 'success' : 'error'} sx={{ fontWeight: 600 }} />
+                        </TableCell>
+                        <TableCell align="right">{trade.quantity}</TableCell>
+                        <TableCell align="right">₹{trade.entryPrice.toFixed(2)}</TableCell>
+                        <TableCell align="right">₹{currentLTP.toFixed(2)}</TableCell>
+                        <TableCell align="right">
+                          <Typography sx={{ color: pnl >= 0 ? 'success.main' : 'error.main', fontWeight: 600 }}>
+                            {pnl >= 0 ? '+' : ''}₹{pnl.toFixed(2)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Button variant="outlined" size="small" color="error" disabled={isProcessing} onClick={() => handleSquareOff(trade.id)}>
+                            {isProcessing ? 'Squaring...' : 'Square Off'}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowOpenTradesModal(false)} variant="contained">Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Order Confirmation Dialog */}
+      {orderConfirmation.payload && (
+        <OrderConfirmationDialog
+          open={orderConfirmation.open}
+          orderDetails={orderConfirmation.payload.orderDetails ?? null}
+          onConfirm={() => { if (orderConfirmation.payload) executeOrder(orderConfirmation.payload); }}
+          onCancel={() => setOrderConfirmation({ open: false, payload: null })}
         />
-      </Container>
+      )}
+
+      {/* Toast Notifications */}
+      <ToastNotification
+        open={toast.open}
+        message={toast.message}
+        severity={toast.severity}
+        onClose={() => setToast({ ...toast, open: false })}
+      />
     </Box>
   );
 }
