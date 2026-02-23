@@ -15,6 +15,7 @@ import {
   Stack,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
+import Navbar from '@/components/Navbar';
 
 interface CredentialsInfo {
   apiKey: string;
@@ -113,8 +114,10 @@ export default function AngelOneCredentialsPage() {
   };
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom>
+    <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
+      <Navbar />
+      <Container maxWidth="md" sx={{ py: { xs: 3, md: 4 } }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
         AngelOne Credentials Management
       </Typography>
 
@@ -253,6 +256,7 @@ export default function AngelOneCredentialsPage() {
         </>
       )}
     </Container>
+    </Box>
   );
 }
 

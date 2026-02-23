@@ -26,6 +26,7 @@ import {
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 import { robotoMonoFontFamily } from '@/theme/theme';
 
 type ChallengePlan = {
@@ -314,11 +315,12 @@ export default function Home() {
                     sx={{
                       backgroundColor: (theme) =>
                         theme.palette.mode === 'light'
-                          ? 'rgba(255,255,255,0.12)'
+                          ? 'rgba(255,255,255,0.22)'
                           : 'rgba(13,17,23,0.7)',
                       color: 'inherit',
-                      border: (theme) => `1px solid rgba(255,255,255,${theme.palette.mode === 'light' ? 0.3 : 0.1})`,
-                      backdropFilter: 'blur(12px)',
+                      border: (theme) => `1px solid rgba(255,255,255,${theme.palette.mode === 'light' ? 0.4 : 0.1})`,
+                      backdropFilter: 'blur(20px)',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
                     }}
                   >
                     <CardContent sx={{ p: 3 }}>
@@ -391,7 +393,23 @@ export default function Home() {
                 }}
               >
                 <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <Box sx={{ color: 'primary.main' }}>{feature.icon}</Box>
+                  <Box
+                    sx={{
+                      color: 'primary.main',
+                      width: 56,
+                      height: 56,
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: (theme) =>
+                        theme.palette.mode === 'light'
+                          ? 'rgba(0, 97, 168, 0.08)'
+                          : 'rgba(79, 195, 247, 0.12)',
+                    }}
+                  >
+                    {feature.icon}
+                  </Box>
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
                     {feature.title}
                   </Typography>
@@ -671,6 +689,8 @@ export default function Home() {
           </Stack>
         </Container>
       </Box>
+
+      <Footer />
     </Box>
   );
 }

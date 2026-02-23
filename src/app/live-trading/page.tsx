@@ -19,6 +19,8 @@ import {
   MenuItem,
 } from '@mui/material';
 import { AngelOneChart } from '@/components/trading/AngelOneChart';
+import Navbar from '@/components/Navbar';
+import { Container } from '@mui/material';
 
 interface MarketData {
   ltp: number;
@@ -321,8 +323,10 @@ export default function LiveTradingPage() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
+    <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
+      <Navbar />
+      <Container maxWidth="xl" sx={{ py: { xs: 2, md: 3 } }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
         Live Market Data - {selectedSymbol}
       </Typography>
 
@@ -489,17 +493,20 @@ export default function LiveTradingPage() {
 
       <Paper sx={{ p: 2 }}>
         {isLoadingChart ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 600 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: { xs: 300, md: 450, lg: 600 } }}>
             <CircularProgress />
           </Box>
         ) : historicalData.length > 0 ? (
-          <AngelOneChart data={historicalData} height={600} />
+          <Box sx={{ height: { xs: 300, md: 450, lg: 600 } }}>
+            <AngelOneChart data={historicalData} height={600} />
+          </Box>
         ) : (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 600 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: { xs: 300, md: 450, lg: 600 } }}>
             <Typography color="text.secondary">No chart data available</Typography>
           </Box>
         )}
       </Paper>
+      </Container>
     </Box>
   );
 }

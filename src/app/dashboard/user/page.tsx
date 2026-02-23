@@ -720,7 +720,7 @@ export default function UserDashboard() {
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                 Portfolio Value
               </Typography>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={250}>
                 <AreaChart data={metricsSeries.cumulative}>
                   <defs>
                     <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
@@ -758,7 +758,7 @@ export default function UserDashboard() {
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                 Trade Volume
               </Typography>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={metricsSeries.trades}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
@@ -785,7 +785,7 @@ export default function UserDashboard() {
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                 Profit & Loss Trend
               </Typography>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={metricsSeries.daily}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />

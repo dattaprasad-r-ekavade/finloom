@@ -1,6 +1,6 @@
 'use client';
 
-import { createTheme } from '@mui/material/styles';
+import { createTheme, responsiveFontSizes } from '@mui/material/styles';
 
 // Light theme colors
 const lightTheme = createTheme({
@@ -229,5 +229,9 @@ const darkTheme = createTheme({
 // Font family for monospace stats
 const robotoMonoFontFamily = 'var(--font-roboto-mono), "Roboto Mono", "Courier New", monospace';
 
-export { lightTheme, darkTheme, robotoMonoFontFamily };
+// Apply responsive font scaling across breakpoints
+const responsiveLightTheme = responsiveFontSizes(lightTheme);
+const responsiveDarkTheme = responsiveFontSizes(darkTheme);
+
+export { responsiveLightTheme as lightTheme, responsiveDarkTheme as darkTheme, robotoMonoFontFamily };
 

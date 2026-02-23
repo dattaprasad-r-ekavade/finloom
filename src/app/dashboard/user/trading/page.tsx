@@ -12,15 +12,22 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
   Grid,
   IconButton,
+  MenuItem,
   Paper,
+  Select,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Typography,
   Fade,
-  Grow,
   Slide,
-  Zoom,
   Tooltip,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -671,8 +678,8 @@ export default function TradingTerminalPage() {
         <Fade in timeout={500}>
         <Stack spacing={2}>
           <Slide direction="down" in timeout={400}>
-          <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-            <Stack direction="row" spacing={2} alignItems="center">
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between" sx={{ flexWrap: 'wrap', gap: 1 }}>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap' }}>
               <Chip
                 label="Demo Trading"
                 color="primary"
@@ -692,7 +699,7 @@ export default function TradingTerminalPage() {
                 />
               </Tooltip>
             </Stack>
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap', gap: 1 }}>
               <Button
                 variant="contained"
                 color="error"
@@ -708,7 +715,7 @@ export default function TradingTerminalPage() {
                   },
                 }}
               >
-                {squaringOffAll ? 'Squaring Off...' : 'Square Off All (Ctrl+Q)'}
+                {squaringOffAll ? 'Squaring Off...' : 'Square Off All'}
               </Button>
               <Button
                 variant="outlined"
@@ -813,7 +820,7 @@ export default function TradingTerminalPage() {
                 openPositionsCount={summary?.metrics?.openTradesCount ?? summary?.summary?.openTrades ?? 0}
               />
               
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: 2, height: 'calc(100vh - 280px)' }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 400px' }, gap: 2, height: { xs: 'auto', lg: 'calc(100vh - 280px)' } }}>
                 {/* Left Panel - Chart and Order Form */}
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
                   {/* Chart */}
@@ -834,8 +841,8 @@ export default function TradingTerminalPage() {
                           ? `${selectedScrip.scrip} • ${selectedScrip.scripFullName}`
                           : 'Trading Chart'}
                       </Typography>
-                      <Stack direction="row" spacing={2} alignItems="center">
-                        <Box sx={{ width: 200 }}>
+                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ xs: 'stretch', sm: 'center' }} sx={{ flexWrap: 'wrap' }}>
+                        <Box sx={{ width: { xs: '100%', sm: 200 } }}>
                           <ScripSearchAutocomplete
                             value={selectedScrip}
                             onChange={(option) => {
@@ -877,35 +884,35 @@ export default function TradingTerminalPage() {
                           LTP: <Box component="span" sx={{ fontWeight: 600 }}>₹{selectedScrip?.ltp.toFixed(2) ?? '--'}</Box>
                         </Typography>
                         </PriceUpdateFlash>
-                        <select
-                          value={chartInterval}
-                          onChange={(e) => setChartInterval(e.target.value)}
-                          style={{
-                            padding: '4px 8px',
-                            borderRadius: '4px',
-                            border: '1px solid #ccc',
-                            fontSize: '12px',
-                          }}
-                        >
-                          <option value="ONE_MINUTE">1m</option>
-                          <option value="THREE_MINUTE">3m</option>
-                          <option value="FIVE_MINUTE">5m</option>
-                          <option value="FIFTEEN_MINUTE">15m</option>
-                          <option value="THIRTY_MINUTE">30m</option>
-                          <option value="ONE_HOUR">1h</option>
-                          <option value="ONE_DAY">1D</option>
-                        </select>
+                        <FormControl size="small" sx={{ minWidth: 80 }}>
+                          <Select
+                            value={chartInterval}
+                            onChange={(e) => setChartInterval(e.target.value as string)}
+                            variant="outlined"
+                            sx={{ fontSize: '0.75rem', height: 32 }}
+                          >
+                            <MenuItem value="ONE_MINUTE">1m</MenuItem>
+                            <MenuItem value="THREE_MINUTE">3m</MenuItem>
+                            <MenuItem value="FIVE_MINUTE">5m</MenuItem>
+                            <MenuItem value="FIFTEEN_MINUTE">15m</MenuItem>
+                            <MenuItem value="THIRTY_MINUTE">30m</MenuItem>
+                            <MenuItem value="ONE_HOUR">1h</MenuItem>
+                            <MenuItem value="ONE_DAY">1D</MenuItem>
+                          </Select>
+                        </FormControl>
                       </Stack>
                     </Box>
                     <Box sx={{ flex: 1, minHeight: 0 }}>
                       {isLoadingChart ? (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 500 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: { xs: 300, md: 400, lg: 500 } }}>
                           <CircularProgress size={30} />
                         </Box>
                       ) : historicalData.length > 0 ? (
-                        <AngelOneChart data={historicalData} height={500} />
+                        <Box sx={{ height: { xs: 300, md: 400, lg: 500 } }}>
+                          <AngelOneChart data={historicalData} height={500} />
+                        </Box>
                       ) : (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 500 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: { xs: 300, md: 400, lg: 500 } }}>
                           <Typography color="text.secondary">No chart data available</Typography>
                         </Box>
                       )}
@@ -1057,55 +1064,54 @@ export default function TradingTerminalPage() {
                       <Typography color="text.secondary">No open positions</Typography>
                     </Box>
                   ) : (
-                    <Box sx={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                          <tr style={{ backgroundColor: 'rgba(0, 0, 0, 0.04)' }}>
-                            <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: 600 }}>Scrip</th>
-                            <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: 600 }}>Type</th>
-                            <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: 600 }}>Qty</th>
-                            <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: 600 }}>Entry Price</th>
-                            <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: 600 }}>Current LTP</th>
-                            <th style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: 600 }}>P&L</th>
-                            <th style={{ padding: '12px', textAlign: 'center', fontSize: '14px', fontWeight: 600 }}>Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                    <TableContainer>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell><strong>Scrip</strong></TableCell>
+                            <TableCell><strong>Type</strong></TableCell>
+                            <TableCell align="right"><strong>Qty</strong></TableCell>
+                            <TableCell align="right"><strong>Entry</strong></TableCell>
+                            <TableCell align="right"><strong>LTP</strong></TableCell>
+                            <TableCell align="right"><strong>P&L</strong></TableCell>
+                            <TableCell align="center"><strong>Action</strong></TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
                           {trades.filter(t => !t.exitPrice).map((trade) => {
                             const currentLTP = selectedScrip?.scrip.startsWith(trade.scrip) ? selectedScrip.ltp : trade.entryPrice;
                             const pnl = trade.tradeType === 'BUY' 
                               ? (currentLTP - trade.entryPrice) * trade.quantity
                               : (trade.entryPrice - currentLTP) * trade.quantity;
-                            const pnlColor = pnl >= 0 ? '#2e7d32' : '#d32f2f';
                             const isProcessing = processingTrades.has(trade.id);
 
                             return (
-                              <tr key={trade.id} style={{ borderBottom: '1px solid rgba(0, 0, 0, 0.08)' }}>
-                                <td style={{ padding: '12px', fontSize: '14px' }}>
-                                  <Box>
-                                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                      {trade.scrip}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                      {trade.scripFullName}
-                                    </Typography>
-                                  </Box>
-                                </td>
-                                <td style={{ padding: '12px', fontSize: '14px' }}>
+                              <TableRow key={trade.id} hover>
+                                <TableCell>
+                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                    {trade.scrip}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {trade.scripFullName}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
                                   <Chip 
                                     label={trade.tradeType} 
                                     size="small"
                                     color={trade.tradeType === 'BUY' ? 'success' : 'error'}
                                     sx={{ fontWeight: 600 }}
                                   />
-                                </td>
-                                <td style={{ padding: '12px', fontSize: '14px', textAlign: 'right' }}>{trade.quantity}</td>
-                                <td style={{ padding: '12px', fontSize: '14px', textAlign: 'right' }}>₹{trade.entryPrice.toFixed(2)}</td>
-                                <td style={{ padding: '12px', fontSize: '14px', textAlign: 'right' }}>₹{currentLTP.toFixed(2)}</td>
-                                <td style={{ padding: '12px', fontSize: '14px', textAlign: 'right', color: pnlColor, fontWeight: 600 }}>
-                                  {pnl >= 0 ? '+' : ''}₹{pnl.toFixed(2)}
-                                </td>
-                                <td style={{ padding: '12px', textAlign: 'center' }}>
+                                </TableCell>
+                                <TableCell align="right">{trade.quantity}</TableCell>
+                                <TableCell align="right">₹{trade.entryPrice.toFixed(2)}</TableCell>
+                                <TableCell align="right">₹{currentLTP.toFixed(2)}</TableCell>
+                                <TableCell align="right">
+                                  <Typography sx={{ color: pnl >= 0 ? 'success.main' : 'error.main', fontWeight: 600 }}>
+                                    {pnl >= 0 ? '+' : ''}₹{pnl.toFixed(2)}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell align="center">
                                   <Button
                                     variant="outlined"
                                     size="small"
@@ -1115,13 +1121,13 @@ export default function TradingTerminalPage() {
                                   >
                                     {isProcessing ? 'Squaring...' : 'Square Off'}
                                   </Button>
-                                </td>
-                              </tr>
+                                </TableCell>
+                              </TableRow>
                             );
                           })}
-                        </tbody>
-                      </table>
-                    </Box>
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
                   )}
                 </DialogContent>
                 <DialogActions>

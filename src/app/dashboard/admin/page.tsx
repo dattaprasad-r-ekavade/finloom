@@ -324,7 +324,6 @@ export default function AdminDashboard() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={(entry) => `${entry.name}: ${entry.value}`}
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
@@ -334,6 +333,7 @@ export default function AdminDashboard() {
                     ))}
                   </Pie>
                   <Tooltip />
+                  <Legend verticalAlign="bottom" height={36} />
                 </PieChart>
               </ResponsiveContainer>
             </Paper>
