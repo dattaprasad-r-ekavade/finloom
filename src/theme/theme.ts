@@ -73,7 +73,7 @@ const lightTheme = createTheme({
     },
   },
   shape: {
-    borderRadius: 12,
+    borderRadius: 10,
   },
   components: {
     MuiCssBaseline: {
@@ -88,10 +88,12 @@ const lightTheme = createTheme({
       styleOverrides: {
         root: {
           boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+          border: '1px solid rgba(0,0,0,0.06)',
+          transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out',
           '&:hover': {
-            transform: 'translateY(-4px)',
+            transform: 'translateY(-2px)',
             boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            borderColor: 'rgba(0,0,0,0.1)',
           },
         },
       },
@@ -108,6 +110,22 @@ const lightTheme = createTheme({
       styleOverrides: {
         root: {
           backgroundImage: 'none',
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          transition: 'background-color 0.2s ease, border-color 0.2s ease',
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+          },
         },
       },
     },
@@ -185,7 +203,7 @@ const darkTheme = createTheme({
     },
   },
   shape: {
-    borderRadius: 12,
+    borderRadius: 10,
   },
   components: {
     MuiCssBaseline: {
@@ -200,10 +218,12 @@ const darkTheme = createTheme({
       styleOverrides: {
         root: {
           boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-          transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+          border: '1px solid rgba(255,255,255,0.06)',
+          transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out',
           '&:hover': {
-            transform: 'translateY(-4px)',
+            transform: 'translateY(-2px)',
             boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+            borderColor: 'rgba(255,255,255,0.1)',
           },
         },
       },
@@ -223,6 +243,22 @@ const darkTheme = createTheme({
         },
       },
     },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          transition: 'background-color 0.2s ease, border-color 0.2s ease',
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+          },
+        },
+      },
+    },
   },
 });
 
@@ -234,4 +270,3 @@ const responsiveLightTheme = responsiveFontSizes(lightTheme);
 const responsiveDarkTheme = responsiveFontSizes(darkTheme);
 
 export { responsiveLightTheme as lightTheme, responsiveDarkTheme as darkTheme, robotoMonoFontFamily };
-

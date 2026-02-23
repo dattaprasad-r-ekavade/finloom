@@ -55,7 +55,8 @@ export default function LiveTradingPage() {
   const [historicalData, setHistoricalData] = useState<CandleData[]>([]);
   const [chartInterval, setChartInterval] = useState('FIVE_MINUTE');
   const [isLoadingChart, setIsLoadingChart] = useState(false);
-  
+  const isInitialChartLoadRef = useRef(true);
+
   const wsRef = useRef<WebSocket | null>(null);
   const sessionRef = useRef<any>(null);
 
@@ -72,17 +73,33 @@ export default function LiveTradingPage() {
   // Fetch historical data when symbol or interval changes
   useEffect(() => {
     if (isConnected && symbolToken) {
+      isInitialChartLoadRef.current = true;
       fetchHistoricalData();
     }
   }, [symbolToken, selectedExchange, chartInterval, isConnected]);
 
+  // Auto-refresh chart data every 5 seconds (silent, no loader)
+  useEffect(() => {
+    if (!isConnected || !symbolToken) return;
+
+    const intervalId = setInterval(() => {
+      fetchHistoricalData();
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [isConnected, symbolToken, selectedExchange, chartInterval]);
+
   const fetchHistoricalData = async () => {
-    setIsLoadingChart(true);
+    // Only show loading on initial load or when no data exists
+    if (isInitialChartLoadRef.current) {
+      setIsLoadingChart(true);
+    }
+
     try {
       // Calculate date range based on interval
       const now = new Date();
       const toDate = now.toISOString().slice(0, 16).replace('T', ' ');
-      
+
       let daysBack = 1;
       switch (chartInterval) {
         case 'ONE_MINUTE': daysBack = 1; break;
@@ -93,7 +110,7 @@ export default function LiveTradingPage() {
         case 'ONE_HOUR': daysBack = 30; break;
         case 'ONE_DAY': daysBack = 365; break;
       }
-      
+
       const fromDateObj = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
       const fromDate = fromDateObj.toISOString().slice(0, 16).replace('T', ' ');
 
@@ -126,6 +143,7 @@ export default function LiveTradingPage() {
       console.error('Error fetching historical data:', err);
     } finally {
       setIsLoadingChart(false);
+      isInitialChartLoadRef.current = false;
     }
   };
 
@@ -144,7 +162,7 @@ export default function LiveTradingPage() {
 
       sessionRef.current = sessionData.data;
       setIsConnected(true);
-      
+
       // Connect to WebSocket
       connectWebSocket(sessionData.data);
     } catch (err: any) {
@@ -157,7 +175,7 @@ export default function LiveTradingPage() {
 
   const connectWebSocket = (session: any) => {
     const wsUrl = `wss://smartapisocket.angelone.in/smart-stream?clientCode=${session.clientCode}&feedToken=${session.feedToken}&apiKey=${session.apiKey}`;
-    
+
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
@@ -165,7 +183,7 @@ export default function LiveTradingPage() {
       console.log('WebSocket connected');
       // Subscribe to initial symbol
       subscribeToSymbol(selectedExchange, symbolToken);
-      
+
       // Start heartbeat
       const heartbeatInterval = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
@@ -248,11 +266,11 @@ export default function LiveTradingPage() {
   const parseMarketData = (buffer: ArrayBuffer) => {
     try {
       const view = new DataView(buffer);
-      
+
       // Parse according to WebSocket 2.0 specification
       const mode = view.getUint8(0);
       const exchangeType = view.getUint8(1);
-      
+
       // Skip token parsing for simplicity
       const ltp = view.getInt32(43, true) / 100; // Convert from paise
       const ltq = Number(view.getBigInt64(51, true));
@@ -309,7 +327,7 @@ export default function LiveTradingPage() {
     setSelectedExchange(result.exchange);
     setSearchResults([]);
     setSearchQuery('');
-    
+
     // Subscribe to new symbol
     subscribeToSymbol(result.exchange, result.symboltoken);
   };
@@ -337,7 +355,7 @@ export default function LiveTradingPage() {
       )}
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 12, md: 3 }}>
+        <Grid size={{ xs: 6, sm: 6, md: 3 }}>
           <TextField
             fullWidth
             size="small"
@@ -347,7 +365,7 @@ export default function LiveTradingPage() {
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
           />
         </Grid>
-        <Grid size={{ xs: 12, md: 2 }}>
+        <Grid size={{ xs: 6, sm: 6, md: 2 }}>
           <FormControl fullWidth size="small">
             <InputLabel>Exchange</InputLabel>
             <Select
@@ -362,12 +380,12 @@ export default function LiveTradingPage() {
             </Select>
           </FormControl>
         </Grid>
-        <Grid size={{ xs: 12, md: 2 }}>
+        <Grid size={{ xs: 6, sm: 4, md: 2 }}>
           <Button fullWidth variant="contained" onClick={handleSearch}>
             Search
           </Button>
         </Grid>
-        <Grid size={{ xs: 12, md: 2 }}>
+        <Grid size={{ xs: 6, sm: 4, md: 2 }}>
           <FormControl fullWidth size="small">
             <InputLabel>Interval</InputLabel>
             <Select
@@ -385,7 +403,7 @@ export default function LiveTradingPage() {
             </Select>
           </FormControl>
         </Grid>
-        <Grid size={{ xs: 12, md: 3 }} sx={{ display: 'flex', alignItems: 'center' }}>
+        <Grid size={{ xs: 12, sm: 4, md: 3 }} sx={{ display: 'flex', alignItems: 'center' }}>
           <Chip
             label={isConnected ? 'Connected' : 'Disconnected'}
             color={isConnected ? 'success' : 'error'}
@@ -416,10 +434,10 @@ export default function LiveTradingPage() {
       )}
 
       {marketData && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid container spacing={{ xs: 1, md: 2 }} sx={{ mb: 3 }}>
           <Grid size={{ xs: 6, md: 2 }}>
             <Card>
-              <CardContent>
+              <CardContent sx={{ p: { xs: 1.5, md: 2 }, '&:last-child': { pb: { xs: 1.5, md: 2 } } }}>
                 <Typography color="text.secondary" variant="caption">
                   LTP
                 </Typography>
@@ -436,7 +454,7 @@ export default function LiveTradingPage() {
           </Grid>
           <Grid size={{ xs: 6, md: 2 }}>
             <Card>
-              <CardContent>
+              <CardContent sx={{ p: { xs: 1.5, md: 2 }, '&:last-child': { pb: { xs: 1.5, md: 2 } } }}>
                 <Typography color="text.secondary" variant="caption">
                   Open
                 </Typography>
@@ -446,7 +464,7 @@ export default function LiveTradingPage() {
           </Grid>
           <Grid size={{ xs: 6, md: 2 }}>
             <Card>
-              <CardContent>
+              <CardContent sx={{ p: { xs: 1.5, md: 2 }, '&:last-child': { pb: { xs: 1.5, md: 2 } } }}>
                 <Typography color="text.secondary" variant="caption">
                   High
                 </Typography>
@@ -458,7 +476,7 @@ export default function LiveTradingPage() {
           </Grid>
           <Grid size={{ xs: 6, md: 2 }}>
             <Card>
-              <CardContent>
+              <CardContent sx={{ p: { xs: 1.5, md: 2 }, '&:last-child': { pb: { xs: 1.5, md: 2 } } }}>
                 <Typography color="text.secondary" variant="caption">
                   Low
                 </Typography>
@@ -470,7 +488,7 @@ export default function LiveTradingPage() {
           </Grid>
           <Grid size={{ xs: 6, md: 2 }}>
             <Card>
-              <CardContent>
+              <CardContent sx={{ p: { xs: 1.5, md: 2 }, '&:last-child': { pb: { xs: 1.5, md: 2 } } }}>
                 <Typography color="text.secondary" variant="caption">
                   Prev Close
                 </Typography>
@@ -480,7 +498,7 @@ export default function LiveTradingPage() {
           </Grid>
           <Grid size={{ xs: 6, md: 2 }}>
             <Card>
-              <CardContent>
+              <CardContent sx={{ p: { xs: 1.5, md: 2 }, '&:last-child': { pb: { xs: 1.5, md: 2 } } }}>
                 <Typography color="text.secondary" variant="caption">
                   Volume
                 </Typography>
@@ -492,13 +510,13 @@ export default function LiveTradingPage() {
       )}
 
       <Paper sx={{ p: 2 }}>
-        {isLoadingChart ? (
+        {isLoadingChart && historicalData.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: { xs: 300, md: 450, lg: 600 } }}>
             <CircularProgress />
           </Box>
         ) : historicalData.length > 0 ? (
           <Box sx={{ height: { xs: 300, md: 450, lg: 600 } }}>
-            <AngelOneChart data={historicalData} height={600} />
+            <AngelOneChart data={historicalData} />
           </Box>
         ) : (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: { xs: 300, md: 450, lg: 600 } }}>
@@ -510,4 +528,3 @@ export default function LiveTradingPage() {
     </Box>
   );
 }
-

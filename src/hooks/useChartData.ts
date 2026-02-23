@@ -3,7 +3,7 @@
  * Handles historical data fetching and auto-refresh
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ScripOption } from '@/components/trading/ScripSearchAutocomplete';
 
 interface UseChartDataProps {
@@ -19,6 +19,7 @@ export const useChartData = ({
   const [chartInterval, setChartInterval] = useState('FIVE_MINUTE');
   const [isLoadingChart, setIsLoadingChart] = useState(false);
   const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
+  const isInitialLoadRef = useRef(true);
 
   /**
    * Load historical chart data for the selected scrip
@@ -30,7 +31,11 @@ export const useChartData = ({
     }
 
     try {
-      setIsLoadingChart(true);
+      // Only show loading spinner on initial load, not on auto-refresh
+      if (isInitialLoadRef.current) {
+        setIsLoadingChart(true);
+      }
+
       const params = new URLSearchParams({
         symboltoken: (selectedScrip as any).scripToken || '',
         exchange: selectedScrip.exchange,
@@ -42,7 +47,7 @@ export const useChartData = ({
 
       if (result.success && Array.isArray(result.data)) {
         setHistoricalData(result.data);
-        setPriceUpdateTrigger((prev) => prev + 1); // Trigger price flash animation
+        setPriceUpdateTrigger((prev) => prev + 1);
       } else {
         setHistoricalData([]);
       }
@@ -51,7 +56,13 @@ export const useChartData = ({
       setHistoricalData([]);
     } finally {
       setIsLoadingChart(false);
+      isInitialLoadRef.current = false;
     }
+  }, [selectedScrip, chartInterval]);
+
+  // Reset initial load flag when scrip or interval changes
+  useEffect(() => {
+    isInitialLoadRef.current = true;
   }, [selectedScrip, chartInterval]);
 
   // Load chart data when scrip or interval changes

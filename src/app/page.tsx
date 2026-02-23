@@ -25,6 +25,7 @@ import {
   Payment,
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { robotoMonoFontFamily } from '@/theme/theme';
@@ -74,46 +75,46 @@ const heroStats = [
 
 const features = [
   {
-    icon: <TrendingUp sx={{ fontSize: 40 }} />,
+    icon: <TrendingUp sx={{ fontSize: 36 }} />,
     title: 'Institutional Execution',
     description:
       'Trade on multi-venue liquidity with sub-3ms routing and automated risk circuit breakers.',
-    indicator: { label: 'Profit Surge', color: 'success.main' },
+    accentColor: '#00A86B',
   },
   {
-    icon: <Analytics sx={{ fontSize: 40 }} />,
+    icon: <Analytics sx={{ fontSize: 36 }} />,
     title: 'Advanced Intelligence',
     description:
       'Predictive analytics, performance cohorts, and anomaly detection streamline scaling decisions.',
-    indicator: { label: 'Insight', color: 'primary.main' },
+    accentColor: '#0061A8',
   },
   {
-    icon: <Security sx={{ fontSize: 40 }} />,
+    icon: <Security sx={{ fontSize: 36 }} />,
     title: 'Bank-Level Security',
     description:
       'Zero-trust infrastructure with biometric SSO, encrypted vaults, and SOC 2-ready policies.',
-    indicator: { label: 'Compliance', color: 'warning.main' },
+    accentColor: '#F39C12',
   },
   {
-    icon: <Speed sx={{ fontSize: 40 }} />,
+    icon: <Speed sx={{ fontSize: 36 }} />,
     title: 'Lightning Performance',
     description:
       'Adaptive streaming dashboards and GPU-accelerated charting keep teams informed in real time.',
-    indicator: { label: '2.4ms Avg Fill', color: 'secondary.main' },
+    accentColor: '#4FC3F7',
   },
   {
-    icon: <AccountBalance sx={{ fontSize: 40 }} />,
+    icon: <AccountBalance sx={{ fontSize: 36 }} />,
     title: 'Capital Allocation',
     description:
       'Automate scaling rules, manage funding rounds, and connect traders to firm capital instantly.',
-    indicator: { label: 'Growth', color: 'success.main' },
+    accentColor: '#00A86B',
   },
   {
-    icon: <Assessment sx={{ fontSize: 40 }} />,
+    icon: <Assessment sx={{ fontSize: 36 }} />,
     title: 'Precision Reporting',
     description:
       'Audit-ready exports, custom KPIs, and reconciled statements reduce end-of-day friction.',
-    indicator: { label: 'Pending Reviews', color: 'warning.main' },
+    accentColor: '#F39C12',
   },
 ];
 
@@ -144,43 +145,23 @@ const dashboards = [
   },
 ];
 
+// Lazy-loaded challenges section
+const ChallengesSection = dynamic(() => import('./ChallengesSection'), {
+  loading: () => (
+    <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+      <CircularProgress />
+    </Box>
+  ),
+});
+
 export default function Home() {
   const router = useRouter();
-  const [challenges, setChallenges] = useState<ChallengePlan[]>([]);
-  const [loadingChallenges, setLoadingChallenges] = useState(true);
-
-  useEffect(() => {
-    const fetchChallenges = async () => {
-      try {
-        const response = await fetch('/api/challenges/plans');
-        const data = await response.json();
-        if (response.ok) {
-          setChallenges(data.plans ?? []);
-        }
-      } catch (error) {
-        console.error('Failed to fetch challenges:', error);
-      } finally {
-        setLoadingChallenges(false);
-      }
-    };
-
-    fetchChallenges();
-  }, []);
-
-  const fadeInUpStyles = (delay = '0s') => ({
-    transform: 'translateY(24px)',
-    animation: 'fadeInUp 0.9s ease forwards',
-    animationDelay: delay,
-    '@keyframes fadeInUp': {
-      from: { opacity: 0, transform: 'translateY(24px)' },
-      to: { opacity: 1, transform: 'translateY(0)' },
-    },
-  });
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
       <Navbar />
 
+      {/* Hero Section */}
       <Box
         sx={{
           position: 'relative',
@@ -188,87 +169,88 @@ export default function Home() {
           color: (theme) => (theme.palette.mode === 'light' ? '#FFFFFF' : theme.palette.text.primary),
           background: (theme) =>
             theme.palette.mode === 'light'
-              ? 'linear-gradient(135deg, #0061A8 0%, #00A86B 100%)'
-              : 'linear-gradient(135deg, rgba(79,195,247,0.25) 0%, rgba(76,175,80,0.25) 100%)',
-          py: { xs: 10, md: 14 },
+              ? 'linear-gradient(145deg, #004577 0%, #0061A8 60%, #00764A 100%)'
+              : 'linear-gradient(145deg, rgba(79,195,247,0.18) 0%, rgba(76,175,80,0.14) 100%)',
+          py: { xs: 7, md: 10 },
           '&::before': {
             content: '""',
             position: 'absolute',
-            width: 360,
-            height: 360,
+            width: 220,
+            height: 220,
             borderRadius: '50%',
             background: (theme) =>
               theme.palette.mode === 'light'
-                ? 'rgba(255,255,255,0.12)'
-                : 'rgba(79,195,247,0.2)',
-            top: -120,
-            right: -140,
-            filter: 'blur(0)',
-            animation: 'pulse 12s ease-in-out infinite',
+                ? 'rgba(255,255,255,0.06)'
+                : 'rgba(79,195,247,0.08)',
+            top: -80,
+            right: -60,
+            filter: 'blur(40px)',
           },
           '&::after': {
             content: '""',
             position: 'absolute',
-            width: 280,
-            height: 280,
+            width: 180,
+            height: 180,
             borderRadius: '50%',
             background: (theme) =>
               theme.palette.mode === 'light'
-                ? 'rgba(0,0,0,0.08)'
-                : 'rgba(76,175,80,0.22)',
-            bottom: -120,
-            left: -80,
-            animation: 'pulse 10s ease-in-out infinite',
-            animationDelay: '2s',
-          },
-          '@keyframes pulse': {
-            '0%, 100%': { transform: 'scale(0.95)', opacity: 0.6 },
-            '50%': { transform: 'scale(1.05)', opacity: 1 },
+                ? 'rgba(0,0,0,0.04)'
+                : 'rgba(76,175,80,0.08)',
+            bottom: -60,
+            left: -40,
+            filter: 'blur(40px)',
           },
         }}
       >
         <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1 }}>
-          <Grid container spacing={6} alignItems="center">
+          <Grid container spacing={5} alignItems="center">
             <Grid size={{ xs: 12, md: 7 }}>
-              <Stack spacing={3}>
+              <Stack spacing={2.5}>
                 <Typography
                   variant="h2"
                   component="h1"
+                  className="fade-in-up"
                   sx={{
                     fontWeight: 700,
                     fontFamily: '"Poppins", "Segoe UI", sans-serif',
                     lineHeight: 1.1,
-                    fontSize: { xs: '2.8rem', md: '3.6rem' },
-                    ...fadeInUpStyles('0s'),
+                    fontSize: { xs: '2.4rem', md: '3.2rem' },
                   }}
                 >
                   Trade. Scale. Succeed with Finloom.
                 </Typography>
                 <Typography
                   variant="h6"
+                  className="fade-in-up"
                   sx={{
-                    maxWidth: 600,
+                    maxWidth: 560,
                     opacity: 0.9,
                     fontWeight: 400,
-                    fontSize: { xs: '1.1rem', md: '1.3rem' },
-                    ...fadeInUpStyles('0.15s'),
+                    fontSize: { xs: '1rem', md: '1.15rem' },
+                    animationDelay: '0.15s',
                   }}
                 >
                   A modern prop trading platform combining lightning execution, deep analytics, and
                   transparent risk governance for ambitious trading teams.
                 </Typography>
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ ...fadeInUpStyles('0.3s') }}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={2}
+                  className="fade-in-up"
+                  sx={{ animationDelay: '0.3s' }}
+                >
                   <Button
                     variant="contained"
                     size="large"
                     onClick={() => router.push('/trader/login')}
                     sx={{
-                      px: 5,
-                      py: 1.6,
-                      fontSize: '1.05rem',
+                      px: 4,
+                      py: 1.4,
+                      fontSize: '1rem',
                       fontWeight: 600,
                       color: '#0D1117',
                       backgroundColor: '#FFFFFF',
+                      width: { xs: '100%', sm: 'auto' },
                       '&:hover': {
                         backgroundColor: 'rgba(255,255,255,0.9)',
                       },
@@ -281,12 +263,13 @@ export default function Home() {
                     size="large"
                     onClick={() => router.push('/admin/login')}
                     sx={{
-                      px: 5,
-                      py: 1.6,
-                      fontSize: '1.05rem',
+                      px: 4,
+                      py: 1.4,
+                      fontSize: '1rem',
                       fontWeight: 600,
                       borderColor: 'currentColor',
                       color: 'inherit',
+                      width: { xs: '100%', sm: 'auto' },
                       '&:hover': {
                         backgroundColor: (theme) =>
                           theme.palette.mode === 'light'
@@ -303,10 +286,11 @@ export default function Home() {
             </Grid>
             <Grid size={{ xs: 12, md: 5 }}>
               <Box
+                className="fade-in-up"
                 sx={{
                   display: 'grid',
-                  gap: 2.5,
-                  ...fadeInUpStyles('0.45s'),
+                  gap: 2,
+                  animationDelay: '0.45s',
                 }}
               >
                 {heroStats.map((stat) => (
@@ -315,30 +299,34 @@ export default function Home() {
                     sx={{
                       backgroundColor: (theme) =>
                         theme.palette.mode === 'light'
-                          ? 'rgba(255,255,255,0.22)'
-                          : 'rgba(13,17,23,0.7)',
+                          ? 'rgba(255,255,255,0.14)'
+                          : 'rgba(13,17,23,0.65)',
                       color: 'inherit',
-                      border: (theme) => `1px solid rgba(255,255,255,${theme.palette.mode === 'light' ? 0.4 : 0.1})`,
-                      backdropFilter: 'blur(20px)',
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                      border: (theme) => `1px solid rgba(255,255,255,${theme.palette.mode === 'light' ? 0.2 : 0.08})`,
+                      backdropFilter: 'blur(12px)',
+                      boxShadow: 'none',
+                      '&:hover': {
+                        transform: 'none',
+                        boxShadow: 'none',
+                      },
                     }}
                   >
-                    <CardContent sx={{ p: 3 }}>
-                      <Typography variant="body2" sx={{ opacity: 0.85, mb: 1 }}>
+                    <CardContent sx={{ p: 2.5 }}>
+                      <Typography variant="body2" sx={{ opacity: 0.8, mb: 0.5 }}>
                         {stat.label}
                       </Typography>
                       <Typography
-                        variant="h4"
+                        variant="h5"
                         sx={{
                           fontFamily: robotoMonoFontFamily,
                           fontWeight: 600,
-                          mb: 1,
+                          mb: 0.5,
                           color: stat.tone,
                         }}
                       >
                         {stat.value}
                       </Typography>
-                      <Typography variant="body2" sx={{ opacity: 0.85 }}>
+                      <Typography variant="caption" sx={{ opacity: 0.7 }}>
                         {stat.caption}
                       </Typography>
                     </CardContent>
@@ -350,27 +338,23 @@ export default function Home() {
         </Container>
       </Box>
 
-      <Container maxWidth="xl" sx={{ py: { xs: 8, md: 10 } }}>
-        <Stack spacing={2} alignItems="center" sx={{ textAlign: 'center', mb: 6 }}>
-          <Chip
-            label="Built for speed and trust"
-            color="primary"
-            variant="outlined"
-            sx={{ fontWeight: 600, fontFamily: '"Poppins", "Segoe UI", sans-serif' }}
-          />
+      {/* Features Section */}
+      <Container maxWidth="xl" sx={{ py: { xs: 6, md: 8 } }}>
+        <Stack spacing={1.5} alignItems="center" sx={{ textAlign: 'center', mb: 5 }}>
           <Typography
             variant="h3"
             sx={{
               fontWeight: 600,
               fontFamily: '"Poppins", "Segoe UI", sans-serif',
-              maxWidth: 720,
+              maxWidth: 680,
+              fontSize: { xs: '1.8rem', md: '2.4rem' },
             }}
           >
-            Everything your proprietary trading firm needs to operate with precision
+            Everything your proprietary trading firm needs
           </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 680 }}>
+          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 600 }}>
             Finloom blends institutional tooling with intuitive UX so both traders and administrators can
-            move faster, stay compliant, and scale confidently across markets.
+            move faster, stay compliant, and scale confidently.
           </Typography>
         </Stack>
 
@@ -382,22 +366,15 @@ export default function Home() {
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
-                  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                  '&:hover': {
-                    transform: 'translateY(-6px)',
-                    boxShadow: (theme) =>
-                      theme.palette.mode === 'light'
-                        ? '0 18px 35px rgba(0,97,168,0.12)'
-                        : '0 18px 35px rgba(13,17,23,0.65)',
-                  },
+                  borderLeft: `3px solid ${feature.accentColor}`,
                 }}
               >
-                <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                   <Box
                     sx={{
                       color: 'primary.main',
-                      width: 56,
-                      height: 56,
+                      width: 48,
+                      height: 48,
                       borderRadius: '50%',
                       display: 'flex',
                       alignItems: 'center',
@@ -416,17 +393,6 @@ export default function Home() {
                   <Typography variant="body2" color="text.secondary">
                     {feature.description}
                   </Typography>
-                  <Chip
-                    label={feature.indicator.label}
-                    sx={{
-                      alignSelf: 'flex-start',
-                      fontWeight: 600,
-                      color: feature.indicator.color,
-                      borderColor: feature.indicator.color,
-                      borderRadius: 6,
-                    }}
-                    variant="outlined"
-                  />
                 </CardContent>
               </Card>
             </Grid>
@@ -436,8 +402,9 @@ export default function Home() {
 
       <Divider sx={{ opacity: 0.4 }} />
 
-      <Container maxWidth="xl" sx={{ py: { xs: 8, md: 10 } }}>
-        <Grid container spacing={4} alignItems="stretch">
+      {/* Dashboards Section */}
+      <Container maxWidth="xl" sx={{ py: { xs: 6, md: 8 } }}>
+        <Grid container spacing={3} alignItems="stretch">
           {dashboards.map((item) => (
             <Grid key={item.title} size={{ xs: 12, md: 6 }}>
               <Card
@@ -448,12 +415,12 @@ export default function Home() {
                   p: { xs: 2, md: 3 },
                   background: (theme) =>
                     theme.palette.mode === 'light'
-                      ? 'linear-gradient(145deg, rgba(0,97,168,0.05) 0%, rgba(0,168,107,0.08) 100%)'
-                      : 'linear-gradient(145deg, rgba(79,195,247,0.12) 0%, rgba(76,175,80,0.12) 100%)',
+                      ? 'linear-gradient(145deg, rgba(0,97,168,0.03) 0%, rgba(0,168,107,0.05) 100%)'
+                      : 'linear-gradient(145deg, rgba(79,195,247,0.08) 0%, rgba(76,175,80,0.08) 100%)',
                   border: (theme) => `1px solid ${theme.palette.divider}`,
                 }}
               >
-                <Stack spacing={3}>
+                <Stack spacing={2.5}>
                   <Chip
                     label={item.badge}
                     color={item.badgeColor as 'primary' | 'secondary'}
@@ -463,18 +430,18 @@ export default function Home() {
                   <Box>
                     <Typography
                       variant="h5"
-                      sx={{ fontWeight: 600, fontFamily: '"Poppins", "Segoe UI", sans-serif', mb: 1.5 }}
+                      sx={{ fontWeight: 600, fontFamily: '"Poppins", "Segoe UI", sans-serif', mb: 1 }}
                     >
                       {item.title}
                     </Typography>
-                    <Typography variant="body1" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary">
                       {item.description}
                     </Typography>
                   </Box>
                   <Stack spacing={1.5}>
                     {item.points.map((point) => (
                       <Stack direction="row" spacing={1.5} alignItems="flex-start" key={point}>
-                        <CheckCircleOutline color="success" sx={{ mt: '2px' }} />
+                        <CheckCircleOutline color="success" sx={{ mt: '2px', fontSize: 20 }} />
                         <Typography variant="body2" color="text.secondary">
                           {point}
                         </Typography>
@@ -490,162 +457,29 @@ export default function Home() {
 
       <Divider sx={{ opacity: 0.4 }} />
 
-      <Container maxWidth="xl" sx={{ py: { xs: 8, md: 10 } }}>
-        <Stack spacing={2} alignItems="center" sx={{ textAlign: 'center', mb: 6 }}>
-          <Chip
-            label="Available Challenges"
-            color="primary"
-            variant="outlined"
-            sx={{ fontWeight: 600, fontFamily: '"Poppins", "Segoe UI", sans-serif' }}
-          />
-          <Typography
-            variant="h3"
-            sx={{
-              fontWeight: 600,
-              fontFamily: '"Poppins", "Segoe UI", sans-serif',
-              maxWidth: 720,
-            }}
-          >
-            Choose Your Trading Challenge
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 680 }}>
-            Select from our tiered challenges and start your journey to becoming a funded trader. Each challenge is designed to test your skills progressively.
-          </Typography>
-        </Stack>
+      {/* Challenges Section (lazy loaded) */}
+      <ChallengesSection />
 
-        {loadingChallenges ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-            <CircularProgress />
-          </Box>
-        ) : challenges.length === 0 ? (
-          <Box sx={{ textAlign: 'center', py: 8 }}>
-            <Typography variant="body1" color="text.secondary">
-              No challenges available at the moment. Please check back soon.
-            </Typography>
-          </Box>
-        ) : (
-          <Grid container spacing={3}>
-            {challenges.map((challenge) => (
-              <Grid key={challenge.id} size={{ xs: 12, sm: 6, md: 4 }}>
-                <Card
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    borderRadius: 4,
-                    border: (theme) => `1px solid ${theme.palette.divider}`,
-                    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                    cursor: 'pointer',
-                    '&:hover': {
-                      transform: 'translateY(-6px)',
-                      boxShadow: (theme) =>
-                        theme.palette.mode === 'light'
-                          ? '0 18px 35px rgba(0,97,168,0.18)'
-                          : '0 18px 35px rgba(13,17,23,0.65)',
-                    },
-                  }}
-                  onClick={() => router.push(`/challenges/${challenge.id}`)}
-                >
-                  <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1 }}>
-                    <Box>
-                      <Chip
-                        label={`Level ${challenge.level}`}
-                        size="small"
-                        color="primary"
-                        sx={{ mb: 1.5 }}
-                      />
-                      <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
-                        {challenge.name}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        {challenge.description}
-                      </Typography>
-                    </Box>
-
-                    <Divider />
-
-                    <Stack spacing={1.5}>
-                      <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="body2" color="text.secondary">
-                          Account Size
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {formatCurrency(challenge.accountSize)}
-                        </Typography>
-                      </Stack>
-                      <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="body2" color="text.secondary">
-                          Profit Target
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main' }}>
-                          {challenge.profitTargetPct}%
-                        </Typography>
-                      </Stack>
-                      <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="body2" color="text.secondary">
-                          Max Loss
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main' }}>
-                          {challenge.maxLossPct}%
-                        </Typography>
-                      </Stack>
-                      <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="body2" color="text.secondary">
-                          Duration
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {challenge.durationDays} days
-                        </Typography>
-                      </Stack>
-                    </Stack>
-
-                    <Divider />
-
-                    <Box sx={{ mt: 'auto' }}>
-                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                        {formatCurrency(challenge.fee)}
-                      </Typography>
-                      <Button
-                        variant="contained"
-                        fullWidth
-                        startIcon={<Payment />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/challenges/${challenge.id}`);
-                        }}
-                        sx={{ fontWeight: 600 }}
-                      >
-                        View Details
-                      </Button>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        )}
-      </Container>
-
+      {/* CTA Section */}
       <Box
         sx={{
           background: (theme) =>
             theme.palette.mode === 'light'
-              ? 'linear-gradient(135deg, #0061A8 0%, #00A86B 100%)'
-              : 'linear-gradient(135deg, rgba(79,195,247,0.2) 0%, rgba(76,175,80,0.18) 100%)',
+              ? 'linear-gradient(145deg, #004577 0%, #0061A8 60%, #00764A 100%)'
+              : 'linear-gradient(145deg, rgba(79,195,247,0.15) 0%, rgba(76,175,80,0.12) 100%)',
           color: (theme) => (theme.palette.mode === 'light' ? '#FFFFFF' : theme.palette.text.primary),
-          py: { xs: 8, md: 10 },
+          py: { xs: 6, md: 8 },
         }}
       >
         <Container maxWidth="md" sx={{ textAlign: 'center' }}>
           <Typography
             variant="h4"
-            sx={{ fontWeight: 700, fontFamily: '"Poppins", "Segoe UI", sans-serif', mb: 2 }}
+            sx={{ fontWeight: 700, fontFamily: '"Poppins", "Segoe UI", sans-serif', mb: 1.5 }}
           >
             Ready to accelerate your trading program?
           </Typography>
-          <Typography variant="body1" sx={{ mb: 4, opacity: 0.9 }}>
-            Launch a performant, secure, and insight-driven prop firm experience with Finloom. Traders and
-            administrators stay perfectly aligned.
+          <Typography variant="body1" sx={{ mb: 3, opacity: 0.9 }}>
+            Launch a performant, secure, and insight-driven prop firm experience with Finloom.
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
             <Button
@@ -653,12 +487,13 @@ export default function Home() {
               size="large"
               onClick={() => router.push('/trader/signup')}
               sx={{
-                px: 5,
-                py: 1.6,
-                fontSize: '1.05rem',
+                px: 4,
+                py: 1.4,
+                fontSize: '1rem',
                 fontWeight: 600,
                 backgroundColor: '#FFFFFF',
                 color: '#0D1117',
+                width: { xs: '100%', sm: 'auto' },
                 '&:hover': { backgroundColor: 'rgba(255,255,255,0.9)' },
               }}
             >
@@ -669,17 +504,18 @@ export default function Home() {
               size="large"
               onClick={() => router.push('/admin/signup')}
               sx={{
-                px: 5,
-                py: 1.6,
-                fontSize: '1.05rem',
+                px: 4,
+                py: 1.4,
+                fontSize: '1rem',
                 fontWeight: 600,
                 borderColor: 'currentColor',
                 color: 'inherit',
+                width: { xs: '100%', sm: 'auto' },
                 '&:hover': {
                   backgroundColor: (theme) =>
                     theme.palette.mode === 'light'
-                      ? 'rgba(255,255,255,0.18)'
-                      : 'rgba(79,195,247,0.2)',
+                      ? 'rgba(255,255,255,0.15)'
+                      : 'rgba(79,195,247,0.15)',
                   borderColor: 'currentColor',
                 },
               }}

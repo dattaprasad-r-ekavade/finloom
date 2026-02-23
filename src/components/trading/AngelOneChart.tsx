@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { 
-  createChart, 
-  ColorType, 
+import { useTheme } from '@mui/material/styles';
+import {
+  createChart,
+  ColorType,
   CandlestickSeries,
   HistogramSeries,
-  type IChartApi, 
-  type ISeriesApi 
+  type IChartApi,
+  type ISeriesApi
 } from 'lightweight-charts';
 
 interface CandleData {
@@ -29,30 +30,37 @@ export const AngelOneChart: React.FC<AngelOneChartProps> = ({ data, height = 600
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
+
+    const bgColor = isDark ? '#161B22' : '#ffffff';
+    const textColor = isDark ? '#8B949E' : '#333';
+    const gridColor = isDark ? '#21262D' : '#f0f0f0';
+    const borderColor = isDark ? '#30363D' : '#cccccc';
 
     // Create chart
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: height,
       layout: {
-        background: { type: ColorType.Solid, color: '#ffffff' },
-        textColor: '#333',
+        background: { type: ColorType.Solid, color: bgColor },
+        textColor: textColor,
       },
       grid: {
-        vertLines: { color: '#f0f0f0' },
-        horzLines: { color: '#f0f0f0' },
+        vertLines: { color: gridColor },
+        horzLines: { color: gridColor },
       },
       crosshair: {
         mode: 1,
       },
       rightPriceScale: {
-        borderColor: '#cccccc',
+        borderColor: borderColor,
       },
       timeScale: {
-        borderColor: '#cccccc',
+        borderColor: borderColor,
         timeVisible: true,
         secondsVisible: false,
       },
@@ -87,24 +95,26 @@ export const AngelOneChart: React.FC<AngelOneChartProps> = ({ data, height = 600
       },
     });
 
-    // Handle resize
-    const handleResize = () => {
-      if (chartContainerRef.current && chartRef.current) {
-        chartRef.current.applyOptions({
-          width: chartContainerRef.current.clientWidth,
-        });
+    // Use ResizeObserver for accurate container sizing
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (chartRef.current) {
+          chartRef.current.applyOptions({
+            width: entry.contentRect.width,
+          });
+        }
       }
-    };
+    });
 
-    window.addEventListener('resize', handleResize);
+    resizeObserver.observe(chartContainerRef.current);
 
     return () => {
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       if (chartRef.current) {
         chartRef.current.remove();
       }
     };
-  }, [height]);
+  }, [height, isDark]);
 
   const dataRef = useRef<string>('');
 
@@ -115,12 +125,12 @@ export const AngelOneChart: React.FC<AngelOneChartProps> = ({ data, height = 600
 
     // Create a hash of the data to check if it has changed
     const dataHash = JSON.stringify(data.map(d => ({ t: d.time, c: d.close })));
-    
+
     // Skip update if data hasn't changed
     if (dataRef.current === dataHash) {
       return;
     }
-    
+
     dataRef.current = dataHash;
 
     // Update candle data (using update for smooth transition)
@@ -151,5 +161,5 @@ export const AngelOneChart: React.FC<AngelOneChartProps> = ({ data, height = 600
     }
   }, [data]);
 
-  return <div ref={chartContainerRef} style={{ position: 'relative' }} />;
+  return <div ref={chartContainerRef} style={{ position: 'relative', width: '100%', height: '100%' }} />;
 };
