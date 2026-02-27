@@ -59,6 +59,69 @@ export default function LiveTradingPage() {
 
   const wsRef = useRef<WebSocket | null>(null);
   const sessionRef = useRef<any>(null);
+  // Keep a ref to chartInterval so parseMarketData (inside ws callback) always sees the latest value
+  const chartIntervalRef = useRef(chartInterval);
+  useEffect(() => {
+    chartIntervalRef.current = chartInterval;
+  }, [chartInterval]);
+
+  // Throttle buffer: hold the latest tick; flush to state at most every 250ms
+  const pendingTickRef = useRef<{ ltp: number; volume: number; tickTimeSecs: number } | null>(null);
+
+  // 250ms flush — reads only stable refs and the stable setState setter, so deps=[] is correct
+  useEffect(() => {
+    const flushId = setInterval(() => {
+      const tick = pendingTickRef.current;
+      if (!tick || tick.ltp <= 0) return;
+      pendingTickRef.current = null;
+
+      const { ltp, volume, tickTimeSecs } = tick;
+      const intervalSecs = getIntervalSeconds(chartIntervalRef.current);
+
+      setHistoricalData((prev) => {
+        if (prev.length === 0) return prev;
+        const lastCandle = prev[prev.length - 1];
+
+        if (tickTimeSecs < lastCandle.time + intervalSecs) {
+          // Same candle: update H / L / C
+          if (
+            ltp === lastCandle.close &&
+            ltp <= lastCandle.high &&
+            ltp >= lastCandle.low
+          ) {
+            return prev; // no change — skip re-render
+          }
+          return [
+            ...prev.slice(0, -1),
+            {
+              ...lastCandle,
+              high: Math.max(lastCandle.high, ltp),
+              low: Math.min(lastCandle.low, ltp),
+              close: ltp,
+              volume: volume > 0 ? volume : lastCandle.volume,
+            },
+          ];
+        } else {
+          // New candle interval: append fresh candle
+          const numIntervals = Math.floor(
+            (tickTimeSecs - lastCandle.time) / intervalSecs
+          );
+          return [
+            ...prev,
+            {
+              time: lastCandle.time + numIntervals * intervalSecs,
+              open: ltp,
+              high: ltp,
+              low: ltp,
+              close: ltp,
+              volume: 0,
+            },
+          ];
+        }
+      });
+    }, 250);
+    return () => clearInterval(flushId);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initialize connection on mount
   useEffect(() => {
@@ -71,23 +134,14 @@ export default function LiveTradingPage() {
   }, []);
 
   // Fetch historical data when symbol or interval changes
+  // WebSocket live ticks will handle updates to the current forming candle — no polling needed
   useEffect(() => {
     if (isConnected && symbolToken) {
       isInitialChartLoadRef.current = true;
+      setHistoricalData([]);  // clear so chart shows loading state while refetching
       fetchHistoricalData();
     }
   }, [symbolToken, selectedExchange, chartInterval, isConnected]);
-
-  // Auto-refresh chart data every 5 seconds (silent, no loader)
-  useEffect(() => {
-    if (!isConnected || !symbolToken) return;
-
-    const intervalId = setInterval(() => {
-      fetchHistoricalData();
-    }, 5000);
-
-    return () => clearInterval(intervalId);
-  }, [isConnected, symbolToken, selectedExchange, chartInterval]);
 
   const fetchHistoricalData = async () => {
     // Only show loading on initial load or when no data exists
@@ -263,6 +317,20 @@ export default function LiveTradingPage() {
     console.log('Subscribed to:', exchange, token);
   };
 
+  /** Returns the number of seconds in a chart interval */
+  const getIntervalSeconds = (interval: string): number => {
+    switch (interval) {
+      case 'ONE_MINUTE':    return 60;
+      case 'THREE_MINUTE':  return 180;
+      case 'FIVE_MINUTE':   return 300;
+      case 'FIFTEEN_MINUTE': return 900;
+      case 'THIRTY_MINUTE': return 1800;
+      case 'ONE_HOUR':      return 3600;
+      case 'ONE_DAY':       return 86400;
+      default:              return 300;
+    }
+  };
+
   const parseMarketData = (buffer: ArrayBuffer) => {
     try {
       const view = new DataView(buffer);
@@ -270,6 +338,19 @@ export default function LiveTradingPage() {
       // Parse according to WebSocket 2.0 specification
       const mode = view.getUint8(0);
       const exchangeType = view.getUint8(1);
+
+      // Exchange timestamp sits at byte offset 35 (Int64, seconds since epoch)
+      let tickTimeSecs: number;
+      try {
+        const rawTs = Number(view.getBigInt64(35, true));
+        // Sanity-check: if the value looks like milliseconds (> 1e12) convert to seconds
+        const asSecs = rawTs > 1e12 ? Math.floor(rawTs / 1000) : rawTs;
+        const nowSecs = Math.floor(Date.now() / 1000);
+        // Accept only if within ±1 day of now, otherwise fall back
+        tickTimeSecs = Math.abs(asSecs - nowSecs) < 86400 ? asSecs : nowSecs;
+      } catch {
+        tickTimeSecs = Math.floor(Date.now() / 1000);
+      }
 
       // Skip token parsing for simplicity
       const ltp = view.getInt32(43, true) / 100; // Convert from paise
@@ -294,6 +375,13 @@ export default function LiveTradingPage() {
         change,
         changePercent,
       });
+
+      // ── Live candlestick update ────────────────────────────────────────────
+      // Store latest tick in a ref; the 250ms flush interval will apply it to state.
+      // This throttles React re-renders to max 4×/sec regardless of tick frequency.
+      if (ltp > 0) {
+        pendingTickRef.current = { ltp, volume, tickTimeSecs };
+      }
     } catch (err) {
       console.error('Error parsing market data:', err);
     }
