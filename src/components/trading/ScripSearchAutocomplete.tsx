@@ -52,7 +52,10 @@ export const ScripSearchAutocomplete: React.FC<ScripSearchAutocompleteProps> = (
         );
 
         if (!response.ok) {
-          throw new Error('Failed to fetch market data');
+          console.warn('Scrip search returned non-ok status:', response.status);
+          setOptions([]);
+          onOptionsLoaded?.([]);
+          return;
         }
 
         const data = await response.json();

@@ -30,14 +30,6 @@ export const useOrderExecution = ({
   }>({ open: false, payload: null });
 
   /**
-   * Calculate order value as percentage of account capital
-   */
-  const calculateOrderPercentage = (payload: OrderPayload) => {
-    const estimatedValue = payload.scrip.ltp * payload.quantity;
-    return (estimatedValue / accountSize) * 100;
-  };
-
-  /**
    * Execute a single order
    */
   const executeOrder = useCallback(
@@ -84,7 +76,8 @@ export const useOrderExecution = ({
    */
   const handlePlaceOrder = useCallback(
     async (payload: OrderPayload) => {
-      const orderPercentage = calculateOrderPercentage(payload);
+      const estimatedValue = payload.scrip.ltp * payload.quantity;
+      const orderPercentage = (estimatedValue / accountSize) * 100;
 
       // Show confirmation for large orders (>10% of capital)
       if (orderPercentage > 10) {

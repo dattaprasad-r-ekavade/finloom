@@ -121,7 +121,7 @@ export default function LiveTradingPage() {
       });
     }, 250);
     return () => clearInterval(flushId);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Initialize connection on mount
   useEffect(() => {
@@ -131,7 +131,7 @@ export default function LiveTradingPage() {
         wsRef.current.close();
       }
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch historical data when symbol or interval changes
   // WebSocket live ticks will handle updates to the current forming candle — no polling needed
@@ -141,7 +141,7 @@ export default function LiveTradingPage() {
       setHistoricalData([]);  // clear so chart shows loading state while refetching
       fetchHistoricalData();
     }
-  }, [symbolToken, selectedExchange, chartInterval, isConnected]);
+  }, [symbolToken, selectedExchange, chartInterval, isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchHistoricalData = async () => {
     // Only show loading on initial load or when no data exists
@@ -260,7 +260,7 @@ export default function LiveTradingPage() {
           const errorData = JSON.parse(event.data);
           console.error('WebSocket error:', errorData);
           setError(errorData.errorMessage || 'WebSocket error');
-        } catch (e) {
+        } catch {
           console.log('WebSocket text message:', event.data);
         }
       } else if (event.data instanceof Blob) {
@@ -336,8 +336,8 @@ export default function LiveTradingPage() {
       const view = new DataView(buffer);
 
       // Parse according to WebSocket 2.0 specification
-      const mode = view.getUint8(0);
-      const exchangeType = view.getUint8(1);
+      view.getUint8(0);
+      view.getUint8(1);
 
       // Exchange timestamp sits at byte offset 35 (Int64, seconds since epoch)
       let tickTimeSecs: number;
@@ -354,8 +354,6 @@ export default function LiveTradingPage() {
 
       // Skip token parsing for simplicity
       const ltp = view.getInt32(43, true) / 100; // Convert from paise
-      const ltq = Number(view.getBigInt64(51, true));
-      const avgPrice = Number(view.getBigInt64(59, true)) / 100;
       const volume = Number(view.getBigInt64(67, true));
       const open = Number(view.getBigInt64(91, true)) / 100;
       const high = Number(view.getBigInt64(99, true)) / 100;

@@ -28,6 +28,8 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
   );
 
   useEffect(() => {
+    const containerEl = containerRef.current;
+
     const loadScript = () =>
       new Promise<void>((resolve) => {
         if (document.getElementById(TRADING_VIEW_SCRIPT_ID)) {
@@ -72,14 +74,14 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
     };
 
     loadScript().then(() => {
-      if (!containerRef.current) {
+      if (!containerEl) {
         return;
       }
-      containerRef.current.innerHTML = '';
+      containerEl.innerHTML = '';
       const container = document.createElement('div');
       container.id = containerIdRef.current;
       container.style.height = `${height}px`;
-      containerRef.current.appendChild(container);
+      containerEl.appendChild(container);
       createWidget();
     });
 
@@ -87,8 +89,8 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({
       if (widgetRef.current && typeof widgetRef.current.remove === 'function') {
         widgetRef.current.remove();
       }
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
+      if (containerEl) {
+        containerEl.innerHTML = '';
       }
     };
   }, [symbol, height, theme]);

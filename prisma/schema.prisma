@@ -169,6 +169,7 @@ model Trade {
   challengeId    String
   scrip          String
   scripFullName  String
+  exchange       String        @default("NSE")
   quantity       Int
   entryPrice     Float
   exitPrice      Float?

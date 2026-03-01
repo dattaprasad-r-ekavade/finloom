@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { formatDate } from '@/lib/dateFormat';
 import {
   Box,
@@ -99,11 +99,7 @@ export default function AdminUsersPage() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [menuUserId, setMenuUserId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchUsers();
-  }, [pagination.page, roleFilter, kycFilter, activeFilter]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async (searchTerm = '') => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -111,7 +107,7 @@ export default function AdminUsersPage() {
         limit: pagination.limit.toString(),
       });
 
-      if (search) params.append('search', search);
+      if (searchTerm) params.append('search', searchTerm);
       if (roleFilter) params.append('role', roleFilter);
       if (kycFilter) params.append('kycStatus', kycFilter);
       if (activeFilter) params.append('hasActiveChallenge', activeFilter);
@@ -125,16 +121,20 @@ export default function AdminUsersPage() {
       } else {
         setError(result.error || 'Failed to fetch users');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to connect to server');
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeFilter, kycFilter, pagination.limit, pagination.page, roleFilter]);
+
+  useEffect(() => {
+    fetchUsers('');
+  }, [pagination.page, roleFilter, kycFilter, activeFilter, fetchUsers]);
 
   const handleSearch = () => {
     setPagination((prev) => ({ ...prev, page: 1 }));
-    fetchUsers();
+    fetchUsers(search);
   };
 
   const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
@@ -199,7 +199,7 @@ export default function AdminUsersPage() {
       } else {
         setError(result.error || 'Failed to update user');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to update user');
     } finally {
       setLoading(false);
@@ -224,7 +224,7 @@ export default function AdminUsersPage() {
       } else {
         setError(result.error || 'Failed to delete user');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to delete user');
     } finally {
       setLoading(false);
@@ -259,7 +259,7 @@ export default function AdminUsersPage() {
       } else {
         setError(result.error || 'Failed to update KYC status');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to update KYC status');
     }
   };
@@ -281,7 +281,7 @@ export default function AdminUsersPage() {
             <Button
               variant="outlined"
               startIcon={<Refresh />}
-              onClick={fetchUsers}
+              onClick={() => fetchUsers('')}
               disabled={loading}
             >
               Refresh

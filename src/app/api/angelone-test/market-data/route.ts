@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     let data;
     try {
       data = responseText ? JSON.parse(responseText) : {};
-    } catch (parseError) {
+    } catch {
       return NextResponse.json(
         { 
           error: 'Invalid JSON response from AngelOne API',

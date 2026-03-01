@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Box, Container, Typography, Stack, Divider, IconButton } from '@mui/material';
+import { Box, Container, Typography, Stack, Divider } from '@mui/material';
 import { useRouter } from 'next/navigation';
 
 const footerLinks = [

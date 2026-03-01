@@ -6,14 +6,13 @@ import {
   Button,
   CircularProgress,
   Divider,
-  Paper,
   Stack,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
-import { ScripOption, ScripSearchAutocomplete } from './ScripSearchAutocomplete';
+import { ScripOption } from './ScripSearchAutocomplete';
 
 export interface OrderPayload {
   scrip: ScripOption;
@@ -32,7 +31,6 @@ export interface OrderPayload {
 interface OrderFormProps {
   challengeId: string;
   selectedScrip: ScripOption | null;
-  onSelectScrip: (option: ScripOption | null) => void;
   capitalAvailable: number;
   onPlaceOrder: (payload: OrderPayload) => Promise<void>;
   isSubmitting?: boolean;
@@ -46,7 +44,6 @@ const currencyFormatter = new Intl.NumberFormat('en-IN', {
 
 export const OrderForm: React.FC<OrderFormProps> = ({
   selectedScrip,
-  onSelectScrip,
   capitalAvailable,
   onPlaceOrder,
   isSubmitting = false,

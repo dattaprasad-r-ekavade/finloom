@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Box,
@@ -111,10 +111,10 @@ interface TradingSummaryResponse {
 }
 
 const DEFAULT_SYMBOL: ScripOption = {
-  scrip: 'RELIANCE-EQ',
-  scripFullName: 'Reliance Industries Ltd',
-  ltp: 2450,
-  exchange: 'NSE',
+  scrip: 'GOLD1!',
+  scripFullName: 'Gold Futures',
+  ltp: 0,
+  exchange: 'MCX',
 };
 
 export default function TradingTerminalPage() {
@@ -122,6 +122,8 @@ export default function TradingTerminalPage() {
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('lg'));
   const user = useAuthStore((state) => state.user);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const checkAuth = useAuthStore((state) => state.checkAuth);
   const [selection, setSelection] = useState<ChallengeSelection | null>(null);
   const [selectedScrip, setSelectedScrip] = useState<ScripOption | null>(DEFAULT_SYMBOL);
   const [summary, setSummary] = useState<TradingSummaryResponse['data'] | null>(null);
@@ -135,6 +137,7 @@ export default function TradingTerminalPage() {
   const [showRiskModal, setShowRiskModal] = useState(false);
   const [historicalData, setHistoricalData] = useState<any[]>([]);
   const [chartInterval, setChartInterval] = useState('FIVE_MINUTE');
+  const [liveStreamUrl, setLiveStreamUrl] = useState<string | null>(null);
   const [isLoadingChart, setIsLoadingChart] = useState(false);
   const [showOpenTradesModal, setShowOpenTradesModal] = useState(false);
   const [mobileTab, setMobileTab] = useState(0);
@@ -154,7 +157,13 @@ export default function TradingTerminalPage() {
   }>({ open: false, payload: null });
   const [squaringOffAll, setSquaringOffAll] = useState(false);
   const isInitialChartLoadRef = React.useRef(true);
-  const symbolTokenCacheRef = React.useRef<Record<string, string>>({});
+  const symbolTokenCacheRef = React.useRef<Record<string, { symbolToken: string; tradingSymbol: string }>>({});
+  const selectedScripRef = React.useRef<ScripOption | null>(DEFAULT_SYMBOL);
+
+  // Keep ref in sync so callbacks can read latest value without it being a dependency
+  useEffect(() => {
+    selectedScripRef.current = selectedScrip;
+  }, [selectedScrip]);
 
   useEffect(() => {
     const hasSeenRiskModal = sessionStorage.getItem('hasSeenRiskModal');
@@ -165,6 +174,14 @@ export default function TradingTerminalPage() {
   }, []);
 
   useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
     if (!user) {
       router.replace('/login');
       return;
@@ -196,7 +213,7 @@ export default function TradingTerminalPage() {
     };
 
     boot();
-  }, [router, user]);
+  }, [isLoading, router, user]);
 
   const challengeId = selection?.id ?? null;
   const isChallengeActive = selection?.status === 'ACTIVE';
@@ -233,7 +250,7 @@ export default function TradingTerminalPage() {
       const tradeItems: TradeRecord[] = json.data?.trades ?? [];
       setTrades(tradeItems);
 
-      if (!selectedScrip && tradeItems.length) {
+      if (!selectedScripRef.current && tradeItems.length) {
         const latest = tradeItems[0];
         setSelectedScrip({
           scrip: latest.scrip,
@@ -246,18 +263,21 @@ export default function TradingTerminalPage() {
       console.error(err);
       setError(err instanceof Error ? err.message : 'Failed to load trades history.');
     }
-  }, [challengeId, selectedScrip]);
+  }, [challengeId]);
 
-  // Resolve symbol token from AngelOne (only caches successes; failures retry)
-  const resolveSymbolToken = useCallback(async (baseSymbol: string): Promise<string | null> => {
-    const cached = symbolTokenCacheRef.current[baseSymbol];
+  // Resolve symbol token + trading symbol from AngelOne search
+  const resolveSymbolToken = useCallback(async (baseSymbol: string, exchange: string): Promise<{ symbolToken: string; tradingSymbol: string } | null> => {
+    const cleanSymbol = baseSymbol.replace(/[!@#]/g, '').replace(/\d+$/, '') || baseSymbol.replace(/[!@#]/g, '');
+    const searchTerm = cleanSymbol || baseSymbol;
+    const cacheKey = `${exchange}:${baseSymbol}`;
+    const cached = symbolTokenCacheRef.current[cacheKey];
     if (cached) return cached;
 
     try {
       const searchRes = await fetch('/api/angelone-live/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ exchange: 'NSE', searchScrip: baseSymbol }),
+        body: JSON.stringify({ exchange, searchScrip: searchTerm }),
       });
 
       const searchData = await searchRes.json();
@@ -265,11 +285,15 @@ export default function TradingTerminalPage() {
         return null;
       }
 
-      const eqScrip = searchData.data.find((s: any) => s.tradingsymbol.endsWith('-EQ'));
-      const token = eqScrip?.symboltoken || searchData.data[0]?.symboltoken;
-      if (token) {
-        symbolTokenCacheRef.current[baseSymbol] = token;
-        return token;
+      const preferredScrip = exchange === 'NSE'
+        ? searchData.data.find((s: any) => s.tradingsymbol.endsWith('-EQ'))
+        : searchData.data[0];
+      const token = preferredScrip?.symboltoken || searchData.data[0]?.symboltoken;
+      const tradingSymbol = preferredScrip?.tradingsymbol || searchData.data[0]?.tradingsymbol;
+      if (token && tradingSymbol) {
+        const entry = { symbolToken: token, tradingSymbol };
+        symbolTokenCacheRef.current[cacheKey] = entry;
+        return entry;
       }
       return null;
     } catch (err) {
@@ -278,7 +302,7 @@ export default function TradingTerminalPage() {
     }
   }, []);
 
-  const fetchHistoricalData = useCallback(async (scrip: string) => {
+  const fetchHistoricalData = useCallback(async (scrip: string, exchange: string) => {
     if (!scrip) return;
 
     if (isInitialChartLoadRef.current) {
@@ -287,9 +311,10 @@ export default function TradingTerminalPage() {
 
     try {
       const baseSymbol = scrip.split('-')[0];
-      const symbolToken = await resolveSymbolToken(baseSymbol);
+      const tokenInfo = await resolveSymbolToken(baseSymbol, exchange);
 
-      if (!symbolToken) {
+      if (!tokenInfo) {
+        setLiveStreamUrl(null);
         return;
       }
 
@@ -314,11 +339,11 @@ export default function TradingTerminalPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          exchange: 'NSE',
-          symbolToken: symbolToken,
+          exchange,
+          symbolToken: tokenInfo.symbolToken,
           interval: chartInterval,
-          fromDate: fromDate,
-          toDate: toDate,
+          fromDate,
+          toDate,
         }),
       });
 
@@ -334,6 +359,10 @@ export default function TradingTerminalPage() {
         }));
         setHistoricalData(candleData);
       }
+
+      // Start live SSE stream for this scrip
+      const streamUrl = `/api/angelone-live/stream?symbolToken=${encodeURIComponent(tokenInfo.symbolToken)}&exchange=${encodeURIComponent(exchange)}&tradingSymbol=${encodeURIComponent(tokenInfo.tradingSymbol)}`;
+      setLiveStreamUrl(streamUrl);
     } catch (err) {
       console.error('Error fetching historical data:', err);
     } finally {
@@ -346,106 +375,29 @@ export default function TradingTerminalPage() {
     if (!challengeId) return;
     setIsRefreshing(true);
     await Promise.all([loadSummary(), loadTrades()]);
-    if (selectedScrip) {
-      try {
-        const detailResponse = await fetch(
-          `/api/trading/market-data/${encodeURIComponent(selectedScrip.scrip.split('-')[0])}`,
-          { cache: 'no-store' },
-        );
-        const detailJson = await detailResponse.json();
-        if (detailResponse.ok && detailJson?.success) {
-          const data = detailJson.data?.marketData;
-          if (data) {
-            setSelectedScrip((prev) =>
-              prev && prev.scrip === data.scrip
-                ? { ...prev, ltp: data.ltp, scripFullName: data.scripFullName, exchange: data.exchange }
-                : prev,
-            );
-          }
-        }
-      } catch (error) {
-        console.error('Failed to refresh selected scrip LTP:', error);
-      }
-    }
     setIsRefreshing(false);
-  }, [challengeId, loadSummary, loadTrades, selectedScrip]);
+  }, [challengeId, loadSummary, loadTrades]);
 
   useEffect(() => {
     if (!challengeId) return;
     refreshAll();
   }, [challengeId, refreshAll]);
 
+  // Load historical data + start SSE stream when scrip or interval changes
   useEffect(() => {
     if (selectedScrip) {
       isInitialChartLoadRef.current = true;
-      fetchHistoricalData(selectedScrip.scrip);
+      setHistoricalData([]); // clear old candles so chart always does a full reset
+      setLiveStreamUrl(null);
+      fetchHistoricalData(selectedScrip.scrip, selectedScrip.exchange);
     }
-  }, [selectedScrip, chartInterval, fetchHistoricalData]);
+  }, [selectedScrip?.scrip, selectedScrip?.exchange, chartInterval, fetchHistoricalData]);
 
-  // Auto-refresh LTP and chart every 5 seconds (silent)
-  useEffect(() => {
-    if (!selectedScrip || !isChallengeActive) return;
-
-    const refreshInterval = setInterval(async () => {
-      try {
-        const detailResponse = await fetch(
-          `/api/trading/market-data/${encodeURIComponent(selectedScrip.scrip.split('-')[0])}`,
-          { cache: 'no-store' },
-        );
-        const detailJson = await detailResponse.json();
-        if (detailResponse.ok && detailJson?.success) {
-          const data = detailJson.data?.marketData;
-          if (data) {
-            setSelectedScrip((prev) =>
-              prev && prev.scrip.startsWith(data.scrip)
-                ? { ...prev, ltp: data.ltp, scripFullName: data.scripFullName, exchange: data.exchange }
-                : prev,
-            );
-            setPriceUpdateTrigger(prev => prev + 1);
-          }
-        }
-
-        await fetchHistoricalData(selectedScrip.scrip);
-      } catch (error) {
-        console.error('Auto-refresh failed:', error);
-      }
-    }, 5000);
-
-    return () => clearInterval(refreshInterval);
-  }, [selectedScrip, isChallengeActive, fetchHistoricalData]);
-
-  const handlePlaceOrder = useCallback(
-    async (payload: OrderPayload) => {
-      if (!challengeId) return;
-
-      const capitalAvailable =
-        summary?.portfolio?.capitalAvailable ??
-        summary?.summary?.capitalAvailable ??
-        selection?.plan.accountSize ??
-        0;
-      const orderValue = payload.scrip.ltp * payload.quantity;
-      const capitalPercentage = (orderValue / capitalAvailable) * 100;
-
-      if (capitalPercentage > 10) {
-        const orderWithDetails: OrderPayload = {
-          ...payload,
-          orderDetails: {
-            scrip: payload.scrip.scrip,
-            scripFullName: payload.scrip.scripFullName,
-            quantity: payload.quantity,
-            tradeType: payload.tradeType,
-            estimatedValue: orderValue,
-            capitalPercentage,
-          },
-        };
-        setOrderConfirmation({ open: true, payload: orderWithDetails });
-        return;
-      }
-
-      await executeOrder(payload);
-    },
-    [challengeId, summary, selection],
-  );
+  // Callback for AngelOneChart to feed live LTP back to the page
+  const handleChartLTPUpdate = useCallback((ltp: number) => {
+    setSelectedScrip((prev) => prev ? { ...prev, ltp } : prev);
+    setPriceUpdateTrigger((t) => t + 1);
+  }, []);
 
   const executeOrder = useCallback(
     async (payload: OrderPayload) => {
@@ -463,6 +415,7 @@ export default function TradingTerminalPage() {
           body: JSON.stringify({
             challengeId,
             scrip: tradingScrip,
+            exchange: payload.scrip.exchange || selectedScripRef.current?.exchange || 'NSE',
             quantity: payload.quantity,
             tradeType: payload.tradeType,
           }),
@@ -496,6 +449,39 @@ export default function TradingTerminalPage() {
       }
     },
     [challengeId, refreshAll],
+  );
+
+  const handlePlaceOrder = useCallback(
+    async (payload: OrderPayload) => {
+      if (!challengeId) return;
+
+      const capitalAvailable =
+        summary?.portfolio?.capitalAvailable ??
+        summary?.summary?.capitalAvailable ??
+        selection?.plan.accountSize ??
+        0;
+      const orderValue = payload.scrip.ltp * payload.quantity;
+      const capitalPercentage = (orderValue / capitalAvailable) * 100;
+
+      if (capitalPercentage > 10) {
+        const orderWithDetails: OrderPayload = {
+          ...payload,
+          orderDetails: {
+            scrip: payload.scrip.scrip,
+            scripFullName: payload.scrip.scripFullName,
+            quantity: payload.quantity,
+            tradeType: payload.tradeType,
+            estimatedValue: orderValue,
+            capitalPercentage,
+          },
+        };
+        setOrderConfirmation({ open: true, payload: orderWithDetails });
+        return;
+      }
+
+      await executeOrder(payload);
+    },
+    [challengeId, executeOrder, selection, summary],
   );
 
   const handleSquareOff = useCallback(
@@ -589,21 +575,12 @@ export default function TradingTerminalPage() {
             value={selectedScrip}
             onChange={(option) => {
               if (!option) { setSelectedScrip(DEFAULT_SYMBOL); return; }
-              const scripForChart = option.scrip.includes('-') ? option.scrip : `${option.scrip}-EQ`;
-              setSelectedScrip({ ...option, scrip: scripForChart });
-              fetch(`/api/trading/market-data/${option.scrip.split('-')[0]}`)
-                .then((res) => res.json())
-                .then((json) => {
-                  if (json?.success && json.data?.marketData) {
-                    setSelectedScrip({
-                      scrip: scripForChart,
-                      scripFullName: json.data.marketData.scripFullName,
-                      ltp: json.data.marketData.ltp,
-                      exchange: json.data.marketData.exchange,
-                    });
-                  }
-                })
-                .catch((err) => console.error('Failed to load scrip details', err));
+              setSelectedScrip({
+                scrip: option.scrip,
+                scripFullName: option.scripFullName,
+                ltp: option.ltp || 0,
+                exchange: option.exchange || 'NSE',
+              });
             }}
           />
         </Box>
@@ -654,7 +631,7 @@ export default function TradingTerminalPage() {
           <CircularProgress size={28} />
         </Box>
       ) : historicalData.length > 0 ? (
-        <AngelOneChart data={historicalData} />
+        <AngelOneChart data={historicalData} liveStreamUrl={liveStreamUrl ?? undefined} onLTPUpdate={handleChartLTPUpdate} />
       ) : (
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
           <Typography variant="body2" color="text.secondary">No chart data</Typography>
@@ -671,7 +648,6 @@ export default function TradingTerminalPage() {
         <OrderForm
           challengeId={selection?.id ?? ''}
           selectedScrip={selectedScrip}
-          onSelectScrip={setSelectedScrip}
           capitalAvailable={
             summary?.portfolio?.capitalAvailable ??
             summary?.summary?.capitalAvailable ??

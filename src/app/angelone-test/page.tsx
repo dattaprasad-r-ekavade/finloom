@@ -54,8 +54,6 @@ export default function AngelOneTestPage() {
   
   // Token
   const [jwtToken, setJwtToken] = useState('');
-  const [refreshToken, setRefreshToken] = useState('');
-  const [feedToken, setFeedToken] = useState('');
   
   // Response
   const [response, setResponse] = useState<any>(null);
@@ -118,8 +116,6 @@ export default function AngelOneTestPage() {
         // Save tokens if login was successful
         if (endpoint === 'login' && data.data?.jwtToken) {
           setJwtToken(data.data.jwtToken);
-          setRefreshToken(data.data.refreshToken);
-          setFeedToken(data.data.feedToken);
         }
       }
     } catch (err: any) {
@@ -136,7 +132,7 @@ export default function AngelOneTestPage() {
       try {
         totpCode = OTPAuth.authenticator.generate(totpSecret);
         setGeneratedTotp(totpCode);
-      } catch (error) {
+      } catch {
         setError('Invalid TOTP secret key');
         return;
       }

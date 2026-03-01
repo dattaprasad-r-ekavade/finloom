@@ -10,8 +10,6 @@ import {
   Divider,
   Alert,
 } from '@mui/material';
-import Trending from '@mui/icons-material/TrendingUp';
-import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 
 interface AdvancedMetricsProps {
   trades: Array<{
@@ -32,7 +30,7 @@ const formatCurrency = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
-const calculateMetrics = (trades: AdvancedMetricsProps['trades'], accountSize: number) => {
+const calculateMetrics = (trades: AdvancedMetricsProps['trades']) => {
   const closedTrades = trades.filter((t) => t.exitPrice !== null);
   
   if (closedTrades.length === 0) {
@@ -120,9 +118,8 @@ const calculateMetrics = (trades: AdvancedMetricsProps['trades'], accountSize: n
 
 export const AdvancedPerformanceMetrics: React.FC<AdvancedMetricsProps> = ({
   trades,
-  accountSize,
 }) => {
-  const metrics = calculateMetrics(trades, accountSize);
+  const metrics = calculateMetrics(trades);
 
   const MetricItem: React.FC<{
     title: string;

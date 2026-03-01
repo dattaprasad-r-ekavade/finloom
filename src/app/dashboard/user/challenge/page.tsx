@@ -87,12 +87,22 @@ const formatCurrency = (value: number) =>
 export default function ChallengeMonitorPage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const checkAuth = useAuthStore((state) => state.checkAuth);
 
   const [status, setStatus] = useState<ChallengeStatusPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
     if (!user) {
       router.replace('/login');
       return;
@@ -139,9 +149,7 @@ export default function ChallengeMonitorPage() {
     };
 
     fetchData();
-  }, [router, user]);
-
-  const credentials = status?.credentials ?? null;
+  }, [isLoading, router, user]);
 
   const payment = status?.payments?.[0] ?? null;
 

@@ -431,6 +431,28 @@ function MockPaymentContent() {
                     </Stack>
                   )}
 
+                  {credentials && (
+                    <Stack spacing={0.75}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        Demo credentials
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Username: <strong>{credentials.username}</strong>
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Password: <strong>{credentials.password}</strong>
+                      </Typography>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={handleCopyCredentials}
+                        sx={{ alignSelf: 'flex-start', fontWeight: 600 }}
+                      >
+                        Copy credentials
+                      </Button>
+                    </Stack>
+                  )}
+
                   <Alert
                     severity="info"
                     sx={{ borderRadius: 2, border: (theme) => `1px solid ${theme.palette.info.light}` }}

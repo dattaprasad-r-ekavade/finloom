@@ -23,9 +23,13 @@ interface CandleData {
 interface AngelOneChartProps {
   data: CandleData[];
   height?: number;
+  /** SSE stream URL for live tick updates */
+  liveStreamUrl?: string;
+  /** Called on every live LTP tick so the parent can update its LTP display */
+  onLTPUpdate?: (ltp: number) => void;
 }
 
-export const AngelOneChart: React.FC<AngelOneChartProps> = ({ data, height = 600 }) => {
+export const AngelOneChart: React.FC<AngelOneChartProps> = ({ data, height = 600, liveStreamUrl, onLTPUpdate }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -112,14 +116,23 @@ export const AngelOneChart: React.FC<AngelOneChartProps> = ({ data, height = 600
       resizeObserver.disconnect();
       if (chartRef.current) {
         chartRef.current.remove();
+        chartRef.current = null;
+        candleSeriesRef.current = null;
+        volumeSeriesRef.current = null;
+        prevDataRef.current = [];
+        liveCandleRef.current = null;
       }
     };
   }, [height, isDark]);
 
   const prevDataRef = useRef<CandleData[]>([]);
+  // Tracks the current in-progress (live) candle built from SSE ticks
+  const liveCandleRef = useRef<CandleData | null>(null);
 
   useEffect(() => {
     if (!candleSeriesRef.current || !volumeSeriesRef.current || !data || data.length === 0) {
+      // Clear prevDataRef so the next non-empty data load triggers a full chart reset
+      prevDataRef.current = [];
       return;
     }
 
@@ -135,6 +148,7 @@ export const AngelOneChart: React.FC<AngelOneChartProps> = ({ data, height = 600
 
     if (isInitialLoad || isFullChange) {
       // Full setData — only on first load or symbol/interval change
+      liveCandleRef.current = null;
       const candleData = data.map(d => ({
         time: d.time as any,
         open: d.open,
@@ -232,6 +246,62 @@ export const AngelOneChart: React.FC<AngelOneChartProps> = ({ data, height = 600
 
     prevDataRef.current = data;
   }, [data]);
+
+  // ----- SSE live tick subscription -----
+  useEffect(() => {
+    if (!liveStreamUrl) {
+      liveCandleRef.current = null;
+      return;
+    }
+
+    const es = new EventSource(liveStreamUrl);
+
+    es.onmessage = (event) => {
+      try {
+        const tick: { ltp: number; time: number } = JSON.parse(event.data);
+        const { ltp, time } = tick;
+        if (typeof ltp !== 'number' || !isFinite(ltp)) return;
+
+        onLTPUpdate?.(ltp);
+
+        // Minute-aligned Unix seconds timestamp for the chart
+        const minuteTs = Math.floor(time / 60000) * 60;
+        const prev = liveCandleRef.current;
+
+        if (!prev || minuteTs > prev.time) {
+          liveCandleRef.current = { time: minuteTs, open: ltp, high: ltp, low: ltp, close: ltp };
+        } else {
+          liveCandleRef.current = {
+            time: prev.time,
+            open: prev.open,
+            high: Math.max(prev.high, ltp),
+            low: Math.min(prev.low, ltp),
+            close: ltp,
+          };
+        }
+
+        const live = liveCandleRef.current;
+        candleSeriesRef.current?.update({
+          time: live.time as any,
+          open: live.open,
+          high: live.high,
+          low: live.low,
+          close: live.close,
+        });
+      } catch {
+        // ignore malformed SSE messages
+      }
+    };
+
+    es.onerror = () => {
+      // EventSource auto-reconnects; suppress console noise
+    };
+
+    return () => {
+      es.close();
+      liveCandleRef.current = null;
+    };
+  }, [liveStreamUrl, onLTPUpdate]);
 
   return <div ref={chartContainerRef} style={{ position: 'relative', width: '100%', height: '100%' }} />;
 };

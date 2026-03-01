@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useSyncExternalStore, ReactNode } from 'react';
 import { ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { lightTheme, darkTheme } from './theme';
@@ -24,19 +24,20 @@ interface ThemeProviderProps {
 }
 
 export default function ThemeProvider({ children }: ThemeProviderProps) {
-  const [mode, setMode] = useState<ThemeMode>('light');
-  const [mounted, setMounted] = useState(false);
+  const isHydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
-  // On mount: read saved preference or fall back to system preference
-  useEffect(() => {
+  const [mode, setMode] = useState<ThemeMode>(() => {
+    if (typeof window === 'undefined') return 'light';
     const saved = localStorage.getItem('theme-mode') as ThemeMode | null;
-    if (saved === 'light' || saved === 'dark') {
-      setMode(saved);
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setMode('dark');
-    }
-    setMounted(true);
-
+    if (saved === 'light' || saved === 'dark') return saved;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+  // Subscribe for system preference changes
+  useEffect(() => {
     // Listen for system preference changes
     const mql = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e: MediaQueryListEvent) => {
@@ -61,8 +62,7 @@ export default function ThemeProvider({ children }: ThemeProviderProps) {
 
   const contextValue = useMemo(() => ({ mode, toggleTheme }), [mode]);
 
-  // Prevent flash of wrong theme before mount
-  if (!mounted) {
+  if (!isHydrated) {
     return null;
   }
 

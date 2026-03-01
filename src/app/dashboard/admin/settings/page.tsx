@@ -32,6 +32,8 @@ interface AdminSettingsData {
 export default function AdminSettingsPage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const checkAuth = useAuthStore((state) => state.checkAuth);
   const [settings, setSettings] = useState<AdminSettingsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -40,6 +42,14 @@ export default function AdminSettingsPage() {
   const [autoApproveKyc, setAutoApproveKyc] = useState(false);
 
   useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
     if (!user) {
       router.replace('/login');
       return;
@@ -51,7 +61,7 @@ export default function AdminSettingsPage() {
     }
 
     fetchSettings();
-  }, [user, router]);
+  }, [isLoading, user, router]);
 
   const fetchSettings = async () => {
     try {
@@ -65,7 +75,7 @@ export default function AdminSettingsPage() {
       } else {
         setError(result.error || 'Failed to fetch settings');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to connect to server');
     } finally {
       setLoading(false);
@@ -92,7 +102,7 @@ export default function AdminSettingsPage() {
       } else {
         setError(result.error || 'Failed to save settings');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to save settings');
     } finally {
       setSaving(false);

@@ -10,10 +10,12 @@ import {
 } from '@/lib/tradingUtils';
 import { requireTrader, getChallengeForTrader } from '@/app/api/trading/_helpers';
 import { TradeStatus, TradeType } from '@prisma/client';
+import { getLivePrice, getLivePriceMap } from '@/lib/angeloneLivePrice';
 
 interface ExecuteBody {
   challengeId?: string;
   scrip?: string;
+  exchange?: string;
   quantity?: number;
   tradeType?: TradeType;
 }
@@ -30,6 +32,7 @@ export async function POST(request: NextRequest) {
 
     const challengeId = body.challengeId?.trim();
     const scrip = body.scrip ? normalizeScripSymbol(body.scrip) : '';
+    const exchange = (body.exchange?.trim().toUpperCase()) || 'NSE';
     const quantity = clampQuantity(Number(body.quantity));
     const tradeType = body.tradeType;
 
@@ -56,13 +59,12 @@ export async function POST(request: NextRequest) {
       return ErrorHandlers.forbidden('Challenge is not active');
     }
 
-    const marketData = await prisma.mockedMarketData.findUnique({
-      where: { scrip },
-    });
-
-    if (!marketData) {
-      return ErrorHandlers.notFound('Requested scrip is unavailable');
+    // Fetch live price from AngelOne
+    const liveData = await getLivePrice(scrip, exchange);
+    if (!liveData) {
+      return ErrorHandlers.notFound(`Live market data unavailable for ${scrip} on ${exchange}. Market may be closed or scrip not found.`);
     }
+    const { ltp: currentLtp, tradingSymbol, scripFullName } = liveData;
 
     const todayStart = getISTStartOfDay();
     const tomorrowStart = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
@@ -107,22 +109,17 @@ export async function POST(request: NextRequest) {
     const scripsToFetch = Array.from(
       new Set([...openTrades.map((trade) => trade.scrip), scrip]),
     );
-    const otherMarketData = await prisma.mockedMarketData.findMany({
-      where: {
-        scrip: { in: scripsToFetch },
-      },
-    });
-
-    const priceMap = new Map<string, number>();
-    otherMarketData.forEach((item) => priceMap.set(item.scrip, item.ltp));
-    priceMap.set(scrip, marketData.ltp);
+    const priceMap = await getLivePriceMap(
+      openTrades.map((t) => ({ scrip: t.scrip, exchange: t.exchange || 'NSE', fallbackPrice: t.entryPrice }))
+    );
+    priceMap.set(scrip, currentLtp);
 
     const capitalUsedBefore = openTrades.reduce((total, trade) => {
       const ltp = priceMap.get(trade.scrip) ?? trade.entryPrice;
       return total + calculateRequiredCapital(trade.quantity, ltp);
     }, 0);
 
-    const requiredCapital = calculateRequiredCapital(quantity, marketData.ltp);
+    const requiredCapital = calculateRequiredCapital(quantity, currentLtp);
     const realizedSum = aggregateRealized._sum.pnl ?? 0;
     const realizedLoss = realizedSum < 0 ? Math.abs(realizedSum) : 0;
     const capitalAvailableBefore =
@@ -137,10 +134,11 @@ export async function POST(request: NextRequest) {
     const createdTrade = await prisma.trade.create({
       data: {
         challengeId,
-        scrip: marketData.scrip,
-        scripFullName: marketData.scripFullName,
+        scrip: normalizeScripSymbol(tradingSymbol.replace(/-EQ$/, '')),
+        scripFullName,
+        exchange,
         quantity,
-        entryPrice: marketData.ltp,
+        entryPrice: currentLtp,
         tradeType,
         status: TradeStatus.OPEN,
         pnl: 0,

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   Box,
   Container,
@@ -22,35 +22,12 @@ import {
   AccountBalance,
   Assessment,
   CheckCircleOutline,
-  Payment,
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { robotoMonoFontFamily } from '@/theme/theme';
-
-type ChallengePlan = {
-  id: string;
-  name: string;
-  description: string | null;
-  accountSize: number;
-  profitTargetPct: number;
-  maxLossPct: number;
-  dailyLossPct: number;
-  fee: number;
-  durationDays: number;
-  allowedInstruments: string[];
-  profitSplit: number;
-  level: number;
-};
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(value);
 
 const heroStats = [
   {

@@ -8,6 +8,7 @@ import {
 } from '@/lib/tradingUtils';
 import { requireAdmin } from '@/app/api/trading/_helpers';
 import { TradeStatus, TradeType } from '@prisma/client';
+import { getLivePriceMap } from '@/lib/angeloneLivePrice';
 
 interface AutoSquareOffBody {
   challengeId?: string;
@@ -66,16 +67,11 @@ export async function POST(request: NextRequest) {
     }
 
     const scrips = Array.from(new Set(openTrades.map((trade) => trade.scrip)));
-    const marketSnapshots = await prisma.mockedMarketData.findMany({
-      where: {
-        scrip: { in: scrips },
-      },
-    });
-
-    const priceMap = new Map<string, number>();
-    marketSnapshots.forEach((snapshot) =>
-      priceMap.set(snapshot.scrip, snapshot.ltp),
-    );
+    const priceMap = scrips.length
+      ? await getLivePriceMap(
+          openTrades.map((t) => ({ scrip: t.scrip, exchange: t.exchange || 'NSE', fallbackPrice: t.entryPrice }))
+        )
+      : new Map<string, number>();
 
     const now = new Date();
     const closeOperations = openTrades.map((trade) => {
@@ -170,16 +166,11 @@ export async function POST(request: NextRequest) {
       const remainingScrips = Array.from(
         new Set(openTradesRemaining.map((trade) => trade.scrip)),
       );
-      const remainingSnapshots = remainingScrips.length
-        ? await prisma.mockedMarketData.findMany({
-            where: { scrip: { in: remainingScrips } },
-          })
-        : [];
-
-      const remainingPriceMap = new Map<string, number>();
-      remainingSnapshots.forEach((snapshot) =>
-        remainingPriceMap.set(snapshot.scrip, snapshot.ltp),
-      );
+      const remainingPriceMap = remainingScrips.length
+        ? await getLivePriceMap(
+            openTradesRemaining.map((t) => ({ scrip: t.scrip, exchange: t.exchange || 'NSE', fallbackPrice: t.entryPrice }))
+          )
+        : new Map<string, number>();
 
       const capitalUsed = openTradesRemaining.reduce((total, trade) => {
         const ltp = remainingPriceMap.get(trade.scrip) ?? trade.entryPrice;

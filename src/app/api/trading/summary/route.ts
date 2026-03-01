@@ -9,6 +9,7 @@ import {
 } from '@/lib/tradingUtils';
 import { getChallengeForTrader, requireTrader } from '@/app/api/trading/_helpers';
 import { TradeStatus } from '@prisma/client';
+import { getLivePriceMap } from '@/lib/angeloneLivePrice';
 
 function parseDateParam(value: string | null): Date | null {
   if (!value) {
@@ -98,17 +99,11 @@ export async function GET(request: NextRequest) {
         }),
       ]);
 
-    const scrips = Array.from(new Set(openTrades.map((trade) => trade.scrip)));
-    const marketSnapshots = scrips.length
-      ? await prisma.mockedMarketData.findMany({
-          where: { scrip: { in: scrips } },
-        })
-      : [];
-
-    const priceMap = new Map<string, number>();
-    marketSnapshots.forEach((snapshot) =>
-      priceMap.set(snapshot.scrip, snapshot.ltp),
-    );
+    const priceMap = openTrades.length
+      ? await getLivePriceMap(
+          openTrades.map((t) => ({ scrip: t.scrip, exchange: t.exchange || 'NSE', fallbackPrice: t.entryPrice }))
+        )
+      : new Map<string, number>();
 
     const capitalUsed = openTrades.reduce((total, trade) => {
       const ltp = priceMap.get(trade.scrip) ?? trade.entryPrice;

@@ -8,6 +8,7 @@ import {
 } from '@/lib/tradingUtils';
 import { requireTrader } from '@/app/api/trading/_helpers';
 import { TradeStatus, TradeType } from '@prisma/client';
+import { getLivePrice, getLivePriceMap } from '@/lib/angeloneLivePrice';
 
 interface SquareOffBody {
   tradeId?: string;
@@ -51,12 +52,10 @@ export async function POST(request: NextRequest) {
       return ErrorHandlers.badRequest('Trade is already closed');
     }
 
-    const marketData = await prisma.mockedMarketData.findUnique({
-      where: { scrip: trade.scrip },
-    });
+    const marketData = await getLivePrice(trade.scrip, trade.exchange || 'NSE');
 
     if (!marketData) {
-      return ErrorHandlers.notFound('Market data unavailable for this scrip');
+      return ErrorHandlers.notFound('Live market data unavailable for this scrip');
     }
 
     const exitPrice = marketData.ltp;
@@ -123,16 +122,11 @@ export async function POST(request: NextRequest) {
     const scripsToFetch = Array.from(
       new Set(openTrades.map((openTrade) => openTrade.scrip)),
     );
-    const marketSnapshots = scripsToFetch.length
-      ? await prisma.mockedMarketData.findMany({
-          where: { scrip: { in: scripsToFetch } },
-        })
-      : [];
-
-    const priceMap = new Map<string, number>();
-    marketSnapshots.forEach((snapshot) =>
-      priceMap.set(snapshot.scrip, snapshot.ltp),
-    );
+    const priceMap = scripsToFetch.length
+      ? await getLivePriceMap(
+          openTrades.map((t) => ({ scrip: t.scrip, exchange: t.exchange || 'NSE', fallbackPrice: t.entryPrice }))
+        )
+      : new Map<string, number>();
 
     const capitalUsed = openTrades.reduce((total, openTrade) => {
       const ltp = priceMap.get(openTrade.scrip) ?? openTrade.entryPrice;

@@ -97,7 +97,7 @@ export default function AdminDashboard() {
       } else {
         setError(result.error || 'Failed to fetch overview data');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to connect to server');
     } finally {
       setLoading(false);

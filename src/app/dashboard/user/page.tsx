@@ -47,7 +47,7 @@ import { useRouter } from 'next/navigation';
 import { robotoMonoFontFamily } from '@/theme/theme';
 import { useAuthStore } from '@/store/authStore';
 import { parseChallengeCredentials } from '@/lib/challengeCredentials';
-import { formatDate, formatDateTime, formatChartDate } from '@/lib/dateFormat';
+import { formatDateTime, formatChartDate } from '@/lib/dateFormat';
 import { ToastNotification } from '@/components/AnimatedComponents';
 
 interface ChallengeStatusPayload {
@@ -219,7 +219,7 @@ export default function UserDashboard() {
     };
 
     fetchSelection();
-  }, [router, user]);
+  }, [isLoading, router, user]);
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -591,6 +591,27 @@ export default function UserDashboard() {
                     }
                   >
                     View payment details
+                  </Button>
+                </Stack>
+              )}
+
+              {credentials && (
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={1.5}
+                  alignItems={{ xs: 'stretch', sm: 'center' }}
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    Demo credentials ready for terminal access.
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<ContentCopy />}
+                    onClick={handleCopyCredentials}
+                    sx={{ fontWeight: 600 }}
+                  >
+                    Copy credentials
                   </Button>
                 </Stack>
               )}
