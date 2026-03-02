@@ -13,7 +13,13 @@ import { getAngelOneSession } from '@/lib/angelone';
 export const dynamic = 'force-dynamic';
 
 const ANGELONE_BASE_URL = 'https://apiconnect.angelone.in';
-const POLL_INTERVAL_MS = 1000; // 1 second
+const POLL_INTERVAL_MS = 5000; // 5 seconds — getCandleData is a heavier call
+
+/** AngelOne getCandleData requires IST-formatted dates (UTC+5:30). */
+function toAngelOneDate(d: Date): string {
+  const ist = new Date(d.getTime() + 5.5 * 60 * 60 * 1000);
+  return ist.toISOString().slice(0, 16).replace('T', ' ');
+}
 
 export async function GET(request: NextRequest) {
   const sessionUser = await requireOneOfRoles(request, ['TRADER', 'ADMIN']);
@@ -61,8 +67,10 @@ export async function GET(request: NextRequest) {
           const pollStart = Date.now();
           try {
             const session = await getAngelOneSession();
+            const now = new Date();
+            const from = new Date(now.getTime() - 5 * 60 * 1000); // last 5 min
             const response = await fetch(
-              `${ANGELONE_BASE_URL}/rest/secure/angelbroking/market/v1/getLtpData`,
+              `${ANGELONE_BASE_URL}/rest/secure/angelbroking/historical/v1/getCandleData`,
               {
                 method: 'POST',
                 headers: {
@@ -76,7 +84,13 @@ export async function GET(request: NextRequest) {
                   'X-MACAddress': '00:00:00:00:00:00',
                   'X-PrivateKey': session.apiKey,
                 },
-                body: JSON.stringify({ exchange, tradingsymbol: tradingSymbol, symboltoken: symbolToken }),
+                body: JSON.stringify({
+                  exchange,
+                  symboltoken: symbolToken,
+                  interval: 'ONE_MINUTE',
+                  fromdate: toAngelOneDate(from),
+                  todate: toAngelOneDate(now),
+                }),
                 signal: AbortSignal.timeout(5000),
               },
             );
@@ -92,15 +106,30 @@ export async function GET(request: NextRequest) {
               continue;
             }
 
-            if (response.ok && (data as any).data?.ltp != null) {
-              const tick = JSON.stringify({ ltp: (data as any).data.ltp, time: Date.now() });
+            const candles = Array.isArray((data as any).data) ? (data as any).data as any[][] : null;
+
+            if (response.ok && candles && candles.length > 0) {
+              const last = candles[candles.length - 1];
+              // last = [timestamp, open, high, low, close, volume]
+              const ltp: number = last[4]; // close
+              const candleTimeMs = new Date(last[0]).getTime();
+              const tick = JSON.stringify({
+                ltp,
+                time: Date.now(),
+                candleTimeMs,
+                open: last[1],
+                high: last[2],
+                low: last[3],
+                close: last[4],
+                volume: last[5],
+              });
               controller.enqueue(encoder.encode(`data: ${tick}\n\n`));
               consecutiveErrors = 0;
             } else if (
               response.status === 401 ||
               response.status === 403 ||
-              data.errorcode === 'AG8001' ||
-              data.errorCode === 'AG8001'
+              (data as any).errorcode === 'AG8001' ||
+              (data as any).errorCode === 'AG8001'
             ) {
               // Stale session — force refresh and retry immediately
               await getAngelOneSession({ forceRefresh: true });

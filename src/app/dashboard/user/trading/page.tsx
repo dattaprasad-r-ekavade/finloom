@@ -319,7 +319,12 @@ export default function TradingTerminalPage() {
       }
 
       const now = new Date();
-      const toDate = now.toISOString().slice(0, 16).replace('T', ' ');
+      // AngelOne getCandleData requires dates in IST (UTC+5:30)
+      const toAngelOneDate = (d: Date) => {
+        const ist = new Date(d.getTime() + 5.5 * 60 * 60 * 1000);
+        return ist.toISOString().slice(0, 16).replace('T', ' ');
+      };
+      const toDate = toAngelOneDate(now);
 
       let daysBack = 3;
       switch (chartInterval) {
@@ -333,7 +338,7 @@ export default function TradingTerminalPage() {
       }
 
       const fromDateObj = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
-      const fromDate = fromDateObj.toISOString().slice(0, 16).replace('T', ' ');
+      const fromDate = toAngelOneDate(fromDateObj);
 
       const res = await fetch('/api/angelone-live/historical', {
         method: 'POST',

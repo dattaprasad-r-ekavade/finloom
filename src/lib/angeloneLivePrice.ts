@@ -7,6 +7,14 @@ import { getAngelOneSession } from './angelone';
 
 const ANGELONE_BASE_URL = 'https://apiconnect.angelone.in';
 
+/**
+ * AngelOne getCandleData requires dates in IST (UTC+5:30) formatted as "YYYY-MM-DD HH:mm".
+ */
+function toAngelOneDate(d: Date): string {
+  const ist = new Date(d.getTime() + 5.5 * 60 * 60 * 1000);
+  return ist.toISOString().slice(0, 16).replace('T', ' ');
+}
+
 interface TokenCacheEntry {
   symbolToken: string;
   tradingSymbol: string;
@@ -100,8 +108,9 @@ export async function searchScripToken(
 }
 
 /**
- * Fetch live LTP for a scrip from AngelOne getLtpData.
- * Returns null if the scrip cannot be found or API fails.
+ * Fetch live price for a scrip using getCandleData (1-min, last 5 min).
+ * getLtpData is WAF-blocked for server-side requests; getCandleData works fine.
+ * Returns the close price of the most recent completed/forming candle.
  */
 export async function getLivePrice(
   scrip: string,
@@ -112,50 +121,69 @@ export async function getLivePrice(
 
   try {
     const session = await getAngelOneSession();
+    const now = new Date();
+    const from = new Date(now.getTime() - 5 * 60 * 1000); // last 5 min
     const response = await fetch(
-      `${ANGELONE_BASE_URL}/rest/secure/angelbroking/market/v1/getLtpData`,
+      `${ANGELONE_BASE_URL}/rest/secure/angelbroking/historical/v1/getCandleData`,
       {
         method: 'POST',
         headers: buildHeaders(session.jwtToken, session.apiKey),
         body: JSON.stringify({
           exchange,
-          tradingsymbol: tokenInfo.tradingSymbol,
           symboltoken: tokenInfo.symbolToken,
+          interval: 'ONE_MINUTE',
+          fromdate: toAngelOneDate(from),
+          todate: toAngelOneDate(now),
         }),
+        signal: AbortSignal.timeout(5000),
       },
     );
 
-    const data = await response.json();
+    const rawText = await response.text();
+    let data: Record<string, unknown>;
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      console.warn(`[angeloneLivePrice] Non-JSON response for ${exchange}:${scrip}`);
+      return null;
+    }
 
-    if (!response.ok || data.status === false || !data.data?.ltp) {
-      // Session stale — retry once with fresh token
-      if (response.status === 401 || response.status === 403 || data.errorcode === 'AG8001' || data.errorCode === 'AG8001') {
+    if (!response.ok || data.status === false || !Array.isArray(data.data) || (data.data as any[]).length === 0) {
+      // Session stale — retry once
+      if (response.status === 401 || response.status === 403 || (data as any).errorcode === 'AG8001') {
         const freshSession = await getAngelOneSession({ forceRefresh: true });
         const retryResp = await fetch(
-          `${ANGELONE_BASE_URL}/rest/secure/angelbroking/market/v1/getLtpData`,
+          `${ANGELONE_BASE_URL}/rest/secure/angelbroking/historical/v1/getCandleData`,
           {
             method: 'POST',
             headers: buildHeaders(freshSession.jwtToken, freshSession.apiKey),
             body: JSON.stringify({
               exchange,
-              tradingsymbol: tokenInfo.tradingSymbol,
               symboltoken: tokenInfo.symbolToken,
+              interval: 'ONE_MINUTE',
+              fromdate: toAngelOneDate(from),
+              todate: toAngelOneDate(now),
             }),
+            signal: AbortSignal.timeout(5000),
           },
         );
-        const retryData = await retryResp.json();
-        if (retryResp.ok && retryData.data?.ltp) {
-          return { ltp: retryData.data.ltp, ...tokenInfo };
+        const retryRaw = await retryResp.text();
+        let retryData: Record<string, unknown>;
+        try { retryData = JSON.parse(retryRaw); } catch { return null; }
+        if (retryResp.ok && Array.isArray(retryData.data) && (retryData.data as any[]).length > 0) {
+          const last = (retryData.data as any[])[retryData.data.length - 1];
+          return { ltp: last[4], ...tokenInfo };
         }
       }
-      console.warn(`[angeloneLivePrice] getLtpData failed for ${exchange}:${scrip}:`, data?.message ?? data);
+      console.warn(`[angeloneLivePrice] getCandleData empty for ${exchange}:${scrip}:`, (data as any)?.message ?? data);
       return null;
     }
 
-    return { ltp: data.data.ltp, ...tokenInfo };
+    const candles = data.data as any[];
+    const last = candles[candles.length - 1];
+    return { ltp: last[4], ...tokenInfo }; // close price
   } catch (err) {
     console.error('[angeloneLivePrice] getLivePrice error:', err);
-    // Clear cache on network errors so next call re-searches
     tokenCache.delete(`${exchange}:${scrip.toUpperCase()}`);
     return null;
   }

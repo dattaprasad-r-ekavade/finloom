@@ -258,36 +258,59 @@ export const AngelOneChart: React.FC<AngelOneChartProps> = ({ data, height = 600
 
     es.onmessage = (event) => {
       try {
-        const tick: { ltp: number; time: number } = JSON.parse(event.data);
+        const tick: {
+          ltp: number;
+          time: number;
+          candleTimeMs?: number;
+          open?: number;
+          high?: number;
+          low?: number;
+          close?: number;
+          volume?: number;
+        } = JSON.parse(event.data);
         const { ltp, time } = tick;
         if (typeof ltp !== 'number' || !isFinite(ltp)) return;
 
         onLTPUpdate?.(ltp);
 
-        // Minute-aligned Unix seconds timestamp for the chart
-        const minuteTs = Math.floor(time / 60000) * 60;
-        const prev = liveCandleRef.current;
-
-        if (!prev || minuteTs > prev.time) {
-          liveCandleRef.current = { time: minuteTs, open: ltp, high: ltp, low: ltp, close: ltp };
-        } else {
+        // If the stream provides real OHLCV candle data (from getCandleData),
+        // use it directly. Otherwise fall back to synthetic tick-building.
+        if (tick.candleTimeMs != null && tick.open != null && tick.high != null && tick.low != null && tick.close != null) {
+          const candleTs = Math.floor(tick.candleTimeMs / 1000) as any;
           liveCandleRef.current = {
-            time: prev.time,
-            open: prev.open,
-            high: Math.max(prev.high, ltp),
-            low: Math.min(prev.low, ltp),
-            close: ltp,
+            time: candleTs,
+            open: tick.open,
+            high: tick.high,
+            low: tick.low,
+            close: tick.close,
           };
-        }
+          candleSeriesRef.current?.update({ time: candleTs, open: tick.open, high: tick.high, low: tick.low, close: tick.close });
+        } else {
+          // Legacy synthetic tick-building path
+          const minuteTs = Math.floor(time / 60000) * 60;
+          const prev = liveCandleRef.current;
 
-        const live = liveCandleRef.current;
-        candleSeriesRef.current?.update({
-          time: live.time as any,
-          open: live.open,
-          high: live.high,
-          low: live.low,
-          close: live.close,
-        });
+          if (!prev || minuteTs > prev.time) {
+            liveCandleRef.current = { time: minuteTs, open: ltp, high: ltp, low: ltp, close: ltp };
+          } else {
+            liveCandleRef.current = {
+              time: prev.time,
+              open: prev.open,
+              high: Math.max(prev.high, ltp),
+              low: Math.min(prev.low, ltp),
+              close: ltp,
+            };
+          }
+
+          const live = liveCandleRef.current;
+          candleSeriesRef.current?.update({
+            time: live.time as any,
+            open: live.open,
+            high: live.high,
+            low: live.low,
+            close: live.close,
+          });
+        }
       } catch {
         // ignore malformed SSE messages
       }
