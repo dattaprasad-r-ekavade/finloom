@@ -19,7 +19,7 @@ import { useRouter } from 'next/navigation';
 
 import Navbar from '@/components/Navbar';
 import { useAuthStore } from '@/store/authStore';
-import { validateName, validatePhone, validateIdNumber, validateAddress } from '@/lib/validation';
+import { validateName, validatePhone, validateAddress } from '@/lib/validation';
 
 export default function KycPage() {
   const router = useRouter();
@@ -28,7 +28,8 @@ export default function KycPage() {
 
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [idNumber, setIdNumber] = useState('');
+  const [panNumber, setPanNumber] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [address, setAddress] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -75,10 +76,15 @@ export default function KycPage() {
       newErrors.phoneNumber = phoneValidation.error ?? 'Invalid phone number';
     }
 
-    // Validate ID number
-    const idValidation = validateIdNumber(idNumber);
-    if (!idValidation.valid) {
-      newErrors.idNumber = idValidation.error ?? 'Invalid ID number';
+    // Validate PAN number
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+    if (!panNumber.trim() || !panRegex.test(panNumber.trim().toUpperCase())) {
+      newErrors.panNumber = 'Enter a valid PAN number (e.g. ABCDE1234F)';
+    }
+
+    // Validate date of birth
+    if (!dateOfBirth.trim()) {
+      newErrors.dateOfBirth = 'Date of birth is required';
     }
 
     // Validate address
@@ -113,7 +119,8 @@ export default function KycPage() {
         body: JSON.stringify({
           fullName,
           phoneNumber,
-          idNumber,
+          panNumber,
+          dateOfBirth,
           address,
         }),
       });
@@ -125,18 +132,16 @@ export default function KycPage() {
         return;
       }
 
-      setSuccessMessage('KYC submitted and auto-approved. Redirecting to your dashboard.');
+      setSuccessMessage('KYC submitted successfully. Our team will review your details within 1–2 business days.');
 
       setUser({
         ...user,
         name: fullName,
-        kycStatus: 'AUTO_APPROVED',
-        hasCompletedKyc: true,
+        kycStatus: 'PENDING',
+        hasCompletedKyc: false,
       });
 
-      setTimeout(() => {
-        router.push(destinationAfterKyc);
-      }, 1500);
+      // No redirect — stay on page to show pending message
     } catch (error) {
       console.error('KYC submission failed', error);
       setErrorMessage('Unexpected error while submitting KYC.');
@@ -207,7 +212,7 @@ export default function KycPage() {
                     You&apos;re already cleared
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Your documents are on file and auto-approved. Head to the dashboard to choose your challenge plan and begin trading simulations.
+                    Your documents are on file and approved. Head to the dashboard to choose your challenge plan and begin trading simulations.
                   </Typography>
                   <Button
                     variant="contained"
@@ -245,13 +250,25 @@ export default function KycPage() {
                     />
                     <TextField
                       fullWidth
-                      label="ID Number"
-                      value={idNumber}
-                      onChange={(event) => setIdNumber(event.target.value)}
-                      error={Boolean(errors.idNumber)}
-                      helperText={errors.idNumber}
+                      label="PAN Number"
+                      placeholder="ABCDE1234F"
+                      inputProps={{ style: { textTransform: 'uppercase' } }}
+                      value={panNumber}
+                      onChange={(event) => setPanNumber(event.target.value)}
+                      error={Boolean(errors.panNumber)}
+                      helperText={errors.panNumber ?? 'As on your PAN card'}
                     />
                   </Box>
+                  <TextField
+                    fullWidth
+                    label="Date of Birth"
+                    type="date"
+                    InputLabelProps={{ shrink: true }}
+                    value={dateOfBirth}
+                    onChange={(event) => setDateOfBirth(event.target.value)}
+                    error={Boolean(errors.dateOfBirth)}
+                    helperText={errors.dateOfBirth}
+                  />
                   <TextField
                     fullWidth
                     multiline
@@ -279,7 +296,7 @@ export default function KycPage() {
                         boxShadow: 'none',
                       }}
                     >
-                      {submitting ? 'Submitting...' : 'Submit & auto-approve'}
+                      {submitting ? 'Submitting...' : 'Submit for review'}
                     </Button>
                     <Button
                       variant="outlined"

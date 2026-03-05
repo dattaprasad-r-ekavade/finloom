@@ -44,16 +44,20 @@ enum TradeStatus {
 }
 
 model User {
-  id             String          @id @default(cuid())
-  email          String          @unique
-  passwordHash   String
-  name           String?
-  role           UserRole        @default(TRADER)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  challenges     UserChallenge[]
-  mockedKyc      MockedKYC?
-  mockedPayments MockedPayment[]
+  id                   String          @id @default(cuid())
+  email                String          @unique
+  passwordHash         String
+  name                 String?
+  role                 UserRole        @default(TRADER)
+  passwordResetToken   String?         @unique
+  passwordResetExpiry  DateTime?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  challenges           UserChallenge[]
+  mockedKyc            MockedKYC?
+  mockedPayments       MockedPayment[]
+
+  @@index([passwordResetToken])
 }
 
 model ChallengePlan {
@@ -105,20 +109,22 @@ model UserChallenge {
 }
 
 model MockedKYC {
-  id          String          @id @default(cuid())
-  userId      String          @unique
-  fullName    String
-  phoneNumber String
-  idNumber    String
-  address     String
-  status      MockedKycStatus @default(PENDING)
-  approvedAt  DateTime?
-  approvedBy  String?
-  rejectedAt  DateTime?
-  rejectedBy  String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String          @id @default(cuid())
+  userId          String          @unique
+  fullName        String
+  phoneNumber     String
+  panNumber       String?
+  dateOfBirth     String?
+  address         String
+  status          MockedKycStatus @default(PENDING)
+  rejectionReason String?
+  approvedAt      DateTime?
+  approvedBy      String?
+  rejectedAt      DateTime?
+  rejectedBy      String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model AdminSettings {
@@ -129,20 +135,24 @@ model AdminSettings {
 }
 
 model MockedPayment {
-  id                String              @id @default(cuid())
-  userId            String
-  challengeId       String
-  amount            Int
-  status            MockedPaymentStatus @default(SUCCESS)
-  mockTransactionId String
-  paidAt            DateTime            @default(now())
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  challenge         UserChallenge       @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  id                  String              @id @default(cuid())
+  userId              String
+  challengeId         String
+  amount              Int
+  status              MockedPaymentStatus @default(SUCCESS)
+  mockTransactionId   String
+  razorpayOrderId     String?
+  razorpayPaymentId   String?
+  razorpaySignature   String?
+  paidAt              DateTime            @default(now())
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge           UserChallenge       @relation(fields: [challengeId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([challengeId])
+  @@index([razorpayOrderId])
 }
 
 model ChallengeMetrics {

@@ -286,7 +286,7 @@ function MockPaymentContent() {
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {isPending
-                    ? 'Confirming will create a mock payment record, activate your reserved challenge, and reveal demo trading credentials.'
+                    ? 'Confirming will create a mock payment record, activate your reserved challenge, and reveal trading credentials.'
                     : 'Mock payment already exists for this plan. Review the details or proceed to the dashboard.'}
                 </Typography>
               </Stack>
@@ -434,7 +434,7 @@ function MockPaymentContent() {
                   {credentials && (
                     <Stack spacing={0.75}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                        Demo credentials
+                        Credentials
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Username: <strong>{credentials.username}</strong>

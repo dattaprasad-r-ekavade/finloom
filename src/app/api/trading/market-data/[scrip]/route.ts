@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { ErrorHandlers, successResponse } from '@/lib/apiResponse';
 import { requireOneOfRoles } from '@/lib/apiAuth';
+import { getLivePrice } from '@/lib/angeloneLivePrice';
 
 interface RouteParams {
   params: Promise<{
@@ -9,9 +9,9 @@ interface RouteParams {
   }>;
 }
 
-export async function GET(_request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await requireOneOfRoles(_request, ['TRADER', 'ADMIN']);
+    const session = await requireOneOfRoles(request, ['TRADER', 'ADMIN']);
     if (!session) {
       return ErrorHandlers.unauthorized('Unauthorized');
     }
@@ -22,15 +22,16 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       return ErrorHandlers.badRequest('Scrip symbol is required');
     }
 
-    const marketData = await prisma.mockedMarketData.findUnique({
-      where: { scrip: symbol.toUpperCase() },
-    });
+    const { searchParams } = new URL(request.url);
+    const exchange = (searchParams.get('exchange') ?? 'NSE').toUpperCase();
 
-    if (!marketData) {
-      return ErrorHandlers.notFound('Scrip not found');
+    const liveData = await getLivePrice(symbol.toUpperCase(), exchange);
+
+    if (!liveData) {
+      return ErrorHandlers.notFound(`No live data found for ${symbol} on ${exchange}`);
     }
 
-    return successResponse({ marketData });
+    return successResponse({ marketData: liveData });
   } catch (error) {
     console.error('Error fetching market data item:', error);
     return ErrorHandlers.serverError('Failed to fetch market data');

@@ -126,6 +126,7 @@ export async function PUT(request: NextRequest) {
       updateData.rejectedBy = admin.userId;
       updateData.approvedAt = null;
       updateData.approvedBy = null;
+      updateData.rejectionReason = body.rejectionReason?.trim() || 'No reason provided';
     }
 
     const updatedKyc = await prisma.mockedKYC.update({

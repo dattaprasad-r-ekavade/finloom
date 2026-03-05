@@ -222,7 +222,7 @@ export default function ChallengePlansPage() {
         setSelection(data.selection ?? null);
 
         setTimeout(() => {
-          router.push(`/payments/mock?planId=${encodeURIComponent(plan.id)}`);
+          router.push(`/payments/razorpay?planId=${encodeURIComponent(plan.id)}`);
         }, 1200);
       } catch (selectError) {
         console.error(selectError);
@@ -260,7 +260,7 @@ export default function ChallengePlansPage() {
               Reserve your simulated trading seat
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 640 }}>
-              Compare the funded account pathways, lock in your preferred capital level, and proceed to the mocked payment flow to activate your evaluation.
+              Compare the funded account pathways, lock in your preferred capital level, and proceed to payment to activate your evaluation.
             </Typography>
           </Stack>
 
@@ -475,7 +475,7 @@ export default function ChallengePlansPage() {
               border: (theme) => `1px solid ${theme.palette.info.light}`,
             }}
           >
-            Complete the mocked payment step to receive demo account credentials and unlock challenge analytics.
+            Complete the payment step to activate your challenge and unlock challenge analytics.
           </Alert>
         </Stack>
       </Container>

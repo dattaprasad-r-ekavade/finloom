@@ -240,9 +240,7 @@ export default function LoginPage() {
                   Request platform access
                 </Link>
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Demo mode: sign in to preview the dashboards with your configured role.
-              </Typography>
+
             </Stack>
           </CardContent>
         </Card>

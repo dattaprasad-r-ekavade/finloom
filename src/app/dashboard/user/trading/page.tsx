@@ -199,7 +199,7 @@ export default function TradingTerminalPage() {
 
         if (!selectionPayload?.selection) {
           setSelection(null);
-          setError('No active challenge found. Reserve and activate a challenge to access demo trading.');
+          setError('No active challenge found. Reserve and activate a challenge to start trading.');
           return;
         }
 
@@ -835,7 +835,6 @@ export default function TradingTerminalPage() {
           sx={{ py: 0.75, flexWrap: 'wrap', gap: 0.5 }}
         >
           <Stack direction="row" spacing={0.5} alignItems="center">
-            <Chip label="Demo" color="primary" variant="outlined" size="small" sx={{ fontWeight: 600, height: 22 }} />
             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
               Trading Terminal
             </Typography>
@@ -864,7 +863,7 @@ export default function TradingTerminalPage() {
               Activate a challenge to start trading
             </Typography>
             <Typography color="text.secondary" variant="body2">
-              You need an active challenge to access the demo trading terminal.
+              You need an active challenge to access the trading terminal.
             </Typography>
             <Button variant="contained" sx={{ mt: 2 }} onClick={() => router.push('/challenge-plans')}>
               Browse challenge plans
@@ -872,7 +871,7 @@ export default function TradingTerminalPage() {
           </Paper>
         ) : !isChallengeActive ? (
           <Alert severity="warning">
-            Your challenge is currently <strong>{selection.status}</strong>. Demo trading activates once ACTIVE.
+            Your challenge is currently <strong>{selection.status}</strong>. Trading activates once ACTIVE.
           </Alert>
         ) : (
           renderActiveTrading()

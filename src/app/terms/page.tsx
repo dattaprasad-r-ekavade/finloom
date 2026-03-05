@@ -35,7 +35,7 @@ export default function TermsAndConditions() {
               </Typography>
               <Typography component="ul" variant="body2" color="text.secondary" sx={{ pl: 2 }}>
                 <li>Trading challenge evaluations for aspiring funded traders</li>
-                <li>Simulated and demo trading environments with real-time market data</li>
+                <li>Simulated trading environments with real-time market data</li>
                 <li>Performance analytics, risk monitoring dashboards, and KPI tracking</li>
                 <li>KYC verification and user management systems</li>
                 <li>Funded account access for traders who successfully pass evaluation challenges</li>

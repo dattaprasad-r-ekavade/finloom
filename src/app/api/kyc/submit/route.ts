@@ -8,7 +8,8 @@ import { requireRole } from '@/lib/apiAuth';
 interface KycRequestBody {
   fullName?: string;
   phoneNumber?: string;
-  idNumber?: string;
+  panNumber?: string;
+  dateOfBirth?: string;
   address?: string;
 }
 
@@ -29,9 +30,9 @@ export async function POST(request: NextRequest) {
     await ensureDatabase();
 
     const body = (await request.json()) as KycRequestBody;
-    const { fullName, phoneNumber, idNumber, address } = body;
+    const { fullName, phoneNumber, panNumber, dateOfBirth, address } = body;
 
-    if (!fullName || !phoneNumber || !idNumber || !address) {
+    if (!fullName || !phoneNumber || !panNumber || !dateOfBirth || !address) {
       return ErrorHandlers.badRequest('All KYC fields are required.');
     }
 
@@ -43,40 +44,39 @@ export async function POST(request: NextRequest) {
 
     const trimmedFullName = fullName.trim();
     const trimmedPhoneNumber = phoneNumber.trim();
-    const trimmedIdNumber = idNumber.trim();
+    const trimmedPanNumber = panNumber.trim().toUpperCase();
+    const trimmedDateOfBirth = dateOfBirth.trim();
     const trimmedAddress = address.trim();
 
-    // Check if auto-approve is enabled in settings
-    let settings = await prisma.adminSettings.findFirst();
-    if (!settings) {
-      // Create default settings if none exist
-      settings = await prisma.adminSettings.create({
-        data: { autoApproveKyc: false },
-      });
+    // Validate PAN format: 5 letters, 4 digits, 1 letter
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+    if (!panRegex.test(trimmedPanNumber)) {
+      return ErrorHandlers.badRequest('Invalid PAN number format (e.g. ABCDE1234F).');
     }
-
-    const shouldAutoApprove = settings.autoApproveKyc;
-    const kycStatus = shouldAutoApprove ? 'AUTO_APPROVED' : 'PENDING';
-    const approvalDate = shouldAutoApprove ? new Date() : null;
 
     const kycRecord = await prisma.mockedKYC.upsert({
       where: { userId: session.userId },
       update: {
         fullName: trimmedFullName,
         phoneNumber: trimmedPhoneNumber,
-        idNumber: trimmedIdNumber,
+        panNumber: trimmedPanNumber,
+        dateOfBirth: trimmedDateOfBirth,
         address: trimmedAddress,
-        status: kycStatus,
-        approvedAt: approvalDate,
+        status: 'PENDING',
+        approvedAt: null,
+        approvedBy: null,
+        rejectedAt: null,
+        rejectedBy: null,
+        rejectionReason: null,
       },
       create: {
         userId: session.userId,
         fullName: trimmedFullName,
         phoneNumber: trimmedPhoneNumber,
-        idNumber: trimmedIdNumber,
+        panNumber: trimmedPanNumber,
+        dateOfBirth: trimmedDateOfBirth,
         address: trimmedAddress,
-        status: kycStatus,
-        approvedAt: approvalDate,
+        status: 'PENDING',
       },
     });
 
@@ -88,16 +88,13 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      message: shouldAutoApprove 
-        ? 'KYC submitted and auto-approved.' 
-        : 'KYC submitted successfully. Pending admin approval.',
+      message: 'KYC submitted successfully. Our team will review your details within 1–2 business days.',
       kyc: {
         id: kycRecord.id,
         status: kycRecord.status,
-        approvedAt: kycRecord.approvedAt,
         fullName: kycRecord.fullName,
         phoneNumber: maskSensitive(kycRecord.phoneNumber),
-        idNumber: maskSensitive(kycRecord.idNumber),
+        panNumber: maskSensitive(trimmedPanNumber),
         address: kycRecord.address,
       },
     });

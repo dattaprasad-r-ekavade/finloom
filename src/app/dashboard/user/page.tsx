@@ -602,7 +602,7 @@ export default function UserDashboard() {
                   alignItems={{ xs: 'stretch', sm: 'center' }}
                 >
                   <Typography variant="body2" color="text.secondary">
-                    Demo credentials ready for terminal access.
+                    Credentials ready for terminal access.
                   </Typography>
                   <Button
                     variant="outlined"
@@ -627,7 +627,7 @@ export default function UserDashboard() {
                   Reserve your evaluation plan
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  Once you select a plan you will be guided through mocked payment and receive demo credentials to start practicing.
+                  Once you select a plan you will be guided through payment and receive credentials to start practicing.
                 </Typography>
               </Box>
               <Button

@@ -187,8 +187,7 @@ export const TradesList: React.FC<TradesListProps> = ({
       ) : (
         <Box sx={{ p: 3 }}>
           <Typography variant="body2" color="text.secondary">
-            No trades have been placed yet. Use the order form to execute your first
-            demo trade.
+            No trades have been placed yet. Use the order form to execute your first trade.
           </Typography>
         </Box>
       )}
