@@ -573,11 +573,20 @@ export default function TradingTerminalPage() {
 
   // ── Chart header bar (shared between mobile and desktop) ──
   const chartHeaderBar = (
-    <Box sx={{ p: 1, borderBottom: (theme) => `1px solid ${theme.palette.divider}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+    <Box sx={{
+      p: 1,
+      borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+      display: 'flex',
+      flexDirection: { xs: 'column', sm: 'row' },
+      alignItems: { xs: 'stretch', sm: 'center' },
+      gap: 0.75,
+    }}>
+      {/* Row 1 (mobile) / Left group (desktop): search + live price */}
       <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
-        <Box sx={{ width: { xs: 140, sm: 180 }, flexShrink: 0 }}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           <ScripSearchAutocomplete
             value={selectedScrip}
+            size="small"
             onChange={(option) => {
               if (!option) { setSelectedScrip(DEFAULT_SYMBOL); return; }
               setSelectedScrip({
@@ -595,7 +604,8 @@ export default function TradingTerminalPage() {
           </Typography>
         </PriceUpdateFlash>
       </Stack>
-      <Stack direction="row" spacing={0.5} alignItems="center">
+      {/* Row 2 (mobile) / Right group (desktop): interval + action icons */}
+      <Stack direction="row" spacing={0.5} alignItems="center" justifyContent={{ xs: 'space-between', sm: 'flex-end' }}>
         <FormControl size="small" sx={{ minWidth: 70 }}>
           <Select
             value={chartInterval}

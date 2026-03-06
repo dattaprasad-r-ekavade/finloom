@@ -11,7 +11,6 @@ import {
   Alert,
   CircularProgress,
   Chip,
-  TextField,
   Button,
   FormControl,
   InputLabel,
@@ -19,6 +18,10 @@ import {
   MenuItem,
 } from '@mui/material';
 import { AngelOneChart } from '@/components/trading/AngelOneChart';
+import {
+  ScripSearchAutocomplete,
+  type ScripOption,
+} from '@/components/trading/ScripSearchAutocomplete';
 import Navbar from '@/components/Navbar';
 import { Container } from '@mui/material';
 
@@ -50,6 +53,7 @@ export default function LiveTradingPage() {
   const [selectedSymbol, setSelectedSymbol] = useState('SBIN-EQ');
   const [selectedExchange, setSelectedExchange] = useState('NSE');
   const [symbolToken, setSymbolToken] = useState('3045');
+  const [selectedScripOption, setSelectedScripOption] = useState<ScripOption | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [historicalData, setHistoricalData] = useState<CandleData[]>([]);
@@ -385,6 +389,15 @@ export default function LiveTradingPage() {
     }
   };
 
+  const handleScripChange = (option: ScripOption | null) => {
+    if (!option) return;
+    setSelectedScripOption(option);
+    setSelectedSymbol(option.scrip);
+    setSymbolToken(option.symbolToken || option.scripToken || '');
+    setSelectedExchange(option.exchange);
+    subscribeToSymbol(option.exchange, option.symbolToken || option.scripToken || '');
+  };
+
   const handleSearch = async () => {
     if (!searchQuery || !sessionRef.current) return;
 
@@ -429,9 +442,13 @@ export default function LiveTradingPage() {
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
       <Navbar />
-      <Container maxWidth="xl" sx={{ py: { xs: 2, md: 3 } }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
-        Live Market Data - {selectedSymbol}
+      <Container maxWidth="xl" sx={{ py: { xs: 1.5, md: 3 } }}>
+      <Typography
+        variant="h5"
+        gutterBottom
+        sx={{ fontWeight: 600, fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' }, mb: { xs: 1, md: 2 } }}
+      >
+        Live Market — {selectedSymbol}
       </Typography>
 
       {error && (
@@ -440,38 +457,15 @@ export default function LiveTradingPage() {
         </Alert>
       )}
 
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 6, sm: 6, md: 3 }}>
-          <TextField
-            fullWidth
+      <Grid container spacing={1.5} sx={{ mb: { xs: 1.5, md: 3 } }}>
+        <Grid size={{ xs: 12, sm: 7, md: 4 }}>
+          <ScripSearchAutocomplete
+            value={selectedScripOption}
+            onChange={handleScripChange}
             size="small"
-            label="Search Scrip"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
           />
         </Grid>
-        <Grid size={{ xs: 6, sm: 6, md: 2 }}>
-          <FormControl fullWidth size="small">
-            <InputLabel>Exchange</InputLabel>
-            <Select
-              value={selectedExchange}
-              label="Exchange"
-              onChange={(e) => setSelectedExchange(e.target.value)}
-            >
-              <MenuItem value="NSE">NSE</MenuItem>
-              <MenuItem value="BSE">BSE</MenuItem>
-              <MenuItem value="NFO">NFO</MenuItem>
-              <MenuItem value="MCX">MCX</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid size={{ xs: 6, sm: 4, md: 2 }}>
-          <Button fullWidth variant="contained" onClick={handleSearch}>
-            Search
-          </Button>
-        </Grid>
-        <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+        <Grid size={{ xs: 6, sm: 3, md: 2 }}>
           <FormControl fullWidth size="small">
             <InputLabel>Interval</InputLabel>
             <Select
@@ -489,7 +483,7 @@ export default function LiveTradingPage() {
             </Select>
           </FormControl>
         </Grid>
-        <Grid size={{ xs: 12, sm: 4, md: 3 }} sx={{ display: 'flex', alignItems: 'center' }}>
+        <Grid size={{ xs: 6, sm: 2, md: 3 }} sx={{ display: 'flex', alignItems: 'center' }}>
           <Chip
             label={isConnected ? 'Connected' : 'Disconnected'}
             color={isConnected ? 'success' : 'error'}
@@ -503,96 +497,43 @@ export default function LiveTradingPage() {
         </Grid>
       </Grid>
 
-      {searchResults.length > 0 && (
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            Search Results:
-          </Typography>
-          {searchResults.map((result, index) => (
-            <Chip
-              key={index}
-              label={`${result.tradingsymbol} (${result.symboltoken})`}
-              onClick={() => handleSymbolSelect(result)}
-              sx={{ m: 0.5, cursor: 'pointer' }}
-            />
-          ))}
-        </Paper>
-      )}
-
       {marketData && (
-        <Grid container spacing={{ xs: 1, md: 2 }} sx={{ mb: 3 }}>
-          <Grid size={{ xs: 6, md: 2 }}>
-            <Card>
-              <CardContent sx={{ p: { xs: 1.5, md: 2 }, '&:last-child': { pb: { xs: 1.5, md: 2 } } }}>
-                <Typography color="text.secondary" variant="caption">
-                  LTP
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: 'repeat(3, 1fr)', sm: 'repeat(6, 1fr)' },
+            gap: { xs: 0.75, md: 2 },
+            mb: { xs: 1.5, md: 3 },
+          }}
+        >
+          {[
+            { label: 'LTP', value: `₹${marketData.ltp.toFixed(2)}`, sub: `${marketData.change >= 0 ? '+' : ''}${marketData.change.toFixed(2)} (${marketData.changePercent.toFixed(2)}%)`, subColor: marketData.change >= 0 ? 'success.main' : 'error.main' },
+            { label: 'Open', value: `₹${marketData.open.toFixed(2)}` },
+            { label: 'High', value: `₹${marketData.high.toFixed(2)}`, valueColor: 'success.main' },
+            { label: 'Low', value: `₹${marketData.low.toFixed(2)}`, valueColor: 'error.main' },
+            { label: 'Prev Close', value: `₹${marketData.close.toFixed(2)}` },
+            { label: 'Volume', value: marketData.volume.toLocaleString() },
+          ].map(({ label, value, sub, subColor, valueColor }) => (
+            <Card key={label}>
+              <CardContent sx={{ p: { xs: 1, md: 2 }, '&:last-child': { pb: { xs: 1, md: 2 } } }}>
+                <Typography color="text.secondary" variant="caption" sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>
+                  {label}
                 </Typography>
-                <Typography variant="h6">₹{marketData.ltp.toFixed(2)}</Typography>
                 <Typography
-                  variant="body2"
-                  color={marketData.change >= 0 ? 'success.main' : 'error.main'}
+                  variant="body1"
+                  sx={{ fontWeight: 700, fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1.25rem' }, color: valueColor }}
                 >
-                  {marketData.change >= 0 ? '+' : ''}
-                  {marketData.change.toFixed(2)} ({marketData.changePercent.toFixed(2)}%)
+                  {value}
                 </Typography>
+                {sub && (
+                  <Typography variant="caption" color={subColor} sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>
+                    {sub}
+                  </Typography>
+                )}
               </CardContent>
             </Card>
-          </Grid>
-          <Grid size={{ xs: 6, md: 2 }}>
-            <Card>
-              <CardContent sx={{ p: { xs: 1.5, md: 2 }, '&:last-child': { pb: { xs: 1.5, md: 2 } } }}>
-                <Typography color="text.secondary" variant="caption">
-                  Open
-                </Typography>
-                <Typography variant="h6">₹{marketData.open.toFixed(2)}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 6, md: 2 }}>
-            <Card>
-              <CardContent sx={{ p: { xs: 1.5, md: 2 }, '&:last-child': { pb: { xs: 1.5, md: 2 } } }}>
-                <Typography color="text.secondary" variant="caption">
-                  High
-                </Typography>
-                <Typography variant="h6" color="success.main">
-                  ₹{marketData.high.toFixed(2)}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 6, md: 2 }}>
-            <Card>
-              <CardContent sx={{ p: { xs: 1.5, md: 2 }, '&:last-child': { pb: { xs: 1.5, md: 2 } } }}>
-                <Typography color="text.secondary" variant="caption">
-                  Low
-                </Typography>
-                <Typography variant="h6" color="error.main">
-                  ₹{marketData.low.toFixed(2)}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 6, md: 2 }}>
-            <Card>
-              <CardContent sx={{ p: { xs: 1.5, md: 2 }, '&:last-child': { pb: { xs: 1.5, md: 2 } } }}>
-                <Typography color="text.secondary" variant="caption">
-                  Prev Close
-                </Typography>
-                <Typography variant="h6">₹{marketData.close.toFixed(2)}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 6, md: 2 }}>
-            <Card>
-              <CardContent sx={{ p: { xs: 1.5, md: 2 }, '&:last-child': { pb: { xs: 1.5, md: 2 } } }}>
-                <Typography color="text.secondary" variant="caption">
-                  Volume
-                </Typography>
-                <Typography variant="h6">{marketData.volume.toLocaleString()}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+          ))}
+        </Box>
       )}
 
       <Paper sx={{ p: 2 }}>

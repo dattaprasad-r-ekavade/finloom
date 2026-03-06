@@ -13,7 +13,7 @@ interface UseChartDataProps {
 
 export const useChartData = ({
   selectedScrip,
-  refreshInterval = 5000,
+  refreshInterval = 60000,
 }: UseChartDataProps) => {
   const [historicalData, setHistoricalData] = useState<any[]>([]);
   const [chartInterval, setChartInterval] = useState('FIVE_MINUTE');

@@ -4,6 +4,7 @@ import React from 'react';
 import {
   Box,
   Chip,
+  Divider,
   IconButton,
   Paper,
   Stack,
@@ -15,6 +16,8 @@ import {
   TableRow,
   Tooltip,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AutoModeIcon from '@mui/icons-material/AutoMode';
@@ -54,6 +57,8 @@ export const TradesList: React.FC<TradesListProps> = ({
   processingTrades,
 }) => {
   const hasTrades = trades.length > 0;
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
     <Paper
@@ -85,8 +90,101 @@ export const TradesList: React.FC<TradesListProps> = ({
       </Box>
 
       {hasTrades ? (
-        <TableContainer>
-          <Table size="small">
+        isMobile ? (
+          // ── Mobile: compact cards ──────────────────────────────────────────
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1 }}>
+            {trades.map((trade) => {
+              const isOpen = trade.status === 'OPEN';
+              const pnlTone = trade.pnl >= 0 ? 'success.main' : 'error.main';
+              const isProcessing = processingTrades.has(trade.id);
+              return (
+                <Paper
+                  key={trade.id}
+                  variant="outlined"
+                  sx={{ p: 1.25, borderRadius: 2 }}
+                >
+                  {/* Header row: symbol + type chip + square-off */}
+                  <Stack direction="row" alignItems="center" justifyContent="space-between" mb={0.5}>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.2 }} noWrap>
+                        {trade.scrip}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" noWrap display="block">
+                        {trade.scripFullName}
+                      </Typography>
+                    </Box>
+                    <Stack direction="row" spacing={0.5} alignItems="center" flexShrink={0} ml={1}>
+                      <Chip
+                        label={trade.tradeType}
+                        color={trade.tradeType === 'BUY' ? 'success' : 'error'}
+                        size="small"
+                        variant="outlined"
+                        sx={{ height: 20, fontSize: '0.7rem' }}
+                      />
+                      <Chip
+                        label={trade.status}
+                        size="small"
+                        color={isOpen ? 'warning' : 'default'}
+                        sx={{ height: 20, fontSize: '0.7rem' }}
+                      />
+                      {isOpen && (
+                        <Tooltip title="Square off">
+                          <span>
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              disabled={isProcessing}
+                              onClick={() => onSquareOff(trade.id)}
+                              sx={{ p: 0.25 }}
+                            >
+                              <CloseIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      )}
+                    </Stack>
+                  </Stack>
+
+                  <Divider sx={{ my: 0.5 }} />
+
+                  {/* Data row */}
+                  <Stack direction="row" spacing={1} justifyContent="space-between">
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Qty</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{trade.quantity}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Entry</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {currencyFormatter.format(trade.entryPrice)}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">Exit</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {trade.exitPrice ? currencyFormatter.format(trade.exitPrice) : '—'}
+                      </Typography>
+                    </Box>
+                    <Box textAlign="right">
+                      <Typography variant="caption" color="text.secondary">P&amp;L</Typography>
+                      <Typography variant="body2" sx={{ color: pnlTone, fontWeight: 700 }}>
+                        {currencyFormatter.format(trade.pnl)}
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                    {formatDateTime(trade.entryTime)}
+                    {trade.exitTime && ` → ${formatDateTime(trade.exitTime)}`}
+                    {!isOpen && trade.autoSquaredOff && ' · Auto sq-off'}
+                  </Typography>
+                </Paper>
+              );
+            })}
+          </Box>
+        ) : (
+          <TableContainer>
+            <Table size="small">
             <TableHead>
               <TableRow>
                 <TableCell>Symbol</TableCell>
@@ -182,8 +280,9 @@ export const TradesList: React.FC<TradesListProps> = ({
                 );
               })}
             </TableBody>
-          </Table>
-        </TableContainer>
+            </Table>
+          </TableContainer>
+        )
       ) : (
         <Box sx={{ p: 3 }}>
           <Typography variant="body2" color="text.secondary">
