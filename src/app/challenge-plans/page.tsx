@@ -58,6 +58,8 @@ const formatCurrency = (value: number) =>
 export default function ChallengePlansPage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const checkAuth = useAuthStore((state) => state.checkAuth);
 
   const [plans, setPlans] = useState<ChallengePlan[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
@@ -74,6 +76,14 @@ export default function ChallengePlansPage() {
   } | null>(null);
 
   useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
     if (!user) {
       router.replace('/login');
       return;
@@ -153,7 +163,7 @@ export default function ChallengePlansPage() {
     fetchPlans();
     fetchSelection();
     fetchProgression();
-  }, [router, user]);
+  }, [isLoading, router, user]);
 
   const selectedPlanId = selection?.plan?.id ?? null;
 
@@ -276,7 +286,7 @@ export default function ChallengePlansPage() {
             </Alert>
           )}
 
-          {isLoading ? (
+          {isLoading || loadingPlans || loadingSelection ? (
             <Box
               sx={{
                 display: 'flex',

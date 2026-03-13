@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { ErrorHandlers, successResponse } from '@/lib/apiResponse';
 import { getChallengeForTrader, requireTrader } from '@/app/api/trading/_helpers';
 import { TradeStatus } from '@prisma/client';
+import { getLivePriceMap } from '@/lib/angeloneLivePrice';
+import { calculateUnrealizedPnl } from '@/lib/tradingUtils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -58,8 +60,32 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
+    const openTrades = trades.filter((trade) => trade.status === TradeStatus.OPEN);
+    const priceMap = openTrades.length
+      ? await getLivePriceMap(
+          openTrades.map((trade) => ({
+            scrip: trade.scrip,
+            exchange: trade.exchange || 'NSE',
+            fallbackPrice: trade.entryPrice,
+          })),
+        )
+      : new Map<string, number>();
+
+    const enrichedTrades = trades.map((trade) => {
+      if (trade.status !== TradeStatus.OPEN) {
+        return trade;
+      }
+
+      const currentPrice = priceMap.get(trade.scrip) ?? trade.entryPrice;
+      return {
+        ...trade,
+        currentPrice,
+        livePnl: calculateUnrealizedPnl(trade, currentPrice),
+      };
+    });
+
     return successResponse({
-      trades,
+      trades: enrichedTrades,
       pagination: {
         page,
         limit,

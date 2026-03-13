@@ -113,6 +113,8 @@ function MockPaymentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const user = useAuthStore((state) => state.user);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const checkAuth = useAuthStore((state) => state.checkAuth);
 
   const [selection, setSelection] = useState<ChallengeSelection | null>(null);
   const [loading, setLoading] = useState(true);
@@ -127,6 +129,14 @@ function MockPaymentContent() {
   const selectedPlanId = searchParams.get('planId');
 
   useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
     if (!user) {
       router.replace('/login');
       return;
@@ -170,7 +180,7 @@ function MockPaymentContent() {
         clearTimeout(redirectTimeoutRef.current);
       }
     };
-  }, [router, user]);
+  }, [isLoading, router, user]);
 
   const isActive = selection?.status === 'ACTIVE';
   const isPending = selection?.status === 'PENDING';
@@ -194,6 +204,9 @@ function MockPaymentContent() {
       const response = await fetch('/api/payment/mock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId: selectedPlanId ?? selection.plan.id,
+        }),
       });
 
       const data = (await response.json()) as MockPaymentResponse & { error?: string };
@@ -220,7 +233,7 @@ function MockPaymentContent() {
     } finally {
       setProcessing(false);
     }
-  }, [router, selection, user]);
+  }, [router, selectedPlanId, selection, user]);
 
   const handleCopyCredentials = useCallback(async () => {
     if (!credentials) {

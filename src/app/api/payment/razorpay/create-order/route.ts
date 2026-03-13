@@ -5,6 +5,10 @@ import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/apiAuth';
 import { ErrorHandlers } from '@/lib/apiResponse';
 
+interface CreateOrderBody {
+  planId?: string;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await requireRole(request, 'TRADER');
@@ -44,6 +48,7 @@ export async function POST(request: NextRequest) {
       where: {
         userId: session.userId,
         status: 'PENDING',
+        ...(requestedPlanId ? { planId: requestedPlanId } : {}),
       },
       include: { plan: true },
       orderBy: { createdAt: 'desc' },
@@ -88,3 +93,11 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+    let body: CreateOrderBody = {};
+    try {
+      body = (await request.json()) as CreateOrderBody;
+    } catch {
+      body = {};
+    }
+
+    const requestedPlanId = body.planId?.trim();

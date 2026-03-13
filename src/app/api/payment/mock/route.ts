@@ -11,6 +11,10 @@ import { requireRole } from '@/lib/apiAuth';
 
 const ELIGIBLE_CHALLENGE_STATUSES: ChallengeStatus[] = ['PENDING', 'ACTIVE'];
 
+interface MockPaymentBody {
+  planId?: string;
+}
+
 const generateTransactionId = () =>
   `razorpay_mock_${Math.random().toString(36).slice(2, 14)}`;
 
@@ -25,6 +29,15 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     }
+
+    let body: MockPaymentBody = {};
+    try {
+      body = (await request.json()) as MockPaymentBody;
+    } catch {
+      body = {};
+    }
+
+    const requestedPlanId = body.planId?.trim();
 
     const user = await prisma.user.findUnique({
       where: { id: session.userId },
@@ -49,6 +62,7 @@ export async function POST(request: NextRequest) {
       where: {
         userId: session.userId,
         status: { in: ELIGIBLE_CHALLENGE_STATUSES },
+        ...(requestedPlanId ? { planId: requestedPlanId } : {}),
       },
       include: {
         plan: true,
@@ -61,7 +75,7 @@ export async function POST(request: NextRequest) {
 
     if (!challenge) {
       return NextResponse.json(
-        { error: 'No challenge reservation found for this user.' },
+        { error: requestedPlanId ? 'No matching challenge reservation found for this plan.' : 'No challenge reservation found for this user.' },
         { status: 404 }
       );
     }

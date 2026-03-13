@@ -955,7 +955,7 @@ export default function TradingTerminalPage() {
                 </TableHead>
                 <TableBody>
                   {trades.filter(t => !t.exitPrice).map((trade) => {
-                    const currentLTP = selectedScrip?.scrip.startsWith(trade.scrip) ? selectedScrip.ltp : trade.entryPrice;
+                    const currentLTP = trade.currentPrice ?? trade.entryPrice;
                     const pnl = trade.tradeType === 'BUY'
                       ? (currentLTP - trade.entryPrice) * trade.quantity
                       : (trade.entryPrice - currentLTP) * trade.quantity;

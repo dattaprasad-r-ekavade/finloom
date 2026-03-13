@@ -127,42 +127,24 @@ const formatCurrency = (value: number) =>
   }).format(value);
 
 
-const FALLBACK_PERFORMANCE_DATA = [
-  { date: 'Jan', pnl: 4000, cumulative: 4000 },
-  { date: 'Feb', pnl: 3000, cumulative: 7000 },
-  { date: 'Mar', pnl: 2000, cumulative: 9000 },
-  { date: 'Apr', pnl: 2780, cumulative: 11780 },
-  { date: 'May', pnl: 1890, cumulative: 13670 },
-  { date: 'Jun', pnl: 2390, cumulative: 16060 },
-];
-
-const FALLBACK_PORTFOLIO_DATA = [
-  { date: '1', value: 45000 },
-  { date: '5', value: 47000 },
-  { date: '10', value: 46500 },
-  { date: '15', value: 49000 },
-  { date: '20', value: 51000 },
-  { date: '25', value: 52500 },
-  { date: '30', value: 54200 },
-];
-
-const FALLBACK_TRADE_VOLUME_DATA = [
-  { date: 'Mon', trades: 120, winRate: 65 },
-  { date: 'Tue', trades: 150, winRate: 60 },
-  { date: 'Wed', trades: 98, winRate: 62 },
-  { date: 'Thu', trades: 180, winRate: 70 },
-  { date: 'Fri', trades: 200, winRate: 68 },
-  { date: 'Sat', trades: 85, winRate: 55 },
-  { date: 'Sun', trades: 60, winRate: 58 },
-];
-
-
 export default function UserDashboard() {
   const router = useRouter();
   const { user, isLoading, checkAuth } = useAuthStore();
   const hasCompletedKyc = user?.hasCompletedKyc ?? false;
-  const kycStatusText = hasCompletedKyc ? 'KYC approved' : 'KYC pending';
-  const kycChipColor = hasCompletedKyc ? 'success' : 'warning';
+  const kycStatusText =
+    user?.kycStatus === 'APPROVED' || user?.kycStatus === 'AUTO_APPROVED'
+      ? 'KYC approved'
+      : user?.kycStatus === 'PENDING'
+        ? 'KYC under review'
+        : user?.kycStatus === 'REJECTED'
+          ? 'KYC rejected'
+          : 'KYC not submitted';
+  const kycChipColor =
+    user?.kycStatus === 'APPROVED' || user?.kycStatus === 'AUTO_APPROVED'
+      ? 'success'
+      : user?.kycStatus === 'REJECTED'
+        ? 'error'
+        : 'warning';
   const [selection, setSelection] = useState<ChallengeSelection | null>(null);
   const [selectionLoading, setSelectionLoading] = useState(false);
   const [selectionError, setSelectionError] = useState<string | null>(null);
@@ -314,9 +296,9 @@ export default function UserDashboard() {
 
     if (metrics.length === 0) {
       return {
-        cumulative: FALLBACK_PORTFOLIO_DATA,
-        daily: FALLBACK_PERFORMANCE_DATA,
-        trades: FALLBACK_TRADE_VOLUME_DATA,
+        cumulative: [],
+        daily: [],
+        trades: [],
       };
     }
 
@@ -343,33 +325,43 @@ export default function UserDashboard() {
     return { cumulative, daily, trades };
   }, [challengeStatus, selection]);
 
+  const latestMetric =
+    challengeStatus?.metrics && challengeStatus.metrics.length > 0
+      ? challengeStatus.metrics[challengeStatus.metrics.length - 1]
+      : null;
+  const accountSize =
+    challengeStatus?.plan.accountSize ?? selection?.plan.accountSize ?? 0;
+
   const stats = [
     {
       title: 'Total Balance',
-      value: '₹54,200',
-      change: '+8.2%',
-      isPositive: true,
+      value:
+        accountSize > 0 && latestMetric
+          ? formatCurrency(accountSize + latestMetric.cumulativePnl)
+          : '--',
+      change: latestMetric ? formatCurrency(latestMetric.cumulativePnl) : 'No data',
+      isPositive: (latestMetric?.cumulativePnl ?? 0) >= 0,
       icon: <AccountBalance sx={{ fontSize: 40 }} />,
     },
     {
       title: 'Today\'s P&L',
-      value: '₹1,680',
-      change: '+3.1%',
-      isPositive: true,
+      value: latestMetric ? formatCurrency(latestMetric.dailyPnl) : '--',
+      change: latestMetric ? `${latestMetric.winRate.toFixed(1)}% win rate` : 'No data',
+      isPositive: (latestMetric?.dailyPnl ?? 0) >= 0,
       icon: <TrendingUp sx={{ fontSize: 40 }} />,
     },
     {
-      title: 'Active Positions',
-      value: '12',
-      change: '+2',
+      title: 'Trades Logged',
+      value: latestMetric ? `${latestMetric.tradesCount}` : '--',
+      change: challengeStatus ? `${challengeStatus.metrics.length} day(s)` : 'No data',
       isPositive: true,
       icon: <ShowChart sx={{ fontSize: 40 }} />,
     },
     {
       title: 'Win Rate',
-      value: '68.5%',
-      change: '-1.2%',
-      isPositive: false,
+      value: latestMetric ? `${latestMetric.winRate.toFixed(1)}%` : '--',
+      change: latestMetric ? formatCurrency(latestMetric.maxDrawdown) : 'No data',
+      isPositive: (latestMetric?.winRate ?? 0) >= 50,
       icon: <TrendingDown sx={{ fontSize: 40 }} />,
     },
   ];

@@ -34,6 +34,8 @@ export interface TradeRecord {
   tradeType: 'BUY' | 'SELL';
   status: 'OPEN' | 'CLOSED';
   pnl: number;
+  currentPrice?: number;
+  livePnl?: number;
   entryTime: string;
   exitTime: string | null;
   autoSquaredOff: boolean;
@@ -95,7 +97,8 @@ export const TradesList: React.FC<TradesListProps> = ({
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1 }}>
             {trades.map((trade) => {
               const isOpen = trade.status === 'OPEN';
-              const pnlTone = trade.pnl >= 0 ? 'success.main' : 'error.main';
+              const displayedPnl = isOpen ? (trade.livePnl ?? trade.pnl) : trade.pnl;
+              const pnlTone = displayedPnl >= 0 ? 'success.main' : 'error.main';
               const isProcessing = processingTrades.has(trade.id);
               return (
                 <Paper
@@ -168,7 +171,7 @@ export const TradesList: React.FC<TradesListProps> = ({
                     <Box textAlign="right">
                       <Typography variant="caption" color="text.secondary">P&amp;L</Typography>
                       <Typography variant="body2" sx={{ color: pnlTone, fontWeight: 700 }}>
-                        {currencyFormatter.format(trade.pnl)}
+                        {currencyFormatter.format(displayedPnl)}
                       </Typography>
                     </Box>
                   </Stack>
@@ -201,7 +204,8 @@ export const TradesList: React.FC<TradesListProps> = ({
             <TableBody>
               {trades.map((trade) => {
                 const isOpen = trade.status === 'OPEN';
-                const pnlTone = trade.pnl >= 0 ? 'success.main' : 'error.main';
+                const displayedPnl = isOpen ? (trade.livePnl ?? trade.pnl) : trade.pnl;
+                const pnlTone = displayedPnl >= 0 ? 'success.main' : 'error.main';
                 const isProcessing = processingTrades.has(trade.id);
                 return (
                   <TableRow hover key={trade.id}>
@@ -232,7 +236,7 @@ export const TradesList: React.FC<TradesListProps> = ({
                     </TableCell>
                     <TableCell align="right">
                       <Typography sx={{ color: pnlTone, fontWeight: 600 }}>
-                        {currencyFormatter.format(trade.pnl)}
+                        {currencyFormatter.format(displayedPnl)}
                       </Typography>
                     </TableCell>
                     <TableCell>

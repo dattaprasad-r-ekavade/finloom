@@ -60,32 +60,25 @@ export async function POST(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     });
 
-    const updatedChallenge =
-      existingChallenge && existingChallenge.planId !== planId
-        ? await prisma.userChallenge.update({
-            where: { id: existingChallenge.id },
-            data: {
-              planId,
-              status: 'PENDING',
-              startDate: null,
-              endDate: null,
-              demoAccountCredentials: null,
-              currentPnl: 0,
-              maxDrawdown: null,
-              violationCount: 0,
-              violationDetails: null,
-            },
-            include: {
-              plan: true,
-              mockedPayments: {
-                orderBy: { createdAt: 'desc' },
-              },
-            },
-          })
-        : existingChallenge;
+    if (existingChallenge?.status === 'ACTIVE' && existingChallenge.planId !== planId) {
+      return ErrorHandlers.forbidden(
+        'You already have an active challenge. Complete it before selecting a different plan.',
+      );
+    }
+
+    if (existingChallenge?.status === 'PENDING' && existingChallenge.planId !== planId) {
+      await prisma.userChallenge.delete({
+        where: { id: existingChallenge.id },
+      });
+    }
+
+    const reusableChallenge =
+      existingChallenge && existingChallenge.planId === planId
+        ? existingChallenge
+        : null;
 
     const challengeRecord =
-      updatedChallenge ??
+      reusableChallenge ??
       (await prisma.userChallenge.create({
         data: {
           userId: session.userId,
@@ -102,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       message:
-        existingChallenge && existingChallenge.planId === planId
+        reusableChallenge
           ? 'Challenge plan already selected.'
           : 'Challenge plan secured. Continue to payment.',
       selection: challengeRecord,

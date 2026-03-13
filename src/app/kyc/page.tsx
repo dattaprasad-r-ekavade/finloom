@@ -24,6 +24,8 @@ import { validateName, validatePhone, validateAddress } from '@/lib/validation';
 export default function KycPage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const checkAuth = useAuthStore((state) => state.checkAuth);
   const setUser = useAuthStore((state) => state.setUser);
 
   const [fullName, setFullName] = useState('');
@@ -37,6 +39,14 @@ export default function KycPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
     if (!user) {
       router.replace('/login');
       return;
@@ -45,7 +55,7 @@ export default function KycPage() {
     if (user.name) {
       setFullName(user.name);
     }
-  }, [router, user]);
+  }, [isLoading, router, user]);
 
   useEffect(() => {
     if (user?.hasCompletedKyc) {

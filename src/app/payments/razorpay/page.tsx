@@ -59,6 +59,8 @@ function RazorpayPaymentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const user = useAuthStore((state) => state.user);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const checkAuth = useAuthStore((state) => state.checkAuth);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +78,14 @@ function RazorpayPaymentContent() {
   const planId = searchParams.get('planId');
 
   useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
     if (!user) {
       router.replace('/login');
       return;
@@ -98,6 +108,7 @@ function RazorpayPaymentContent() {
         const response = await fetch('/api/payment/razorpay/create-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ planId }),
         });
         const data = await response.json();
 
@@ -118,7 +129,7 @@ function RazorpayPaymentContent() {
     return () => {
       document.body.removeChild(script);
     };
-  }, [router, user, planId]);
+  }, [isLoading, router, user, planId]);
 
   const handlePayment = useCallback(async () => {
     if (!orderData || !user) return;

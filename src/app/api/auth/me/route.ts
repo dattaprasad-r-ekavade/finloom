@@ -47,13 +47,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const kycStatus = user.mockedKyc ? user.mockedKyc.status : ('NOT_SUBMITTED' as const);
+    const hasCompletedKyc =
+      kycStatus === 'APPROVED' || kycStatus === 'AUTO_APPROVED';
+
     const responseUser = {
       id: user.id,
       email: user.email,
       name: user.name,
       role: user.role,
-      kycStatus: user.mockedKyc ? user.mockedKyc.status : ('NOT_SUBMITTED' as const),
-      hasCompletedKyc: Boolean(user.mockedKyc),
+      kycStatus,
+      hasCompletedKyc,
     };
 
     return NextResponse.json({
