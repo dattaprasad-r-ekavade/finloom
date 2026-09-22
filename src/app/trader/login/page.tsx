@@ -123,10 +123,10 @@ export default function TraderLoginPage() {
                     mb: 1,
                   }}
                 >
-                  Trader Workspace
+                  Learner sign in
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
-                  Access your trading intelligence and real-time market analytics.
+                  Sign in to continue to your Finloom learning and practice workspace.
                 </Typography>
               </Box>
               <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -177,7 +177,7 @@ export default function TraderLoginPage() {
                     },
                   }}
                 >
-                  {loading ? 'Signing in…' : 'Trader Sign In'}
+                  {loading ? 'Signing in…' : 'Sign in'}
                 </Button>
                 <Button
                   fullWidth
@@ -186,7 +186,7 @@ export default function TraderLoginPage() {
                   onClick={() => router.push('/trader/signup')}
                   sx={{ py: 1.6, fontWeight: 600 }}
                 >
-                  Create Trader Account
+                  Create an account
                 </Button>
               </Box>
             </Stack>
@@ -196,11 +196,10 @@ export default function TraderLoginPage() {
                 variant="h6"
                 sx={{ fontWeight: 600, fontFamily: '"Poppins", "Segoe UI", sans-serif' }}
               >
-                High-Performance Trading Tools
+                Learn and practise with context
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Real-time account status, scalable risk controls, instant messaging, and advanced analytics. 
-                Optimized UI for focus and rapid decision-making.
+                Finloom is building historical replay and simulated assessment tools. Simulated results have no cash value and are not a promise of funding or employment.
               </Typography>
               <Divider flexItem>
                 <Typography variant="caption" color="text.secondary">

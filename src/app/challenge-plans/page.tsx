@@ -56,6 +56,7 @@ const formatCurrency = (value: number) =>
   }).format(value);
 
 export default function ChallengePlansPage() {
+  const commerceEnabled = process.env.NEXT_PUBLIC_COMMERCE_ENABLED === 'true';
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const isLoading = useAuthStore((state) => state.isLoading);
@@ -169,7 +170,7 @@ export default function ChallengePlansPage() {
 
   useEffect(() => {
     if (selection?.status === 'ACTIVE' && !successMessage) {
-      setSuccessMessage('Challenge is already active with mock funding.');
+      setSuccessMessage('Your simulated skills assessment is active. Virtual results have no cash value.');
     }
   }, [selection?.status, successMessage]);
 
@@ -190,10 +191,6 @@ export default function ChallengePlansPage() {
       {
         label: 'Trading window',
         build: (plan: ChallengePlan) => `${plan.durationDays} days`,
-      },
-      {
-        label: 'Profit split',
-        build: (plan: ChallengePlan) => `${plan.profitSplit}%`,
       },
     ],
     []
@@ -244,7 +241,7 @@ export default function ChallengePlansPage() {
     [isSubmitting, router, user]
   );
 
-  const isLoading = loadingPlans || loadingSelection;
+  const isPageLoading = loadingPlans || loadingSelection;
 
   return (
     <Box
@@ -267,10 +264,10 @@ export default function ChallengePlansPage() {
               sx={{ alignSelf: 'flex-start', fontWeight: 600 }}
             />
             <Typography variant="h4" sx={{ fontWeight: 600 }}>
-              Reserve your simulated trading seat
+              Choose a simulated skills assessment
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 640 }}>
-              Compare the funded account pathways, lock in your preferred capital level, and proceed to payment to activate your evaluation.
+              Review the practice limits and listed subscription price. The billing period and renewal terms must be confirmed before paid access opens. Virtual gains are never paid out, and passing does not guarantee employment.
             </Typography>
           </Stack>
 
@@ -286,7 +283,7 @@ export default function ChallengePlansPage() {
             </Alert>
           )}
 
-          {isLoading || loadingPlans || loadingSelection ? (
+          {isPageLoading ? (
             <Box
               sx={{
                 display: 'flex',
@@ -402,7 +399,7 @@ export default function ChallengePlansPage() {
 
                       <Stack spacing={1}>
                         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          Capital allocation
+                          Virtual starting balance
                         </Typography>
                         <Typography variant="h6">{formatCurrency(plan.accountSize)}</Typography>
                       </Stack>
@@ -449,7 +446,7 @@ export default function ChallengePlansPage() {
 
                       <Stack spacing={1}>
                         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          Evaluation fee
+                          Subscription price
                         </Typography>
                         <Typography variant="h6">{formatCurrency(plan.fee)}</Typography>
                       </Stack>
@@ -458,7 +455,7 @@ export default function ChallengePlansPage() {
                         variant="contained"
                         size="large"
                         fullWidth
-                        disabled={isLocked || isSubmitting || isSelected}
+                        disabled={!commerceEnabled || isLocked || isSubmitting || isSelected}
                         onClick={() => handlePlanSelection(plan)}
                         startIcon={isLocked ? undefined : <Payment />}
                         sx={{ mt: 1.5, fontWeight: 600 }}
@@ -467,9 +464,9 @@ export default function ChallengePlansPage() {
                           ? ` Complete Level ${(progressionData?.highestPassedLevel || 0) + 1} first`
                           : isSelected
                           ? isActivePlan
-                            ? 'Challenge live'
+                            ? 'Assessment active'
                             : 'Reserved for you'
-                          : 'Reserve & continue'}
+                          : commerceEnabled ? 'Reserve & continue' : 'Preview only'}
                       </Button>
                     </CardContent>
                   </Card>
@@ -485,7 +482,9 @@ export default function ChallengePlansPage() {
               border: (theme) => `1px solid ${theme.palette.info.light}`,
             }}
           >
-            Complete the payment step to activate your challenge and unlock challenge analytics.
+            {commerceEnabled
+              ? 'Review the subscription period, renewal, included attempts and refund terms before paying. A Finloom certificate may support an application to a separate desk role; hiring is not guaranteed.'
+              : 'Checkout is disabled in this preview. Paid assessments will open only after the data rights, assessment terms and customer policies are ready.'}
           </Alert>
         </Stack>
       </Container>

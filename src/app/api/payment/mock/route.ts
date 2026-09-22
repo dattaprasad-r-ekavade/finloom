@@ -24,6 +24,10 @@ const generateCredentials = (): ChallengeCredentials => ({
 });
 
 export async function POST(request: NextRequest) {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Mock payments are disabled in production.' }, { status: 410 });
+  }
+
   try {
     const session = await requireRole(request, 'TRADER');
     if (!session) {

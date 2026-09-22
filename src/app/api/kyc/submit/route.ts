@@ -22,6 +22,10 @@ function maskSensitive(value: string): string {
 
 export async function POST(request: NextRequest) {
   try {
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ error: 'Identity verification is disabled in this preview.' }, { status: 410 });
+    }
+
     const session = await requireRole(request, 'TRADER');
     if (!session) {
       return ErrorHandlers.unauthorized('Trader authentication required.');

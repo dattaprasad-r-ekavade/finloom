@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
-import { successResponse, errorResponse } from '@/lib/apiResponse';
+import { errorResponse } from '@/lib/apiResponse';
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,8 +12,9 @@ export async function POST(req: NextRequest) {
       return errorResponse('Email is required.', 400);
     }
 
+    const normalisedEmail = email.toLowerCase().trim();
     const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() },
+      where: { email: normalisedEmail },
     });
 
     // Always return success to avoid email enumeration
@@ -23,7 +24,11 @@ export async function POST(req: NextRequest) {
 
     if (!user) return genericSuccess;
 
-    // Generate a secure random token
+    if (process.env.NODE_ENV === 'production') {
+      return errorResponse('Password recovery is temporarily unavailable. Please contact support.', 503);
+    }
+
+    // Generate a secure random token for the local development flow.
     const rawToken = crypto.randomBytes(32).toString('hex');
     const hashedToken = crypto
       .createHash('sha256')
@@ -40,15 +45,10 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // In production this would be sent via email.
-    // For now, expose the raw token in development mode for testing.
-    const isDev = process.env.NODE_ENV === 'development';
-
-    console.log(`[ForgotPassword] Reset token for ${email}: ${rawToken}`);
-
     return NextResponse.json({
       message: 'If an account with that email exists, reset instructions will be sent.',
-      ...(isDev && { resetToken: rawToken, expiresAt: expiry }),
+      resetToken: rawToken,
+      expiresAt: expiry,
     });
   } catch (error) {
     console.error('[ForgotPassword] Error:', error);

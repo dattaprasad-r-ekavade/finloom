@@ -20,6 +20,7 @@ import {
   CardContent,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
+import Navbar from '@/components/Navbar';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -43,6 +44,27 @@ function TabPanel(props: TabPanelProps) {
 }
 
 export default function AngelOneTestPage() {
+  if (process.env.NODE_ENV === 'production') {
+    return <AngelOneTestUnavailable />;
+  }
+
+  return <AngelOneTestDevelopmentPage />;
+}
+
+function AngelOneTestUnavailable() {
+  return (
+    <Box sx={{ minHeight: '100vh', background: '#f7f8f4' }}>
+      <Navbar />
+      <Box sx={{ maxWidth: 760, mx: 'auto', px: 3, py: { xs: 7, md: 12 } }}>
+        <Alert severity="info" sx={{ borderRadius: 3 }}>
+          The AngelOne test console is internal development tooling and is unavailable in production.
+        </Alert>
+      </Box>
+    </Box>
+  );
+}
+
+function AngelOneTestDevelopmentPage() {
   const [tabValue, setTabValue] = useState(0);
   
   // Auth credentials

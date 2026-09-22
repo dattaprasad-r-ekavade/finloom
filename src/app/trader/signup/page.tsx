@@ -113,7 +113,7 @@ export default function TraderSignupPage() {
             <Stack spacing={3} sx={{ maxWidth: 420 }}>
               <Chip
                 icon={<TrendingUp fontSize="small" />}
-                label="Trader Registration"
+                label="Learner registration"
                 color="primary"
                 variant="outlined"
                 sx={{ alignSelf: 'flex-start', fontWeight: 600 }}
@@ -127,10 +127,10 @@ export default function TraderSignupPage() {
                     mb: 1,
                   }}
                 >
-                  Create Trader Account
+                  Create your account
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
-                  Register to access your personalized trading workspace with real-time analytics and tools.
+                  Create an account to access learning and simulated-practice features as they become available.
                 </Typography>
               </Box>
               <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -189,7 +189,7 @@ export default function TraderSignupPage() {
                     },
                   }}
                 >
-                  {loading ? 'Creating account…' : 'Create Trader Account'}
+                  {loading ? 'Creating account…' : 'Create account'}
                 </Button>
                 <Button
                   fullWidth
@@ -198,7 +198,7 @@ export default function TraderSignupPage() {
                   onClick={() => router.push('/trader/login')}
                   sx={{ py: 1.6, fontWeight: 600 }}
                 >
-                  Back to Trader Sign In
+                  Back to sign in
                 </Button>
               </Box>
             </Stack>
@@ -208,11 +208,10 @@ export default function TraderSignupPage() {
                 variant="h6"
                 sx={{ fontWeight: 600, fontFamily: '"Poppins", "Segoe UI", sans-serif' }}
               >
-                Your Trading Command Center
+                Your learning workspace
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Get high-tempo analytics, instant funding signals, execution tooling, and personalized dashboards.
-                Built for traders who need real-time intelligence and rapid decision-making capabilities.
+                Learn market foundations, practise decisions in simulation and review how you manage risk. No simulated gains or losses are paid.
               </Typography>
               <Divider flexItem>
                 <Typography variant="caption" color="text.secondary">

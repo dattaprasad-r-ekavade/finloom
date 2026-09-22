@@ -48,6 +48,38 @@ interface LoadedChallenge {
     createdAt: Date;
     updatedAt: Date;
   }>;
+  dailySummaries: Array<{
+    date: Date;
+    realizedPnl: number;
+    unrealizedPnl: number;
+  }>;
+}
+
+function getEvaluationMetrics(challenge: LoadedChallenge) {
+  if (challenge.dailySummaries.length === 0) {
+    return challenge.metrics;
+  }
+
+  let cumulativeRealizedPnl = 0;
+  let peakPnl = 0;
+  let maxDrawdown = 0;
+  return challenge.dailySummaries.map((summary) => {
+    cumulativeRealizedPnl += summary.realizedPnl;
+    const cumulativePnl = cumulativeRealizedPnl + summary.unrealizedPnl;
+    const dailyPnl = summary.realizedPnl + summary.unrealizedPnl;
+    peakPnl = Math.max(peakPnl, cumulativePnl);
+    maxDrawdown = Math.max(maxDrawdown, peakPnl - cumulativePnl);
+    return {
+      date: summary.date,
+      dailyPnl,
+      cumulativePnl,
+      maxDrawdown,
+      tradesCount: 0,
+      winRate: 0,
+      profitTarget: 0,
+      violations: 0,
+    };
+  });
 }
 
 class EvaluateApiError extends Error {
@@ -74,6 +106,7 @@ async function loadSingleChallenge(challengeId: string): Promise<LoadedChallenge
       metrics: {
         orderBy: { date: 'asc' },
       },
+      dailySummaries: { orderBy: { date: 'asc' } },
     },
   }) as Promise<LoadedChallenge | null>;
 }
@@ -110,6 +143,7 @@ async function loadChallengesForRequest(
         metrics: {
           orderBy: { date: 'asc' },
         },
+        dailySummaries: { orderBy: { date: 'asc' } },
       },
     })) as LoadedChallenge[];
   }
@@ -134,6 +168,7 @@ async function loadChallengesForRequest(
         metrics: {
           orderBy: { date: 'asc' },
         },
+        dailySummaries: { orderBy: { date: 'asc' } },
       },
     })) as LoadedChallenge[];
   }
@@ -147,6 +182,7 @@ async function loadChallengesForRequest(
       metrics: {
         orderBy: { date: 'asc' },
       },
+      dailySummaries: { orderBy: { date: 'asc' } },
     },
   })) as LoadedChallenge[];
 }
@@ -191,7 +227,7 @@ export async function POST(request: NextRequest) {
         maxDrawdown: challenge.maxDrawdown ?? 0,
         violationCount: challenge.violationCount,
         plan: challenge.plan,
-        metrics: challenge.metrics,
+        metrics: getEvaluationMetrics(challenge),
       });
 
       if (result.status !== challenge.status) {
@@ -203,10 +239,7 @@ export async function POST(request: NextRequest) {
           violationDetails?: string;
         } = {
           status: result.status,
-          currentPnl:
-            result.progressPct > 0
-              ? challenge.metrics[challenge.metrics.length - 1]?.cumulativePnl ?? 0
-              : 0,
+          currentPnl: challenge.currentPnl,
         };
 
         if (result.passed || result.failed) {
@@ -303,7 +336,7 @@ export async function GET(request: NextRequest) {
         maxDrawdown: challenge.maxDrawdown ?? 0,
         violationCount: challenge.violationCount,
         plan: challenge.plan,
-        metrics: challenge.metrics,
+        metrics: getEvaluationMetrics(challenge),
       });
 
       return {

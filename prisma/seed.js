@@ -7,7 +7,7 @@ async function main() {
     {
       name: "Level 1 Challenge",
       description:
-        "Entry-level evaluation with Rs.10 Lakh virtual capital and conservative risk limits.",
+        "Entry-level simulated skills assessment with a virtual practice balance and conservative risk limits.",
       accountSize: 1000000,
       profitTargetPct: 8,
       maxLossPct: 5,
@@ -22,7 +22,7 @@ async function main() {
     {
       name: "Level 2 Challenge",
       description:
-        "Intermediate evaluation with Rs.25 Lakh virtual capital and balanced risk targets.",
+        "Intermediate simulated skills assessment with a virtual practice balance and balanced risk targets.",
       accountSize: 2500000,
       profitTargetPct: 8,
       maxLossPct: 5,
@@ -37,7 +37,7 @@ async function main() {
     {
       name: "Level 3 Challenge",
       description:
-        "Advanced evaluation with Rs.50 Lakh virtual capital for experienced prop traders.",
+        "Advanced simulated skills assessment with a virtual practice balance for experienced learners.",
       accountSize: 5000000,
       profitTargetPct: 8,
       maxLossPct: 5,

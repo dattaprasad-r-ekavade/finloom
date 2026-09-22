@@ -22,6 +22,27 @@ import { useAuthStore } from '@/store/authStore';
 import { validateName, validatePhone, validateAddress } from '@/lib/validation';
 
 export default function KycPage() {
+  if (process.env.NODE_ENV === 'production') {
+    return <KycUnavailable />;
+  }
+
+  return <KycDevelopmentPage />;
+}
+
+function KycUnavailable() {
+  return (
+    <Box sx={{ minHeight: '100vh', background: '#f7f8f4' }}>
+      <Navbar />
+      <Container maxWidth="md" sx={{ py: { xs: 5, md: 9 } }}>
+        <Alert severity="info" sx={{ borderRadius: 3 }}>
+          Identity verification is disabled in this preview. Please do not submit PAN, date-of-birth, phone or address details. A reviewed identity and privacy flow is required before launch.
+        </Alert>
+      </Container>
+    </Box>
+  );
+}
+
+function KycDevelopmentPage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const isLoading = useAuthStore((state) => state.isLoading);
@@ -195,10 +216,10 @@ export default function KycPage() {
                   sx={{ alignSelf: 'flex-start', fontWeight: 600 }}
                 />
                 <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                  Complete your rapid KYC
+                  Complete your identity check
                 </Typography>
                 <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 520 }}>
-                  Submit your verification details once to unlock funding workflows, payout tracking, and challenge plan selection.
+                  If an identity check is required for an assessment or payment, submit your details here. It does not unlock real capital or simulated-profit payouts.
                 </Typography>
               </Stack>
 

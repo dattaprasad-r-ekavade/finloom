@@ -7,17 +7,17 @@ const lightTheme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#0061A8',
-      light: '#3381BA',
-      dark: '#004577',
+      main: '#174F3D',
+      light: '#4A8662',
+      dark: '#103B30',
     },
     secondary: {
-      main: '#00A86B',
-      light: '#33BA8B',
-      dark: '#00764A',
+      main: '#6AA77E',
+      light: '#91C29D',
+      dark: '#477D5A',
     },
     success: {
-      main: '#00A86B',
+      main: '#4A8662',
     },
     error: {
       main: '#E74C3C',
@@ -26,12 +26,12 @@ const lightTheme = createTheme({
       main: '#F39C12',
     },
     background: {
-      default: '#FAFAFA',
+      default: '#F7F8F4',
       paper: '#FFFFFF',
     },
     text: {
-      primary: '#1E1E1E',
-      secondary: '#4D5561',
+      primary: '#152720',
+      secondary: '#65736C',
     },
   },
   typography: {
@@ -79,8 +79,8 @@ const lightTheme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         body: {
-          backgroundColor: '#FAFAFA',
-          color: '#1E1E1E',
+          backgroundColor: '#F7F8F4',
+          color: '#152720',
         },
       },
     },

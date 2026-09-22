@@ -15,6 +15,10 @@ function maskSecret(value: string): string {
 // GET - Retrieve current credentials (without sensitive data)
 export async function GET(request: NextRequest) {
   try {
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ error: 'AngelOne is an internal development integration.' }, { status: 404 });
+    }
+
     const admin = await requireRole(request, 'ADMIN');
     if (!admin) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
@@ -44,6 +48,10 @@ export async function GET(request: NextRequest) {
 // POST - Update credentials
 export async function POST(request: NextRequest) {
   try {
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ error: 'AngelOne is an internal development integration.' }, { status: 404 });
+    }
+
     const admin = await requireRole(request, 'ADMIN');
     if (!admin) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
@@ -83,6 +91,10 @@ export async function POST(request: NextRequest) {
 // PUT - Seed credentials from environment variables
 export async function PUT(request: NextRequest) {
   try {
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ error: 'AngelOne is an internal development integration.' }, { status: 404 });
+    }
+
     const admin = await requireRole(request, 'ADMIN');
     if (!admin) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });

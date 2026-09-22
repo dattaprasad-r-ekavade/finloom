@@ -46,6 +46,27 @@ interface CandleData {
 }
 
 export default function LiveTradingPage() {
+  if (process.env.NODE_ENV === 'production') {
+    return <LiveTradingUnavailable />;
+  }
+
+  return <LiveTradingDevelopmentPage />;
+}
+
+function LiveTradingUnavailable() {
+  return (
+    <Box sx={{ minHeight: '100vh', background: '#f7f8f4' }}>
+      <Navbar />
+      <Box sx={{ maxWidth: 760, mx: 'auto', px: 3, py: { xs: 7, md: 12 } }}>
+        <Alert severity="info" sx={{ borderRadius: 3 }}>
+          Live broker data is an internal development integration. Finloom&apos;s learner product is planned around licensed historical replay, which is not available yet.
+        </Alert>
+      </Box>
+    </Box>
+  );
+}
+
+function LiveTradingDevelopmentPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
