@@ -177,19 +177,13 @@ export default function ChallengeDetailsPage() {
                     <Stack spacing={1.5}>
                       <Stack direction="row" justifyContent="space-between">
                         <Typography variant="body1" color="text.secondary">
-                          Account Size
+                          Virtual Starting Balance
                         </Typography>
                         <Typography variant="body1" sx={{ fontWeight: 600 }}>
                           {formatCurrency(challenge.accountSize)}
                         </Typography>
                       </Stack>
                       <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="body1" color="text.secondary">
-                          Profit Split
-                        </Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 600, color: 'success.main' }}>
-                          {challenge.profitSplit}%
-                        </Typography>
                       </Stack>
                     </Stack>
                   </Stack>

@@ -520,6 +520,23 @@ function MockPaymentContent() {
 }
 
 export default function MockPaymentPage() {
+  if (process.env.NODE_ENV === 'production') {
+    return (
+      <Box sx={{ minHeight: '100vh', background: '#f7f8f4' }}>
+        <Navbar />
+        <Container maxWidth="md" sx={{ py: { xs: 5, md: 9 } }}>
+          <Alert severity="info" sx={{ borderRadius: 3 }}>
+            The mock-payment screen is for internal development only. Paid checkout is disabled in this deployment.
+          </Alert>
+        </Container>
+      </Box>
+    );
+  }
+
+  return <MockPaymentDevelopmentPage />;
+}
+
+function MockPaymentDevelopmentPage() {
   return (
     <Suspense
       fallback={

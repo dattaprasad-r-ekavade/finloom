@@ -173,10 +173,10 @@ export default function ChallengeMonitorPage() {
               sx={{ alignSelf: 'flex-start', fontWeight: 600 }}
             />
             <Typography variant="h4" sx={{ fontWeight: 600 }}>
-              Track your mock challenge performance
+              Review your simulated assessment
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 640 }}>
-              Review profit target progress, daily performance, and guardrail adherence for your active evaluation.
+              Review assessment progress, daily results and risk-rule adherence. Simulated gains and losses are not paid out.
             </Typography>
           </Stack>
 
@@ -232,7 +232,7 @@ export default function ChallengeMonitorPage() {
                         <Button
                           variant="contained"
                           onClick={() =>
-                            router.push(`/payments/mock?planId=${encodeURIComponent(status.plan.id)}`)
+                            router.push(`/payments/razorpay?planId=${encodeURIComponent(status.plan.id)}`)
                           }
                         >
                           Payment details

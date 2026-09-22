@@ -272,7 +272,7 @@ export default function UserDashboard() {
     const targetAmount = basePlan.accountSize * (basePlan.profitTargetPct / 100);
 
     return [
-      { label: 'Capital', value: formatCurrency(basePlan.accountSize) },
+      { label: 'Virtual starting balance', value: formatCurrency(basePlan.accountSize) },
       {
         label: 'Profit target',
         value: `${basePlan.profitTargetPct}% (${formatCurrency(targetAmount)})`,
@@ -375,13 +375,12 @@ export default function UserDashboard() {
             User Dashboard
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 720 }}>
-            Monitor your funded accounts, measure risk in real time, and action opportunities instantly with
-            responsive analytics tailored for traders.
+            Review your simulated assessment and risk decisions. Virtual balances and results are for practice only and have no cash value.
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-            <Chip label="Live" color="success" variant="outlined" />
-            <Chip label="Risk Guardrails" color="warning" variant="outlined" />
-            <Chip label="Performance" color="primary" variant="outlined" />
+            <Chip label="Simulation only" color="success" variant="outlined" />
+            <Chip label="Risk rules" color="warning" variant="outlined" />
+            <Chip label="Assessment" color="primary" variant="outlined" />
             <Chip label={kycStatusText} color={kycChipColor} variant="filled" />
           </Stack>
         </Stack>
@@ -405,7 +404,7 @@ export default function UserDashboard() {
               </Button>
             }
           >
-            Complete the rapid KYC flow to unlock challenge plans and funding simulations.
+            Complete the identity check if prompted before using paid assessment features.
           </Alert>
         )}
 
@@ -446,8 +445,8 @@ export default function UserDashboard() {
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                     Level {selection.plan.level}{' '}
                     {isActiveChallenge
-                      ? 'is funded with mock capital. Monitor your metrics and stay within guardrails.'
-                      : 'pathway secured. Complete the mocked payment to activate your simulated capital.'}
+                      ? 'is active as a simulated assessment. Virtual results have no cash value.'
+                      : 'is reserved. Complete checkout to activate the simulation when paid assessments are available.'}
                   </Typography>
                 </Box>
                 <Chip
@@ -511,7 +510,7 @@ export default function UserDashboard() {
               {primaryPayment && (
                 <Stack spacing={0.75}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    Latest mock payment
+                    Latest assessment payment
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Transaction ID: <strong>{primaryPayment.mockTransactionId}</strong>
@@ -528,11 +527,11 @@ export default function UserDashboard() {
                     variant="contained"
                     size="large"
                     onClick={() =>
-                      router.push(`/payments/mock?planId=${encodeURIComponent(selection.plan.id)}`)
+                      router.push(`/payments/razorpay?planId=${encodeURIComponent(selection.plan.id)}`)
                     }
                     sx={{ fontWeight: 600 }}
                   >
-                    Proceed to mocked payment
+                    Continue to checkout
                   </Button>
                   <Button
                     variant="outlined"
@@ -549,6 +548,7 @@ export default function UserDashboard() {
                   <Button
                     variant="contained"
                     size="large"
+                    disabled={process.env.NODE_ENV === 'production'}
                     onClick={() => router.push('/dashboard/user/trading')}
                     sx={{ 
                       fontWeight: 700,
@@ -565,7 +565,7 @@ export default function UserDashboard() {
                       transition: 'all 0.3s ease-in-out',
                     }}
                   >
-                     Start Trading
+                     {process.env.NODE_ENV === 'production' ? 'Historical replay in development' : 'Start simulated practice'}
                   </Button>
                   <Button
                     variant="contained"
@@ -579,7 +579,7 @@ export default function UserDashboard() {
                     variant="outlined"
                     size="large"
                     onClick={() =>
-                      router.push(`/payments/mock?planId=${encodeURIComponent(selection.plan.id)}`)
+                      router.push(`/payments/razorpay?planId=${encodeURIComponent(selection.plan.id)}`)
                     }
                   >
                     View payment details

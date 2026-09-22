@@ -264,8 +264,8 @@ export default function SignupPage() {
                 Choose your operating cockpit
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Traders get high-tempo analytics, instant funding signals, and execution tooling.
-                Use the dedicated admin registration flow if you need administrative access.
+                Learners can build market knowledge and practise with simulated assessments as features become available.
+                Administrative access is managed separately.
               </Typography>
               <Divider flexItem>
                 <Typography variant="caption" color="text.secondary">
@@ -285,7 +285,7 @@ export default function SignupPage() {
                 .
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Trader accounts are provisioned instantly and redirected into the challenge selection flow.
+                Simulation results have no cash value and do not guarantee a job or access to trading capital.
               </Typography>
             </Stack>
           </CardContent>

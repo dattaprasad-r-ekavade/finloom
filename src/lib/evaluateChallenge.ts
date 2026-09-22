@@ -28,7 +28,7 @@ interface ChallengeData {
   maxDrawdown: number;
   violationCount: number;
   plan: ChallengePlan;
-  metrics: ChallengeMetrics[];
+  metrics: Array<Pick<ChallengeMetrics, 'date' | 'dailyPnl' | 'cumulativePnl' | 'maxDrawdown'>>;
 }
 
 /**
@@ -58,44 +58,48 @@ export const evaluateChallenge = (challenge: ChallengeData): EvaluationResult =>
   
   // Calculate key metrics
   const latestMetric = metrics[metrics.length - 1];
-  const cumulativePnl = latestMetric?.cumulativePnl ?? 0;
+  const cumulativePnl = Number.isFinite(challenge.currentPnl)
+    ? challenge.currentPnl
+    : latestMetric?.cumulativePnl ?? 0;
   const profitTargetAmount = plan.accountSize * (plan.profitTargetPct / 100);
   const maxLossAmount = plan.accountSize * (plan.maxLossPct / 100);
   const dailyLossLimit = plan.accountSize * (plan.dailyLossPct / 100);
   const progressPct = profitTargetAmount ? (cumulativePnl / profitTargetAmount) * 100 : 0;
 
+  // A target reached during the allowed period remains achieved even if a
+  // scheduled evaluator runs later. Daily snapshots provide that evidence.
+  const now = new Date();
+  const expiresAt = startDate
+    ? new Date(startDate.getTime() + plan.durationDays * 24 * 60 * 60 * 1000)
+    : null;
+  const isExpired = expiresAt !== null && now >= expiresAt;
+  const targetReachedWithinDuration = metrics.some(
+    (metric) => metric.date <= (expiresAt ?? now) && metric.cumulativePnl >= profitTargetAmount,
+  );
+  const targetCanPass = !isExpired ? cumulativePnl >= profitTargetAmount : targetReachedWithinDuration;
+
   // Rule 1: Check duration expiry
   if (startDate) {
-    const now = new Date();
-    const daysElapsed = Math.floor(
-      (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    if (daysElapsed > plan.durationDays) {
+    if (isExpired && !targetReachedWithinDuration) {
       violations.push({
         type: 'DURATION_EXPIRED',
         date: now,
-        description: `Challenge duration of ${plan.durationDays} days has expired (${daysElapsed} days elapsed)`,
+        description: `Challenge duration of ${plan.durationDays} days expired before the profit target was reached`,
         severity: 'CRITICAL',
       });
 
-      // Check if profit target was reached before expiry
-      if (cumulativePnl >= profitTargetAmount) {
-        passed = true;
-        reason = `Profit target of ${plan.profitTargetPct}% achieved before duration expired`;
-      } else {
-        failed = true;
-        reason = `Duration of ${plan.durationDays} days expired without reaching profit target`;
-      }
+      failed = true;
+      reason = `Duration of ${plan.durationDays} days expired without reaching the target`;
     }
   }
 
   // Rule 2: Check max drawdown (max loss limit)
-  if (!failed && maxDrawdown > maxLossAmount) {
+  const observedMaxDrawdown = Math.max(maxDrawdown, ...metrics.map((metric) => metric.maxDrawdown));
+  if (observedMaxDrawdown > maxLossAmount) {
     violations.push({
       type: 'MAX_LOSS',
       date: new Date(),
-      description: `Maximum drawdown of ${maxDrawdown.toFixed(2)} exceeded the ${plan.maxLossPct}% limit (${maxLossAmount.toFixed(2)})`,
+      description: `Maximum drawdown of ${observedMaxDrawdown.toFixed(2)} exceeded the ${plan.maxLossPct}% limit (${maxLossAmount.toFixed(2)})`,
       severity: 'CRITICAL',
     });
     failed = true;
@@ -103,33 +107,29 @@ export const evaluateChallenge = (challenge: ChallengeData): EvaluationResult =>
   }
 
   // Rule 3: Check daily loss violations
-  if (!failed) {
-    metrics.forEach((metric) => {
-      if (metric.dailyPnl < 0 && Math.abs(metric.dailyPnl) > dailyLossLimit) {
-        violations.push({
-          type: 'DAILY_LOSS',
-          date: metric.date,
-          description: `Daily loss of ${Math.abs(metric.dailyPnl).toFixed(2)} exceeded the ${plan.dailyLossPct}% daily limit (${dailyLossLimit.toFixed(2)})`,
-          severity: 'CRITICAL',
-        });
-        
-        if (!failed) {
-          failed = true;
-          reason = `Daily loss limit of ${plan.dailyLossPct}% exceeded on ${formatDate(metric.date)}`;
-        }
-      }
-    });
-  }
+  metrics.forEach((metric) => {
+    if (metric.dailyPnl < 0 && Math.abs(metric.dailyPnl) > dailyLossLimit) {
+      violations.push({
+        type: 'DAILY_LOSS',
+        date: metric.date,
+        description: `Daily loss of ${Math.abs(metric.dailyPnl).toFixed(2)} exceeded the ${plan.dailyLossPct}% daily limit (${dailyLossLimit.toFixed(2)})`,
+        severity: 'CRITICAL',
+      });
+
+      failed = true;
+      reason = `Daily loss limit of ${plan.dailyLossPct}% exceeded on ${formatDate(metric.date)}`;
+    }
+  });
 
   // Rule 4: Check profit target achievement (if not already failed)
-  const profitTargetAchieved = cumulativePnl >= profitTargetAmount;
-  if (!failed && profitTargetAchieved) {
+  const profitTargetAchieved = targetCanPass;
+  if (!failed && targetCanPass) {
     passed = true;
     reason = `Profit target of ${plan.profitTargetPct}% achieved (${cumulativePnl.toFixed(2)} / ${profitTargetAmount.toFixed(2)})`;
   }
 
   // Rule 5: Check cumulative loss
-  if (!failed && cumulativePnl < -maxLossAmount) {
+  if (cumulativePnl < -maxLossAmount) {
     violations.push({
       type: 'MAX_LOSS',
       date: new Date(),
@@ -142,10 +142,10 @@ export const evaluateChallenge = (challenge: ChallengeData): EvaluationResult =>
 
   // Determine final status
   let finalStatus: ChallengeStatus = 'ACTIVE';
-  if (passed) {
-    finalStatus = 'PASSED';
-  } else if (failed) {
+  if (failed) {
     finalStatus = 'FAILED';
+  } else if (passed) {
+    finalStatus = 'PASSED';
   }
 
   // Determine eligibility for next level
@@ -153,7 +153,7 @@ export const evaluateChallenge = (challenge: ChallengeData): EvaluationResult =>
 
   return {
     status: finalStatus,
-    passed,
+    passed: finalStatus === 'PASSED',
     failed,
     reason: reason || 'Challenge is still active and within all limits',
     violations,

@@ -23,6 +23,23 @@ interface CredentialsInfo {
 }
 
 export default function AngelOneCredentialsPage() {
+  if (process.env.NODE_ENV === 'production') {
+    return (
+      <Box sx={{ minHeight: '100vh', background: '#f7f8f4' }}>
+        <Navbar />
+        <Container maxWidth="md" sx={{ py: { xs: 5, md: 9 } }}>
+          <Alert severity="info" sx={{ borderRadius: 3 }}>
+            AngelOne credentials are limited to internal development. This integration is unavailable in production.
+          </Alert>
+        </Container>
+      </Box>
+    );
+  }
+
+  return <AngelOneCredentialsDevelopmentPage />;
+}
+
+function AngelOneCredentialsDevelopmentPage() {
   const [loading, setLoading] = useState(false);
   const [loadingInfo, setLoadingInfo] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);

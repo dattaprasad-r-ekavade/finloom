@@ -23,9 +23,9 @@ const footerLinks = [
   {
     title: 'Product',
     links: [
-      { label: 'Challenge Plans', href: '/challenge-plans' },
-      { label: 'Trader Login', href: '/trader/login' },
-      { label: 'Admin Login', href: '/admin/login' },
+      { label: 'Practice plans', href: '/challenge-plans' },
+      { label: 'Learner sign in', href: '/trader/login' },
+      { label: 'Create an account', href: '/trader/signup' },
     ],
   },
 ];
@@ -37,8 +37,7 @@ export default function Footer() {
     <Box
       component="footer"
       sx={{
-        backgroundColor: (theme) =>
-          theme.palette.mode === 'light' ? '#F5F5F5' : '#0A0E14',
+        backgroundColor: '#f3f6f1',
         borderTop: (theme) => `1px solid ${theme.palette.divider}`,
         mt: 'auto',
       }}
@@ -64,11 +63,10 @@ export default function Footer() {
               Finloom
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 300, mb: 2 }}>
-              A modern proprietary trading platform combining lightning execution, deep analytics, and
-              transparent risk governance for ambitious trading teams.
+              A learning and simulated-practice platform for people building market knowledge and disciplined trading habits.
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Operated by Finloom Technologies Private Limited
+              Simulation only. Virtual results have no cash value.
             </Typography>
           </Box>
 
@@ -111,7 +109,7 @@ export default function Footer() {
           spacing={2}
         >
           <Typography variant="caption" color="text.secondary">
-            &copy; {new Date().getFullYear()} Finloom Technologies Pvt. Ltd. All rights reserved.
+            &copy; {new Date().getFullYear()} Finloom. All rights reserved.
           </Typography>
           <Stack direction="row" spacing={2}>
             <Typography

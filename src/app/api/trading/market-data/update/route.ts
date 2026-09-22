@@ -19,6 +19,10 @@ function isCronAuthorized(request: NextRequest): boolean {
 
 export async function POST(request: NextRequest) {
   try {
+    if (process.env.NODE_ENV === 'production') {
+      return ErrorHandlers.forbidden('Synthetic market-data updates are disabled in production.');
+    }
+
     const cronAuthorized = isCronAuthorized(request);
     const admin = cronAuthorized ? null : await requireAdmin(request);
 

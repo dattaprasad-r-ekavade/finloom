@@ -120,6 +120,10 @@ export async function invalidateAngelOneSession(): Promise<void> {
  * Pass { forceRefresh: true } to invalidate the stored token and re-login immediately.
  */
 export async function getAngelOneSession(options?: { forceRefresh?: boolean }): Promise<AngelOneSession> {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('AngelOne is an internal development integration and is disabled in production.');
+  }
+
   if (options?.forceRefresh) {
     await invalidateAngelOneSession();
     console.log('AngelOne session invalidated, forcing re-login...');

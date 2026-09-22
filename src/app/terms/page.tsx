@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Box, Container, Typography, Stack, Divider, Paper } from '@mui/material';
+import { Box, Container, Typography, Stack, Divider, Paper, Alert } from '@mui/material';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
@@ -15,14 +15,17 @@ export default function TermsAndConditions() {
             Terms and Conditions
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-            Last updated: February 23, 2026
+            Preview draft · September 23, 2026
           </Typography>
+          <Alert severity="warning" sx={{ mb: 4 }}>
+            These are preview disclosures, not final paid-service terms. Checkout is disabled in this deployment. Finloom must publish reviewed terms, verified company/contact details, and final data-use, renewal and refund policies before accepting paid learners.
+          </Alert>
 
           <Stack spacing={3}>
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>1. Acceptance of Terms</Typography>
               <Typography variant="body2" color="text.secondary">
-                By accessing or using the Finloom platform (&quot;Platform&quot;), operated by Finloom Technologies Private Limited (&quot;Company&quot;, &quot;we&quot;, &quot;us&quot;, or &quot;our&quot;), you agree to be bound by these Terms and Conditions (&quot;Terms&quot;). If you do not agree to these Terms, you must not use the Platform. These Terms constitute a legally binding agreement between you and the Company.
+                These preview disclosures describe the Finloom website and its learning and simulated-practice features. They do not replace final service terms. The legal entity responsible for any commercial launch and its contact details must be confirmed and published before paid access opens.
               </Typography>
             </Box>
 
@@ -31,17 +34,16 @@ export default function TermsAndConditions() {
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>2. Description of Services</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Finloom is a proprietary trading evaluation platform that provides:
+                Finloom is developing a market-learning and simulated-practice product. The current preview may include:
               </Typography>
               <Typography component="ul" variant="body2" color="text.secondary" sx={{ pl: 2 }}>
-                <li>Trading challenge evaluations for aspiring funded traders</li>
-                <li>Simulated trading environments with real-time market data</li>
-                <li>Performance analytics, risk monitoring dashboards, and KPI tracking</li>
-                <li>KYC verification and user management systems</li>
-                <li>Funded account access for traders who successfully pass evaluation challenges</li>
+                <li>Market-learning and independent NISM examination-preparation material, if and when published</li>
+                <li>Simulated skills assessments with virtual balances</li>
+                <li>A Finloom skills certificate for candidates who meet published assessment criteria</li>
+                <li>Historical replay features only after a suitable data licence is secured</li>
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                The Platform does not provide investment advice, portfolio management services, or direct brokerage services. All trading activities during the evaluation phase are conducted in a simulated environment.
+                Simulated trades do not use real capital; simulated gains and losses have no cash value and are not paid out. A Finloom certificate may be required to apply for a separate prop-desk role, but does not guarantee an interview, offer, salary or trading capital. Any employer makes its own hiring decision. Finloom does not provide investment advice, brokerage or portfolio-management services through the simulation.
               </Typography>
             </Box>
 
@@ -68,7 +70,7 @@ export default function TermsAndConditions() {
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>5. Challenge Plans and Fees</Typography>
               <Typography variant="body2" color="text.secondary">
-                Challenge plans are offered at various tiers with different account sizes, profit targets, maximum loss limits, and evaluation durations. Fees for challenge plans are non-refundable once the evaluation period has commenced unless otherwise stated in our Refund Policy. The Company reserves the right to modify challenge plan structures, pricing, and availability at any time. Changes will not affect active challenges already purchased.
+                This preview does not accept payment. Before any paid assessment opens, the applicable price, billing period, renewal, included attempts, cancellation, outage, refund, tax and support terms must be shown clearly at checkout. Do not rely on placeholder plans or prices shown in a preview deployment.
               </Typography>
             </Box>
 
@@ -77,7 +79,7 @@ export default function TermsAndConditions() {
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>6. Trading Rules and Risk Limits</Typography>
               <Typography variant="body2" color="text.secondary">
-                All traders must adhere to the risk parameters defined in their selected challenge plan, including but not limited to: daily loss limits, maximum drawdown thresholds, profit target percentages, and permitted trading instruments. Violation of any risk limit will result in automatic failure of the challenge. The Company employs automated risk monitoring systems that enforce these limits in real time.
+                Published assessment rules will explain applicable limits, scoring, time windows, attempts and appeal procedures before a learner begins a scored attempt. Simulated performance is not evidence of actual returns or a guarantee of future results.
               </Typography>
             </Box>
 
@@ -86,7 +88,7 @@ export default function TermsAndConditions() {
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>7. Payments</Typography>
               <Typography variant="body2" color="text.secondary">
-                All payments are processed securely through Razorpay, our authorized payment gateway partner. We accept payments via UPI, debit cards, credit cards, net banking, and other methods supported by Razorpay. All prices are listed in Indian Rupees (INR) and are inclusive of applicable taxes unless otherwise specified. Payment confirmation will be sent to your registered email address upon successful transaction.
+                Paid checkout is disabled in this preview. A payment provider, accepted payment methods, invoice/tax treatment, and payment-support process will be identified only after they are configured and verified for the commercial service.
               </Typography>
             </Box>
 
@@ -95,7 +97,7 @@ export default function TermsAndConditions() {
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>8. Intellectual Property</Typography>
               <Typography variant="body2" color="text.secondary">
-                All content on the Platform, including but not limited to software, text, graphics, logos, designs, analytics tools, and trading interfaces, is the intellectual property of Finloom Technologies Private Limited and is protected under applicable copyright and trademark laws. You may not reproduce, distribute, modify, or create derivative works from any Platform content without prior written consent.
+                Platform content may be subject to intellectual-property rights held by Finloom or its licensors. Market-data rights and any permitted display or redistribution will be governed by applicable provider terms.
               </Typography>
             </Box>
 
@@ -122,7 +124,7 @@ export default function TermsAndConditions() {
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>11. Governing Law and Dispute Resolution</Typography>
               <Typography variant="body2" color="text.secondary">
-                These Terms are governed by and construed in accordance with the laws of India. Any disputes arising from these Terms or use of the Platform shall be subject to the exclusive jurisdiction of the courts in Bangalore, Karnataka, India. The parties agree to first attempt to resolve disputes through good-faith negotiation before pursuing formal legal proceedings.
+                The governing law, dispute process and competent courts for any commercial service must be confirmed with Indian counsel and included in final terms before paid access opens.
               </Typography>
             </Box>
 
@@ -140,9 +142,7 @@ export default function TermsAndConditions() {
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>13. Contact Information</Typography>
               <Typography variant="body2" color="text.secondary">
-                For questions about these Terms, please contact us at:<br />
-                Email: legal@finloom.com<br />
-                Address: Finloom Technologies Pvt. Ltd., Bangalore, Karnataka, India
+                A verified legal contact and responsible business entity have not yet been published for this preview. Contact details will be added before commercial launch.
               </Typography>
             </Box>
           </Stack>

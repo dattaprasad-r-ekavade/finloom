@@ -118,6 +118,27 @@ const DEFAULT_SYMBOL: ScripOption = {
 };
 
 export default function TradingTerminalPage() {
+  if (process.env.NODE_ENV === 'production') {
+    return <TradingUnavailable />;
+  }
+
+  return <TradingTerminalDevelopmentPage />;
+}
+
+function TradingUnavailable() {
+  return (
+    <Box sx={{ minHeight: '100vh', background: '#f7f8f4' }}>
+      <Navbar />
+      <Box sx={{ maxWidth: 760, mx: 'auto', px: 3, py: { xs: 7, md: 12 } }}>
+        <Alert severity="info" sx={{ borderRadius: 3 }}>
+          Historical replay is being prepared. This older live-data practice screen is available for internal development only.
+        </Alert>
+      </Box>
+    </Box>
+  );
+}
+
+function TradingTerminalDevelopmentPage() {
   const router = useRouter();
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('lg'));

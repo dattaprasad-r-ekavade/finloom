@@ -74,10 +74,10 @@ export default function ChallengesSection() {
             fontSize: { xs: '1.8rem', md: '2.4rem' },
           }}
         >
-          Choose Your Trading Challenge
+          Choose a Practice Assessment
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 600 }}>
-          Select from our tiered challenges and start your journey to becoming a funded trader.
+          Compare simulated assessment stages and practise with published risk limits. Virtual profits are not paid out.
         </Typography>
       </Stack>
 

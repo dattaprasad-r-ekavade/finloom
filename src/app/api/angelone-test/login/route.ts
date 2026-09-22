@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { internalDevelopmentOnlyResponse } from '@/lib/internalDevelopment';
 import { requireRole } from '@/lib/apiAuth';
 
 const ANGELONE_BASE_URL = 'https://apiconnect.angelone.in';
 
 export async function POST(request: NextRequest) {
+  const blocked = internalDevelopmentOnlyResponse();
+  if (blocked) return blocked;
   try {
     const admin = await requireRole(request, 'ADMIN');
     if (!admin) {

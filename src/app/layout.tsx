@@ -10,8 +10,8 @@ const poppins = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700
 const robotoMono = Roboto_Mono({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-roboto-mono" });
 
 export const metadata: Metadata = {
-  title: "Finloom - Modern Fintech Platform",
-  description: "A prop trade firm with advanced analytics and trading tools",
+  title: "Finloom | Learn. Practise. Build your process.",
+  description: "Market learning and simulated trading practice for aspiring trading professionals.",
 };
 
 export default function RootLayout({

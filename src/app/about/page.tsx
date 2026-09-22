@@ -1,200 +1,73 @@
 'use client';
 
-import React from 'react';
-import {
-  Box,
-  Container,
-  Typography,
-  Stack,
-  Paper,
-  Grid,
-  Divider,
-} from '@mui/material';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import SecurityIcon from '@mui/icons-material/Security';
-import SpeedIcon from '@mui/icons-material/Speed';
-import GroupsIcon from '@mui/icons-material/Groups';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
-import SupportAgentIcon from '@mui/icons-material/SupportAgent';
-import Navbar from '@/components/Navbar';
+import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded';
+import MenuBookRounded from '@mui/icons-material/MenuBookRounded';
+import ReplayRounded from '@mui/icons-material/ReplayRounded';
+import ShieldRounded from '@mui/icons-material/ShieldRounded';
+import { Box, Button, Card, CardContent, Container, Stack, Typography } from '@mui/material';
+import { useRouter } from 'next/navigation';
 import Footer from '@/components/Footer';
+import Navbar from '@/components/Navbar';
 
-const values = [
-  {
-    icon: <TrendingUpIcon sx={{ fontSize: 32 }} />,
-    title: 'Performance First',
-    description: 'We believe in recognizing and rewarding consistent trading performance. Our evaluation criteria are designed to identify disciplined, skilled traders.',
-  },
-  {
-    icon: <SecurityIcon sx={{ fontSize: 32 }} />,
-    title: 'Risk Management',
-    description: 'Capital preservation is at the heart of sustainable trading. Our platform enforces strict risk parameters to ensure responsible and accountable trading.',
-  },
-  {
-    icon: <SpeedIcon sx={{ fontSize: 32 }} />,
-    title: 'Real-Time Technology',
-    description: 'Built on modern infrastructure with real-time market data integration, our platform provides a professional-grade trading experience.',
-  },
-  {
-    icon: <GroupsIcon sx={{ fontSize: 32 }} />,
-    title: 'Trader Community',
-    description: 'We are building a community of talented traders across India. Together, we aim to democratize access to institutional-grade trading capital.',
-  },
-  {
-    icon: <EmojiEventsIcon sx={{ fontSize: 32 }} />,
-    title: 'Fair Evaluation',
-    description: 'Our challenge evaluation metrics are transparent, objective, and clearly defined. Every trader is assessed on the same criteria with no hidden rules.',
-  },
-  {
-    icon: <SupportAgentIcon sx={{ fontSize: 32 }} />,
-    title: 'Dedicated Support',
-    description: 'Our support team is available to assist you with technical issues, account queries, and any questions about the evaluation process.',
-  },
-];
-
-const stats = [
-  { value: '500+', label: 'Registered Traders' },
-  { value: '₹5 Cr+', label: 'Evaluation Capital' },
-  { value: '3', label: 'Challenge Tiers' },
-  { value: '99.9%', label: 'Platform Uptime' },
+const pathway = [
+  { number: '01', title: 'Build market knowledge', text: 'Study core market concepts and develop a clear understanding of instruments, orders and risk.', icon: <MenuBookRounded /> },
+  { number: '02', title: 'Practise on past sessions', text: 'Use simulated orders against historical market sessions and review each decision in context.', icon: <ReplayRounded /> },
+  { number: '03', title: 'Complete an assessment', text: 'Work through published stages and earn a private Finloom skills certificate if you meet the criteria.', icon: <ShieldRounded /> },
 ];
 
 export default function AboutUs() {
+  const router = useRouter();
+
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', color: '#152720', background: '#fbfcf9' }}>
       <Navbar />
+      <Box component="main" sx={{ flex: 1 }}>
+        <Box sx={{ py: { xs: 8, md: 12 }, background: 'radial-gradient(ellipse at 82% 12%, rgba(193,225,205,.5), transparent 32%), linear-gradient(120deg,#fbfcf9,#f0f6ef)' }}>
+          <Container maxWidth="md">
+            <Typography sx={{ color: '#588268', fontSize: 11, fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase' }}>About Finloom</Typography>
+            <Typography component="h1" sx={{ mt: 2, maxWidth: 800, color: '#152720', fontFamily: 'var(--font-poppins),sans-serif', fontSize: { xs: 39, md: 60 }, fontWeight: 500, letterSpacing: '-.06em', lineHeight: 1.15 }}>
+              A thoughtful way to learn, practise and show your process.
+            </Typography>
+            <Typography sx={{ mt: 2.5, maxWidth: 690, color: '#647169', fontSize: { xs: 15, md: 17 }, lineHeight: 1.8 }}>
+              Finloom is building a market-learning and simulated-practice platform for aspiring trading professionals in India. The focus is on knowledge, historical context and risk discipline.
+            </Typography>
+          </Container>
+        </Box>
 
-      {/* Hero Section */}
-      <Box sx={{ py: { xs: 6, md: 10 }, textAlign: 'center', background: (theme) => theme.palette.mode === 'dark' ? 'linear-gradient(135deg, #0a1929 0%, #1a237e 100%)' : 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)' }}>
-        <Container maxWidth="md">
-          <Typography variant="h3" sx={{ fontWeight: 800, fontFamily: '"Poppins", sans-serif', mb: 2 }}>
-            About Finloom
-          </Typography>
-          <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 400, lineHeight: 1.6, maxWidth: 700, mx: 'auto' }}>
-            India&apos;s proprietary trading evaluation platform &mdash; empowering skilled traders with funded accounts through rigorous, transparent, and fair performance-based challenges.
-          </Typography>
-        </Container>
-      </Box>
-
-      <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 }, flexGrow: 1 }}>
-        <Stack spacing={6}>
-          {/* Our Story */}
-          <Paper sx={{ p: { xs: 3, md: 5 }, borderRadius: 3, border: (theme) => `1px solid ${theme.palette.divider}` }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"Poppins", sans-serif', mb: 2 }}>
-              Our Story
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 2, lineHeight: 1.8 }}>
-              Finloom was founded with a clear mission: to bridge the gap between talented traders and the capital they need to succeed. We recognized that many skilled traders in India lack access to sufficient capital to trade professionally, despite having the skills and discipline to generate consistent returns.
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 2, lineHeight: 1.8 }}>
-              Our proprietary evaluation platform uses real-time market data and professional-grade analytics to assess trading performance across multiple dimensions &mdash; profitability, risk management, consistency, and discipline. Traders who meet our rigorous evaluation criteria earn access to funded trading accounts where they can trade with institutional capital.
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
-              Built by traders, for traders, Finloom leverages modern technology including real-time data feeds, advanced charting, and automated risk monitoring to create an evaluation experience that mirrors professional trading environments. Our platform is designed to identify and nurture trading talent across India.
-            </Typography>
-          </Paper>
-
-          {/* Stats */}
-          <Grid container spacing={3}>
-            {stats.map((stat) => (
-              <Grid size={{ xs: 6, sm: 3 }} key={stat.label}>
-                <Paper sx={{ p: 3, borderRadius: 3, textAlign: 'center', border: (theme) => `1px solid ${theme.palette.divider}` }}>
-                  <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"Poppins", sans-serif', color: 'primary.main' }}>
-                    {stat.value}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                    {stat.label}
-                  </Typography>
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
-
-          {/* Our Values */}
-          <Box>
-            <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"Poppins", sans-serif', mb: 3, textAlign: 'center' }}>
-              Our Values
-            </Typography>
-            <Grid container spacing={3}>
-              {values.map((value) => (
-                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={value.title}>
-                  <Paper sx={{ p: 3, borderRadius: 3, height: '100%', border: (theme) => `1px solid ${theme.palette.divider}`, transition: 'transform 0.2s ease, box-shadow 0.2s ease', '&:hover': { transform: 'translateY(-4px)', boxShadow: 6 } }}>
-                    <Box sx={{ width: 56, height: 56, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2, color: 'primary.main', backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(79, 195, 247, 0.12)' : 'rgba(0, 97, 168, 0.08)' }}>
-                      {value.icon}
-                    </Box>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                      {value.title}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {value.description}
-                    </Typography>
-                  </Paper>
-                </Grid>
-              ))}
-            </Grid>
+        <Container maxWidth="lg" sx={{ py: { xs: 7, md: 9 } }}>
+          <Box sx={{ maxWidth: 800, mb: 6 }}>
+            <Typography sx={{ color: '#588268', fontSize: 10, fontWeight: 700, letterSpacing: '.16em' }}>THE LEARNING PATH</Typography>
+            <Typography component="h2" sx={{ mt: 1.5, fontFamily: 'var(--font-poppins),sans-serif', fontSize: { xs: 29, md: 40 }, fontWeight: 500, letterSpacing: '-.05em' }}>Practice is useful when it teaches you something.</Typography>
+            <Typography sx={{ mt: 1.5, color: '#6c7971', fontSize: 14, lineHeight: 1.8 }}>We want learners to understand both the market decision and the risk behind it—not mistake a simulated result for an investment return.</Typography>
           </Box>
 
-          <Divider />
-
-          {/* How It Works */}
-          <Paper sx={{ p: { xs: 3, md: 5 }, borderRadius: 3, border: (theme) => `1px solid ${theme.palette.divider}` }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"Poppins", sans-serif', mb: 3 }}>
-              How It Works
-            </Typography>
-            <Grid container spacing={3}>
-              {[
-                { step: '01', title: 'Choose a Challenge', desc: 'Select from our Starter, Growth, or Pro challenge tiers based on your trading experience and goals. Each tier has defined profit targets, loss limits, and evaluation durations.' },
-                { step: '02', title: 'Complete KYC', desc: 'Verify your identity through our streamlined KYC process. Submit your PAN card and other required documents for quick verification and account activation.' },
-                { step: '03', title: 'Trade & Prove', desc: 'Trade in a simulated environment using real-time market data. Meet the profit target while respecting risk parameters to demonstrate your trading skill.' },
-                { step: '04', title: 'Get Funded', desc: 'Pass the evaluation and receive access to a funded trading account. Trade with real capital and earn profit splits based on your performance.' },
-              ].map((item) => (
-                <Grid size={{ xs: 12, sm: 6 }} key={item.step}>
-                  <Stack direction="row" spacing={2} alignItems="flex-start">
-                    <Typography variant="h4" sx={{ fontWeight: 800, color: 'primary.main', fontFamily: '"Poppins", sans-serif', minWidth: 48 }}>
-                      {item.step}
-                    </Typography>
-                    <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>{item.title}</Typography>
-                      <Typography variant="body2" color="text.secondary">{item.desc}</Typography>
-                    </Box>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3,1fr)' }, gap: 2 }}>
+            {pathway.map((item) => (
+              <Card key={item.number} elevation={0} sx={{ border: '1px solid #e5ebe4', borderRadius: '18px', background: 'white' }}>
+                <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Box sx={{ width: 42, height: 42, display: 'grid', placeItems: 'center', border: '1px solid #e1eee3', borderRadius: '13px', color: '#3c7754', background: '#f1f7f0' }}>{item.icon}</Box>
+                    <Typography sx={{ color: '#a2b3a5', fontSize: 11, fontWeight: 700 }}>{item.number}</Typography>
                   </Stack>
-                </Grid>
-              ))}
-            </Grid>
-          </Paper>
+                  <Typography component="h3" sx={{ mt: 2.5, fontFamily: 'var(--font-poppins),sans-serif', fontSize: 17, fontWeight: 500 }}>{item.title}</Typography>
+                  <Typography sx={{ mt: 1, color: '#718077', fontSize: 12, lineHeight: 1.75 }}>{item.text}</Typography>
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
 
-          {/* Company Information */}
-          <Paper sx={{ p: { xs: 3, md: 5 }, borderRadius: 3, border: (theme) => `1px solid ${theme.palette.divider}` }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, fontFamily: '"Poppins", sans-serif', mb: 2 }}>
-              Company Information
+          <Box sx={{ mt: 7, p: { xs: 3, md: 4 }, borderRadius: '20px', color: 'white', background: '#103b30' }}>
+            <Typography component="h2" sx={{ maxWidth: 680, fontFamily: 'var(--font-poppins),sans-serif', fontSize: { xs: 25, md: 34 }, fontWeight: 500, letterSpacing: '-.04em', lineHeight: 1.3 }}>A certificate can support an application. It cannot promise a job.</Typography>
+            <Typography sx={{ mt: 2, maxWidth: 800, color: '#cfddd1', fontSize: 13, lineHeight: 1.85 }}>
+              Passing all published assessment stages may earn a private Finloom skills certificate. It can be used when applying for a separate prop-desk role, subject to that firm&apos;s independent screening, interviews and hiring decision. Finloom simulated trades use no real capital, and their gains or losses are never paid out.
             </Typography>
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  <strong>Company Name:</strong> Finloom Technologies Private Limited
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  <strong>Registered Address:</strong> Bangalore, Karnataka, India
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  <strong>Email:</strong> contact@finloom.com
-                </Typography>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  <strong>Website:</strong> www.finloom.com
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  <strong>Industry:</strong> Financial Technology / Prop Trading
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  <strong>Founded:</strong> 2025
-                </Typography>
-              </Grid>
-            </Grid>
-          </Paper>
-        </Stack>
-      </Container>
+            <Typography sx={{ mt: 1.5, color: '#9db4a3', fontSize: 11, lineHeight: 1.75 }}>
+              Historical market replay is in development. A launch will depend on a suitable licensed data source and review of its permitted use. Any future educational material for NISM exams would be independent preparation; NISM exams and certificates remain separate.
+            </Typography>
+            <Button onClick={() => router.push('/')} endIcon={<ArrowForwardRounded />} sx={{ mt: 2, ml: -1, color: '#c0e1c8', fontWeight: 700 }}>Explore Finloom</Button>
+          </Box>
+        </Container>
+      </Box>
       <Footer />
     </Box>
   );

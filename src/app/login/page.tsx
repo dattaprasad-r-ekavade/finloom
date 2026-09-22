@@ -226,8 +226,7 @@ export default function LoginPage() {
                 Designed for high-performance teams
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Real-time account status, scalable risk controls, and instant messaging keep traders and admins
-                aligned. Enjoy light, performant UI transitions optimised for focus.
+                Sign in to continue to your Finloom learning and simulated-practice workspace.
               </Typography>
               <Divider flexItem>
                 <Typography variant="caption" color="text.secondary">

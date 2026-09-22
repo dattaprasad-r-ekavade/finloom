@@ -11,9 +11,25 @@ interface CreateOrderBody {
 
 export async function POST(request: NextRequest) {
   try {
+    if (process.env.NODE_ENV === 'production' && process.env.RELEASE_COMMERCE_ENABLED !== 'true') {
+      return NextResponse.json({ error: 'Paid assessments are not enabled for this deployment.' }, { status: 503 });
+    }
+
     const session = await requireRole(request, 'TRADER');
     if (!session) {
       return ErrorHandlers.unauthorized('Trader authentication required.');
+    }
+
+    let body: CreateOrderBody;
+    try {
+      body = (await request.json()) as CreateOrderBody;
+    } catch {
+      return ErrorHandlers.badRequest('A valid payment request is required.');
+    }
+
+    const requestedPlanId = typeof body.planId === 'string' ? body.planId.trim() : '';
+    if (!requestedPlanId) {
+      return ErrorHandlers.badRequest('A challenge plan is required.');
     }
 
     const keyId = process.env.RAZORPAY_KEY_ID;
@@ -77,6 +93,16 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    await prisma.challengeOrder.create({
+      data: {
+        userId: session.userId,
+        challengeId: challenge.id,
+        razorpayOrderId: order.id,
+        amount: amountInPaise,
+        currency: 'INR',
+      },
+    });
+
     return NextResponse.json({
       orderId: order.id,
       amount: amountInPaise,
@@ -93,11 +119,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-    let body: CreateOrderBody = {};
-    try {
-      body = (await request.json()) as CreateOrderBody;
-    } catch {
-      body = {};
-    }
-
-    const requestedPlanId = body.planId?.trim();
