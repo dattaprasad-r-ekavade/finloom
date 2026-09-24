@@ -2,7 +2,7 @@
 
 Working strategy — updated 23 September 2026.
 
-This document captures the founder's confirmed model and recommendations from the product discussion. It distinguishes decisions from proposals and unresolved questions. It is not evidence of regulatory approval, signed provider contracts, accreditation or existing hiring capacity. Engineering findings and implementation release gates remain in [plan.md](./plan.md).
+This document captures the founder's confirmed model and recommendations from the product discussion. It distinguishes decisions from proposals and unresolved questions. It is not evidence of regulatory approval, signed provider contracts, accreditation or existing hiring capacity. Engineering findings and implementation release gates remain in [PLAN.md](../PLAN.md) and [release-review-2026-09.md](./release-review-2026-09.md).
 
 ## 1. What Finloom is building
 
@@ -312,7 +312,7 @@ Owner: content reviewer + product/engineering.
 - [ ] Pilot a small licensed historical replay library with virtual trades, journaling and post-session review; keep unlicensed sample data out of public delivery.
 - [ ] Link official resources and apply independent-provider branding.
 - [ ] Measure comprehension and revise explanations.
-- [ ] Fix build, security, payment and scoring blockers in `plan.md` before paid assessment.
+- [ ] Fix build, security, payment and scoring blockers in `PLAN.md` / `docs/release-review-2026-09.md` before paid assessment.
 
 Exit: useful reviewed learning content, understood customer needs and a reproducible application foundation.
 
