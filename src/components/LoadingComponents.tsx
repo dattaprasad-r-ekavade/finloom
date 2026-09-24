@@ -44,7 +44,8 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: fullScreen ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.9)',
+        bgcolor: fullScreen ? 'rgba(0 0 0 / 0.6)' : 'background.paper',
+        opacity: fullScreen ? 1 : 0.92,
         backdropFilter: 'blur(4px)',
         zIndex: fullScreen ? 9999 : 10,
         animation: `${fadeIn} 0.3s ease-out`,
@@ -154,7 +155,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
             width,
             height,
             borderRadius,
-            background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
+            background: 'linear-gradient(90deg, var(--mui-palette-background-subtle) 25%, var(--mui-palette-divider) 50%, var(--mui-palette-background-subtle) 75%)',
             backgroundSize: '1000px 100%',
             animation: `${shimmer} 2s infinite linear`,
           }}

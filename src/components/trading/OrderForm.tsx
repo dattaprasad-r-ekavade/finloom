@@ -90,9 +90,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({
           sx={{
             p: 1.5,
             borderRadius: 1,
-            backgroundColor: (theme) =>
-              theme.palette.mode === 'light' ? 'grey.50' : 'grey.900',
-            border: (theme) => `1px solid ${theme.palette.divider}`,
+            backgroundColor: 'background.subtle',
+            border: (theme) => `1px solid ${(theme.vars || theme).palette.divider}`,
           }}
         >
           <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">

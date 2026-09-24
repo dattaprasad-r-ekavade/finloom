@@ -22,7 +22,7 @@ import {
   ScripSearchAutocomplete,
   type ScripOption,
 } from '@/components/trading/ScripSearchAutocomplete';
-import Navbar from '@/components/Navbar';
+import SiteHeader from '@/components/shell/SiteHeader';
 import { Container } from '@mui/material';
 
 interface MarketData {
@@ -55,8 +55,8 @@ export default function LiveTradingPage() {
 
 function LiveTradingUnavailable() {
   return (
-    <Box sx={{ minHeight: '100vh', background: '#f7f8f4' }}>
-      <Navbar />
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      <SiteHeader />
       <Box sx={{ maxWidth: 760, mx: 'auto', px: 3, py: { xs: 7, md: 12 } }}>
         <Alert severity="info" sx={{ borderRadius: 3 }}>
           Live broker data is an internal development integration. Finloom&apos;s learner product is planned around licensed historical replay, which is not available yet.
@@ -462,7 +462,7 @@ function LiveTradingDevelopmentPage() {
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
-      <Navbar />
+      <SiteHeader />
       <Container maxWidth="xl" sx={{ py: { xs: 1.5, md: 3 } }}>
       <Typography
         variant="h5"

@@ -55,14 +55,14 @@ export default async function DatabaseTestPage() {
     >
       <section>
         <h1 style={{ fontSize: '2rem', fontWeight: 600, marginBottom: '0.75rem' }}>Database connection test</h1>
-        <p style={{ color: '#4b5563', fontSize: '0.95rem' }}>
+        <p style={{ color: 'var(--fl-muted)', fontSize: '0.95rem' }}>
           This server-rendered page attempts to run a simple query against your configured Prisma datasource.
         </p>
       </section>
 
       <section
         style={{
-          border: '1px solid #e5e7eb',
+          border: '1px solid var(--fl-border)',
           borderRadius: '0.75rem',
           padding: '1.75rem',
           boxShadow: '0 10px 30px -15px rgba(15, 23, 42, 0.25)',
@@ -71,8 +71,8 @@ export default async function DatabaseTestPage() {
         <h2 style={{ fontSize: '1.25rem', fontWeight: 500 }}>Status</h2>
         {status.ok ? (
           <div style={{ marginTop: '0.75rem' }}>
-            <p style={{ color: '#047857', fontWeight: 500 }}>Successfully connected to the database.</p>
-            <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>
+            <p style={{ color: 'var(--mui-palette-success-main)', fontWeight: 500 }}>Successfully connected to the database.</p>
+            <p style={{ color: 'var(--fl-muted)', fontSize: '0.9rem' }}>
               Last checked at {status.timestamp.toLocaleString('en-GB', {
                 day: '2-digit',
                 month: 'short',
@@ -84,10 +84,10 @@ export default async function DatabaseTestPage() {
           </div>
         ) : (
           <div style={{ marginTop: '0.75rem' }}>
-            <p style={{ color: '#b91c1c', fontWeight: 500 }}>Failed to connect to the database.</p>
-            <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>{status.message}</p>
+            <p style={{ color: 'var(--mui-palette-error-main)', fontWeight: 500 }}>Failed to connect to the database.</p>
+            <p style={{ color: 'var(--fl-muted)', fontSize: '0.9rem' }}>{status.message}</p>
             {status.hint ? (
-              <p style={{ color: '#6b7280', fontSize: '0.9rem', marginTop: '0.5rem' }}>{status.hint}</p>
+              <p style={{ color: 'var(--fl-muted)', fontSize: '0.9rem', marginTop: '0.5rem' }}>{status.hint}</p>
             ) : null}
           </div>
         )}
@@ -95,14 +95,14 @@ export default async function DatabaseTestPage() {
 
       <section
         style={{
-          border: '1px solid #e5e7eb',
+          border: '1px solid var(--fl-border)',
           borderRadius: '0.75rem',
           padding: '1.75rem',
           boxShadow: '0 10px 30px -15px rgba(15, 23, 42, 0.25)',
         }}
       >
         <h2 style={{ fontSize: '1.25rem', fontWeight: 500 }}>Configuration</h2>
-        <ul style={{ marginTop: '0.75rem', color: '#6b7280', fontSize: '0.9rem', paddingLeft: '1.5rem' }}>
+        <ul style={{ marginTop: '0.75rem', color: 'var(--fl-muted)', fontSize: '0.9rem', paddingLeft: '1.5rem' }}>
           <li>{databaseUrlConfigured ? 'DATABASE_URL environment variable detected.' : 'DATABASE_URL environment variable is missing.'}</li>
           <li>Prisma uses the environment variable directly at runtime, so no local .env generation step is required.</li>
         </ul>

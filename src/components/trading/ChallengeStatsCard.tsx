@@ -119,7 +119,7 @@ export const ChallengeStatsCard: React.FC<ChallengeStatsCardProps> = ({
         elevation={0}
         sx={{
           borderRadius: 2,
-          border: (theme) => `1px solid ${theme.palette.divider}`,
+          border: (theme) => `1px solid ${(theme.vars || theme).palette.divider}`,
         }}
       >
         <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
@@ -174,7 +174,7 @@ export const ChallengeStatsCard: React.FC<ChallengeStatsCardProps> = ({
       elevation={0}
       sx={{
         borderRadius: 3,
-        border: (theme) => `1px solid ${theme.palette.divider}`,
+        border: (theme) => `1px solid ${(theme.vars || theme).palette.divider}`,
         height: '100%',
       }}
     >

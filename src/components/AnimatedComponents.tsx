@@ -119,7 +119,7 @@ export const PriceUpdateFlash: React.FC<PriceUpdateFlashProps> = ({
     }
   }, [trigger]);
 
-  const flashColor = isPositive ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)';
+  const flashColor = `color-mix(in srgb, var(--mui-palette-market-${isPositive ? 'up' : 'down'}) 20%, transparent)`;
 
   return (
     <Box
