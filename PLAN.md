@@ -1,12 +1,18 @@
 # Finloom PLAN.md: UI overhaul, market data, and paper-trading hardening
 
-Status: planning only. Written 2026-09-24 against branch `claude/compassionate-planck-4wo24n`. This file does not replace `plan.md`. That file is the release and legal review and stays authoritative on licensing and release gates.
+Status: **source of truth for product and engineering direction.** Written 2026-09-24. Phase 4 (UI system and shells) is implemented; see §8. When this file conflicts with an older document, this file wins.
+
+Other docs:
+- `docs/release-review-2026-09.md`: the September release and legal review, formerly root `plan.md`. It stays the reference for licensing, legal and release gates only.
+- `docs/business.md`: business model.
+- `docs/known-issues-2026-03.md`: March bug snapshot, not re-verified.
+- `docs/keyboard-shortcuts.md`.
 
 **Product decisions taken for this plan (from the owner, 2026-09-24):**
-- **MVP quotes: delayed, near-live.** A worker polls NSE through jugaad-data every 15–60 s during market hours. The UI always labels prices "Delayed · as of HH:MM:SS IST". Fills use the stored LTP, subject to a staleness cap. Licensed historical replay (`plan.md` §"Historical replay implementation specification") remains the later production data mode.
+- **MVP quotes: delayed, near-live.** A worker polls NSE through jugaad-data every 15–60 s during market hours. The UI always labels prices "Delayed · as of HH:MM:SS IST". Fills use the stored LTP, subject to a staleness cap. Licensed historical replay (`docs/release-review-2026-09.md` §"Historical replay implementation specification") remains the later production data mode.
 - **AngelOne: unplug now, delete later.** Remove AngelOne from execute, square-off, summary, trades, search and charts in phase 1. Keep the dev-only AngelOne screens behind an explicit env flag for one release, then delete them (phase 6).
 
-**Conflict to note:** `README.md:5` and `plan.md:5,11` say launch = licensed replay of data at least 30 days old, and "live-data practice" is disabled in production (`src/app/dashboard/user/trading/page.tsx:121`). Delayed near-live jugaad quotes change that stance. The owner chose it for the MVP. The NSE ToS / redistribution risk in §7 is a release gate, and `plan.md` §"Data licensing" still applies.
+**Superseded stance:** `docs/release-review-2026-09.md:5,11` says launch = licensed replay of data at least 30 days old, with "live-data practice" disabled in production (`src/app/dashboard/user/trading/page.tsx`). This plan replaces that with delayed near-live jugaad quotes for the MVP, as the owner decided. `README.md` has been updated to match. The NSE ToS / redistribution risk in §7 is still a release gate, and `docs/release-review-2026-09.md` §"Data licensing" still applies.
 
 Legend: **[unverified]** means not confirmable from the repo; check before relying on it.
 
@@ -14,11 +20,13 @@ Legend: **[unverified]** means not confirmable from the repo; check before relyi
 
 ## 1. Current-state map
 
+> This section is a snapshot from before phase 4, taken 2026-09-24. Pages have since moved into route groups, `Navbar.tsx` was replaced by `SiteHeader`/`AppShell`, and the theme was rebuilt (§5.0). File paths under `src/app/` below are pre-move. For example, `src/app/dashboard/user/trading/page.tsx` is now `src/app/(app)/dashboard/user/trading/page.tsx`.
+
 ### 1.1 Stack and config
 - `package.json`: Next ^16.3.6, React 19.2.1, MUI ^7.3.4 + Emotion, Prisma ^6.19.3, zustand, `lightweight-charts` ^5, `recharts`, `framer-motion`, Tailwind 4 (postcss present, barely used), `@vercel/analytics`, `@vercel/speed-insights`.
 - `node_modules` is not installed in this checkout, so `AGENTS.md`'s "read `node_modules/next/dist/docs/`" could not be done in this pass. **The implementation agent must run `npm ci` and read those docs before touching caching (`"use cache"`, `cacheLife`), route handlers, or `proxy.ts` conventions.**
 - `next.config.ts`: only `optimizePackageImports` for MUI.
-- No `vercel.json` and no committed cron schedule. `plan.md:162` confirms this.
+- No `vercel.json` and no committed cron schedule. `docs/release-review-2026-09.md:162` confirms this.
 - `.env.example`: `DATABASE_URL`, `JWT_SECRET`, `CRON_SECRET`, `NODE_ENV`. Other env vars read in code: `ANGELONE_CREDENTIALS_KEY` (`src/lib/secretCrypto.ts:8`), `RELEASE_COMMERCE_ENABLED` (razorpay routes), `NEXT_PUBLIC_COMMERCE_ENABLED` (`src/app/challenge-plans/page.tsx:59`).
 
 ### 1.2 Database (`prisma/schema.prisma`)
@@ -75,7 +83,7 @@ Auth split:
   6. Capital check.
   7. `trade.create`, a separate `dailyTradeSummary.upsert`, and a separate `userChallenge.update`.
 
-  **No transaction, no lock, no idempotency key, no market-hours check, no price age check.** `plan.md:131` confirms this.
+  **No transaction, no lock, no idempotency key, no market-hours check, no price age check.** `docs/release-review-2026-09.md:131` confirms this.
 - **`POST /api/trading/square-off`**: reads the trade, checks `status === OPEN`, then `trade.update({ where: { id } })` **with no OPEN predicate**. Two concurrent taps can double-close, and the second overwrites `exitPrice`/`pnl`.
 - **`POST /api/trading/auto-square-off`**:
   - Auth is `x-cron-secret` header or admin, and it is a POST handler. **Vercel Cron sends `GET` with `Authorization: Bearer $CRON_SECRET`, so it cannot call this route as written.**
@@ -84,7 +92,7 @@ Auth split:
 - `GET /api/trading/summary` and `GET /api/trading/trades` each call `getLivePriceMap` (AngelOne) per request. Each page refresh therefore makes N broker calls per user.
 - `src/lib/tradingUtils.ts`:
   - `isMarketOpen` checks weekdays and 09:15–15:30 only, with no holidays.
-  - `getISTStartOfDay` uses host-local `setHours` after adding the offset. It is correct only on UTC hosts; see `plan.md:160`.
+  - `getISTStartOfDay` uses host-local `setHours` after adding the offset. It is correct only on UTC hosts; see `docs/release-review-2026-09.md:160`.
 - **Dead code:** these are not imported by any page.
   - `src/hooks/useChartData.ts` (calls `/api/angelone-live/historical` via GET).
   - `src/hooks/useOrderExecution.ts` (posts to **non-existent** `/api/trading/place-order`).
@@ -106,7 +114,7 @@ Auth split:
 
 **Dev-only tooling (flag for now, delete in phase 6):**
 - `src/lib/angelone.ts` (session/TOTP login, credential storage).
-- `src/lib/secretCrypto.ts`. `plan.md:95` says encryption is a passthrough; verify.
+- `src/lib/secretCrypto.ts`. `docs/release-review-2026-09.md:95` says encryption is a passthrough; verify.
 - `src/app/api/angelone-test/*`, 8 routes, gated by `internalDevelopmentOnlyResponse()` (`src/lib/internalDevelopment.ts`).
 - `src/app/angelone-test/page.tsx`.
 - `src/app/live-trading/page.tsx`: opens a browser WebSocket to `wss://smartapisocket.angelone.in` with `clientCode`/`feedToken`/`apiKey` in the URL. `api/angelone-live/session` currently returns only `authenticated`, so this page is likely already broken [unverified].
@@ -354,11 +362,43 @@ model SymbolInterest { instrumentId String @id  lastRequestedAt DateTime }
 2. Flip the worker env `INGEST=licensed`.
 3. If the vendor's contract forbids storage/redistribution in our DB, implement `LicensedHttpProvider` in Next and set `MARKET_DATA_PROVIDER=licensed-http`.
 4. The UI, trade routes and charts are unchanged because they only see `Quote`/`Candle`/`MarketStatus`.
-5. For historical replay (`plan.md` §replay), add a `ReplayProvider` implementing the same read interface with a server-owned clock. That is out of scope here, but the interface is shaped for it (the `getCandles` time bounds are enforced server-side).
+5. For historical replay (`docs/release-review-2026-09.md` §replay), add a `ReplayProvider` implementing the same read interface with a server-owned clock. That is out of scope here, but the interface is shaped for it (the `getCandles` time bounds are enforced server-side).
 
 ---
 
 ## 5. UI / IA plan
+
+### 5.0 Status: implemented (phase 4)
+Built:
+- **Tokens:** `src/theme/tokens.ts` is the only place raw colours live. It holds one forest-green brand in both modes (cyan removed), separate `market.up/down`, neutrals, the inverse panel, chart series, radius and font stacks.
+- **Theme:** `src/theme/theme.ts` builds one theme with MUI `cssVariables` + `colorSchemes` (selector `data-color-scheme`). Custom palette keys are `brand.*`, `market.*`, `inverse.*`, `background.subtle/raised`, and each is exposed as a CSS variable (`--mui-palette-brand-subtle`, …).
+- **Provider:** `src/theme/ThemeProvider.tsx` wraps `AppRouterCacheProvider` (from `@mui/material-nextjs`, CSS layer `mui`) around the MUI ThemeProvider. The `return null` hydration gate is gone. `src/app/layout.tsx` renders `<InitColorSchemeScript attribute="data-color-scheme" />`, so there is no flash, and the font variables sit on `<html>`.
+- **Theme toggle:** `src/components/shell/ThemeToggle.tsx` cycles system → light → dark via `useColorScheme()`.
+- **Chart colours:** `src/theme/useChartColors.ts` gives resolved colours for recharts and lightweight-charts, which can't read CSS variables.
+- **Shells:**
+  - `src/app/(marketing)/layout.tsx`: `SiteHeader` + `Footer`.
+  - `src/app/(auth)/layout.tsx`: `SiteHeader` + a centred column.
+  - `src/app/(app)/layout.tsx`: `AppShell`, with a side rail on md+ and a bottom nav on xs–sm. Navigation lives in `src/components/shell/navConfig.ts`.
+  - `not-found.tsx` and `error.tsx` use `SiteHeader` + `StatusScreen`.
+- **Primitives** (`src/components/ui/`): `PageHeader`, `SectionCard`, `StatTile`, `StatusPill`, `EmptyState`, `PriceText`, `AuthCard`, `ContentPage`, `StatusScreen`. Also `AppPage`, exported from `AppShell.tsx`.
+- **Auth:** `src/components/auth/LoginForm.tsx` and `SignupForm.tsx` back `/login`, `/trader/login`, `/admin/login`, `/signup` and `/trader/signup`. Login honours a same-origin `?redirect=` from `proxy.ts`.
+- **Guard:** ESLint `no-restricted-syntax` errors on hex colour literals in `src/**` outside `src/theme/**`. `globals.css` uses only `--fl-*` aliases of the MUI variables.
+- **Removed:** `Navbar.tsx`, `ChallengesSection.tsx` (unused), and the dead `useChartData`, `useOrderExecution`, `useTradingData`, `TradingViewChart`, `AdvancedPerformanceMetrics` and `mockMetrics`.
+- **Fonts:** Inter variable, Poppins 500/600, Roboto Mono 400/600.
+
+**Not yet done (still per §5.3–5.4):**
+- Split `dashboard/user/page.tsx` (≈900 lines) and `dashboard/user/trading/page.tsx` (≈1000 lines) into `ui/` primitives.
+- The trading mobile layout (§5.4) and `OrderTicket` (§6.3).
+- Swap each page's ad-hoc header for `PageHeader`.
+- The admin "More" overflow for more than 5 nav items (§10.3).
+
+**Rules for new pages** (so later work reuses the system):
+1. Put the page in a route group; never render a header or navbar inside a page.
+2. Start from `AppPage` + `PageHeader`, then `SectionCard` / `StatTile` / `EmptyState`. Public text pages use `ContentPage`; forms in the auth area use `AuthCard`.
+3. Colours come from theme paths (`'text.secondary'`, `'brand.subtle'`, `'market.up'`) or `var(--mui-palette-…)`. Never use hex; add a token instead.
+4. Style callbacks read `(theme.vars || theme).palette…`, never `theme.palette.mode` (use `theme.applyStyles('dark', …)` if a mode-specific rule is really needed).
+5. Server components must not pass functions to MUI, e.g. `component={Link}`. Mark the file `'use client'` or use a plain `<a>`.
+6. `globals.css` is unlayered and beats MUI's `mui` layer. Keep element selectors (`a`, `*`, `button`) out of it.
 
 ### 5.1 Tokens and dark/light (fixes cyan vs green)
 - **One brand hue in both modes.**
@@ -464,9 +504,9 @@ Auth consolidation:
    - Two concurrent orders (double-tap, two tabs) both pass `capitalAvailableBefore >= requiredCapital` and the 100-trades/day check. A crash between writes leaves summary and P&L inconsistent.
 2. **Double close:** `square-off/route.ts` reads `OPEN` then calls `update({ where: { id } })`. Concurrent requests both close, and the second overwrites the exit.
 3. **Auto square-off fabricates fills:** `?? trade.entryPrice` on price failure. The Vercel Cron method and header don't match (POST + `x-cron-secret`, vs Vercel's GET + `Authorization: Bearer`).
-4. **No market-hours, holiday, instrument, expiry or daily-loss check before entry** (`plan.md:131`). Price freshness is never validated.
+4. **No market-hours, holiday, instrument, expiry or daily-loss check before entry** (`docs/release-review-2026-09.md:131`). Price freshness is never validated.
 5. **External HTTP inside the request path:** N AngelOne calls in execute, summary and trades.
-6. The price map is keyed by `scrip` only, ignoring exchange (`plan.md:137`).
+6. The price map is keyed by `scrip` only, ignoring exchange (`docs/release-review-2026-09.md:137`).
 7. Client:
    - no idempotency key
    - the submit button state isn't bound to request identity
@@ -559,7 +599,9 @@ placeOrder({ userId, challengeId, instrumentKey, side, quantity, clientOrderId }
 
 | Risk | Mitigation |
 |---|---|
-| **NSE ToS / IP ban** | NSE's website terms prohibit automated scraping and redistribution without agreement (`plan.md:184` cites the NSE data policy). Treat jugaad as **internal/pre-launch only** until counsel signs off, and keep the licensed provider on the release-gate list. Single worker, low request rate, backoff, circuit breaker. If banned, the heartbeat turns `down`, trading entry is disabled, and charts show last data with a banner. Have the IP-rotation question answered by counsel, not engineering |
+| **SEBI 30-day lag for educational data** | `docs/business.md` §8 cites a SEBI circular (8 May 2026, effective 1 July 2026) that sets a 30-day lag for sharing market data for education, under its framework. If it applies to Finloom, **delayed near-live quotes (§3) would not be permitted for learners**, and the product falls back to replay of data at least 30 days old. **Launch blocker: get a legal answer before building phase 5 for customers.** The provider contract (§4) already supports a `ReplayProvider`, so the architecture survives either answer |
+| **Migrations out of sync with `schema.prisma`** (found 2026-09-24) | `prisma migrate deploy` on an empty database does not produce the current schema. `MockedKYC.rejectionReason` is missing (login fails with P2022), `MockedKYC.idNumber` is extra, `MockedPayment_razorpayOrderId` indexes differ, and `AngelOneCredentials` timestamp precision differs. Check with `prisma migrate diff --from-url <db> --to-schema-datamodel prisma/schema.prisma`. Before any new migration: compare against the production DB, then add one corrective migration. **It drops `idNumber`, so the owner must confirm first** |
+| **NSE ToS / IP ban** | NSE's website terms prohibit automated scraping and redistribution without agreement (`docs/release-review-2026-09.md:184` cites the NSE data policy). Treat jugaad as **internal/pre-launch only** until counsel signs off, and keep the licensed provider on the release-gate list. Single worker, low request rate, backoff, circuit breaker. If banned, the heartbeat turns `down`, trading entry is disabled, and charts show last data with a banner. Have the IP-rotation question answered by counsel, not engineering |
 | Stale prices used for fills | `assertFillable` + `MAX_QUOTE_AGE_SECONDS`; `entryPriceAsOf` stored for audit; UI always shows as-of |
 | Weekend / holiday | `MarketCalendar` from `holidays()`, plus the NSE special-session and Muhurat trading exception rows entered by an admin; the worker sleeps; execute returns `MARKET_CLOSED` |
 | Corporate actions (split/bonus/dividend) | Daily `stock_df` history is unadjusted [unverified]. Charts spanning a split show a gap. MVP: intraday-only positions mean no overnight exposure; chart gaps are labelled. Later: adjustments from the licensed vendor |
@@ -570,7 +612,7 @@ placeOrder({ userId, challengeId, instrumentKey, side, quantity, clientOrderId }
 | 100 users on the same NIFTY chart | One worker poll updates one `Quote` row and the `Candle` rows. `/api/market/candles?key=NSE:NIFTY%2050&res=5m&from=<day start>` has an identical URL for everyone, so the CDN serves it and a function runs about once per `s-maxage` window. Quotes are the same. Worst case with the CDN disabled: 100 users × 0.1–0.2 rps = 10–20 rps of single-row PK reads, which is trivial for Postgres. The client appends the latest quote onto the last candle locally between candle refreshes |
 | Auth vs CDN caching | `/api/market/*` must not vary by user. Either make them public (delayed data; accept exposure) or check the JWT cookie and still send `public` cache headers. The latter lets the CDN serve unauthenticated hits. Decide in §9; the default is public + rate-limited, only if the ToS review allows it, else `private, max-age=5` (loses CDN coalescing, which is still fine at 100 users) |
 | MCX/NFO symbols in existing data | `DEFAULT_SYMBOL` is `GOLD1!`/MCX (`trading/page.tsx:113`). `market-data/route.ts` searches MCX/NFO. MVP is NSE equities + indices only, so change the default to `NSE:NIFTY 50` (chart only; indices are not tradable) and set `ChallengePlan.allowedInstruments` accordingly [check the seed in `prisma/seed.js`] |
-| Leaked broker secrets | `live-trading/page.tsx` builds an AngelOne WS URL with `feedToken`/`apiKey`, and `secretCrypto` is reportedly passthrough (`plan.md:95`). Flag now, delete in phase 6, and rotate the AngelOne credentials after deletion |
+| Leaked broker secrets | `live-trading/page.tsx` builds an AngelOne WS URL with `feedToken`/`apiKey`, and `secretCrypto` is reportedly passthrough (`docs/release-review-2026-09.md:95`). Flag now, delete in phase 6, and rotate the AngelOne credentials after deletion |
 | `ThemeProvider` returns null | The SSR page is empty, which hurts LCP and SEO; fixed in phase 4 |
 
 ---
@@ -584,7 +626,7 @@ Each phase is one PR. Run `npm run lint` and `npm run build` on each. Add tests 
 - Provision Neon (or Supabase), add `directUrl` + `DIRECT_DATABASE_URL`, and create the `market_writer` role.
 - Smoke-test jugaad `NSELive().live_index("NIFTY 50")` from the candidate worker host/region, and pick the host that isn't blocked.
 
-**Phase 1: Unplug AngelOne (Vercel only)**
+**Phase 1: Unplug AngelOne (Vercel only).** Dead hooks and components were already removed in phase 4.
 - Add a `ENABLE_ANGELONE_DEV_TOOLS` env flag (default unset = off, in every environment including dev). When off:
   - `api/angelone-live/*`, `api/angelone-test/*` and `api/admin/angelone-credentials` return 404 via an extended `internalDevelopmentOnlyResponse()`.
   - `angelone-test`, `live-trading` and `dashboard/admin/angelone-credentials` pages render a notFound.
@@ -608,7 +650,7 @@ Each phase is one PR. Run `npm run lint` and `npm run build` on each. Add tests 
 - Vitest: concurrent `placeOrder` ×10 on one challenge must not overspend; duplicate `clientOrderId` returns one trade; double close yields one close; a stale quote is rejected; holiday/boundary times; EOD idempotent over 2 runs. Use a disposable Neon branch or a local Postgres in CI.
 - **Ships on Vercel alone** against fixture or manually loaded data.
 
-**Phase 4: UI system + shells (Vercel only; can run in parallel with 2–3 after phase 1)**
+**Phase 4: UI system + shells: DONE (2026-09-24), see §5.0 for what remains**
 - `tokens.ts`, `colorSchemes` theme, the `ThemeProvider` rewrite, `ThemeToggle`.
 - Route groups and the three layouts, `SiteHeader`, `AppShell`, `navConfig`, `ui/*` primitives.
 - Auth consolidation.
@@ -638,7 +680,7 @@ New env summary:
 
 ## 9. Open decisions
 
-1. **Live vs delayed quotes.** *Decided:* delayed near-live (15–60 s polling, labelled). Still open: the exact `POLL_SECONDS` and `MAX_QUOTE_AGE_SECONDS`, and whether this contradicts the replay-first launch stance in `README.md`/`plan.md`. The owner should update those docs or confirm jugaad is pre-launch only.
+1. **Live vs delayed quotes.** *Decided:* delayed near-live (15–60 s polling, labelled). Still open: the exact `POLL_SECONDS` and `MAX_QUOTE_AGE_SECONDS`, and whether jugaad stays pre-launch only (pending the ToS review in §7). `README.md` now reflects this plan.
 2. **AngelOne: flag or delete.** *Decided:* flag in phase 1 (`ENABLE_ANGELONE_DEV_TOOLS`), delete in phase 6. Still open: whether dev-only tools must survive at all. If not, merge phase 6's deletion into phase 1.
 3. **Stream vs poll.** Recommended: poll (option B). Revisit with option A-i only if measured quote-to-screen lag is unacceptable in user tests.
 4. **DB host:** Neon (default) vs Supabase. Also the region (Mumbai vs Singapore) and whether it matches the Vercel function region.
@@ -652,3 +694,202 @@ New env summary:
 12. **Fonts:** keep Poppins (2 weights) or drop to Inter-only. **Tailwind:** remove the unused dependency or keep it.
 13. **Alerting channel** for worker down (email / Slack / none for MVP).
 14. **Vercel plan** (Pro required for commercial use and precise cron) [verify current terms].
+15. **SEBI 30-day educational lag** (§7): does it apply to Finloom's learner practice? If yes, delayed near-live is out for customers and replay of data at least 30 days old becomes the MVP data mode. This blocks phase 5 for customers.
+16. **Corrective migration** for the schema drift (§7). It drops `MockedKYC.idNumber`, so check production data first.
+17. **Learning, assessment and careers** (§10.7): the decisions listed there.
+
+---
+
+## 10. Learning, assessments, certificates and careers (landing-page promises with no admin today)
+
+### 10.1 Gap: what the site promises vs what exists
+| Promise (file) | Exists today? |
+|---|---|
+| "Learn the foundations… one clear lesson at a time" (`src/app/(marketing)/page.tsx`, `steps[0]`) | **No.** No course, module or lesson models, pages or admin |
+| "Original explanations and worked examples", "Topic quizzes with clear answer reviews", "Practice lessons that connect concepts to risk" (`page.tsx`, learning section) | **No.** No quiz or question-bank models; nothing to author them |
+| "Independent preparation for NISM… securities-market fundamentals and equity derivatives" (`page.tsx`; `docs/business.md` §5: Series VIII first, Series XII later) | **No** |
+| "Complete a published skills assessment" (`steps[2]`) | **Partly.** `ChallengePlan` + `UserChallenge` + `src/lib/evaluateChallenge.ts` act as assessment stages. But plans exist only through `prisma/seed.js` (no admin CRUD; `src/app/api/admin/` has no plan routes) and have **no rule versioning** |
+| "Earn a Finloom certificate" (certificate section; `docs/business.md` §4, §7) | **No.** No certificate model, issuance, revocation or public verification |
+| "Eligible candidates may then apply for relevant prop-desk roles" | **No.** No openings or applications workflow |
+| Diagnostic quiz, content-error reporting, syllabus mapping and monthly review (`docs/business.md` §4, §5) | **No** |
+
+The landing page already labels the library "Learning library in development". Keep that label until §10.6 phase L2 ships.
+
+### 10.2 Data model (one migration per phase, after the §7 drift fix; not applied)
+```prisma
+enum ContentStatus { DRAFT IN_REVIEW PUBLISHED ARCHIVED }
+enum CourseTrack { FOUNDATIONS NISM_SERIES_VIII NISM_SERIES_XII PRACTICE }
+enum LessonKind { ARTICLE WORKED_EXAMPLE PRACTICE_EXERCISE }
+enum QuizKind { DIAGNOSTIC TOPIC MOCK_EXAM }
+enum QuestionKind { SINGLE MULTI NUMERIC }
+enum EnrollmentSource { FREE PURCHASE ADMIN_GRANT }
+enum CertificateStatus { ISSUED REVOKED SUPERSEDED }
+enum OpeningStatus { DRAFT OPEN CLOSED }
+enum ApplicationStatus { SUBMITTED SCREENING INTERVIEW OFFER REJECTED WITHDRAWN }
+
+model Course {
+  id String @id @default(cuid())
+  slug String @unique
+  title String
+  summary String
+  track CourseTrack
+  status ContentStatus @default(DRAFT)
+  isFree Boolean @default(true)
+  priceInr Int?                       // display only until commerce gates pass
+  syllabusVersion String?             // e.g. official NISM syllabus edition this maps to
+  officialSyllabusUrl String?
+  disclosure String?                  // e.g. the NISM "not affiliated" text (docs/business.md §5)
+  sortOrder Int @default(0)
+  publishedAt DateTime?
+  lastReviewedAt DateTime?            // monthly review rule (docs/business.md §5)
+  modules CourseModule[]
+  enrollments Enrollment[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model CourseModule { id String @id @default(cuid())  courseId String  title String  sortOrder Int
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)  lessons Lesson[]  quizzes Quiz[] }
+model Lesson {
+  id String @id @default(cuid())
+  moduleId String
+  slug String
+  title String
+  kind LessonKind @default(ARTICLE)
+  bodyMarkdown String                 // Markdown rendered server-side; no WYSIWYG dependency
+  estMinutes Int @default(10)
+  isPreview Boolean @default(false)   // free sample visible without enrollment
+  syllabusRef String?                 // mapping to official objective
+  status ContentStatus @default(DRAFT)
+  version Int @default(1)
+  reviewedById String?  reviewedAt DateTime?
+  sortOrder Int
+  module CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  @@unique([moduleId, slug])
+}
+model Quiz { id String @id @default(cuid())  moduleId String?  title String  kind QuizKind
+  passPct Int @default(70)  timeLimitSec Int?  status ContentStatus @default(DRAFT)
+  module CourseModule? @relation(fields: [moduleId], references: [id])  questions QuizQuestion[] }
+model Question {                      // shared question bank
+  id String @id @default(cuid())
+  kind QuestionKind @default(SINGLE)
+  stem String
+  explanation String                  // why the answer is right
+  syllabusRef String?
+  difficulty Int @default(2)
+  status ContentStatus @default(DRAFT)
+  version Int @default(1)
+  options QuestionOption[]
+  quizzes QuizQuestion[]
+}
+model QuestionOption { id String @id @default(cuid())  questionId String  text String  isCorrect Boolean
+  whyWrong String?                    // "why plausible alternatives are wrong" (docs/business.md §5)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade) }
+model QuizQuestion { quizId String  questionId String  sortOrder Int  @@id([quizId, questionId]) }
+model Enrollment { id String @id @default(cuid())  userId String  courseId String  source EnrollmentSource
+  startedAt DateTime @default(now())  expiresAt DateTime?  @@unique([userId, courseId]) }
+model LessonProgress { userId String  lessonId String  completedAt DateTime @default(now())  @@id([userId, lessonId]) }
+model QuizAttempt { id String @id @default(cuid())  userId String  quizId String
+  startedAt DateTime @default(now())  submittedAt DateTime?  scorePct Float?
+  answers Json                        // [{questionId, questionVersion, selectedOptionIds, correct}] snapshot
+  @@index([userId, quizId]) }
+model ContentReport { id String @id @default(cuid())  userId String  lessonId String?  questionId String?
+  message String  status String @default("OPEN")  resolvedById String?  resolvedAt DateTime?  createdAt DateTime @default(now()) }
+
+// Assessment integrity: freeze rules per purchase (docs/business.md §4, docs/release-review-2026-09.md §replay)
+model AssessmentRuleVersion { id String @id @default(cuid())  planId String  version Int
+  rules Json                          // targets, loss limits, scoring dimensions, published text
+  publishedAt DateTime  publishedById String  @@unique([planId, version]) }
+// + UserChallenge.ruleVersionId String? (FK); evaluateChallenge reads the frozen version, not live ChallengePlan fields.
+
+model Certificate {
+  id String @id @default(cuid())
+  publicCode String @unique           // short random code for /verify/[code]
+  userId String
+  challengeId String @unique
+  ruleVersionId String
+  status CertificateStatus @default(ISSUED)
+  issuedAt DateTime @default(now())
+  issuedById String?                  // null = automatic on PASSED
+  revokedAt DateTime?  revokedReason String?
+}
+model JobOpening { id String @id @default(cuid())  title String  desk String?  location String?
+  description String  status OpeningStatus @default(DRAFT)  requiresCertificate Boolean @default(true)
+  opensAt DateTime?  closesAt DateTime?  applications JobApplication[] }
+model JobApplication { id String @id @default(cuid())  openingId String  userId String  certificateId String?
+  status ApplicationStatus @default(SUBMITTED)  coverNote String?  internalNotes String?
+  createdAt DateTime @default(now())  updatedAt DateTime @updatedAt  @@unique([openingId, userId]) }
+model AuditLog { id String @id @default(cuid())  actorId String  action String  entityType String  entityId String
+  before Json?  after Json?  createdAt DateTime @default(now())  @@index([entityType, entityId]) }
+```
+Notes:
+- **Versioning:** publishing a lesson or question bumps `version`. Quiz attempts snapshot the question version and chosen options, so later edits never rewrite a learner's past result.
+- **Separation:** job applications never touch checkout, and there is no application fee (`docs/business.md` §4). Paid preparation never changes assessment rules or hiring priority. Enforce this in code: no `Enrollment` or `Payment` reads inside `evaluateChallenge` or application screening.
+- **Public verification** shows only the name you choose to display, the certificate code, the rule version, the issue date and the status. It never shows PAN, DOB, address or trade history (`docs/business.md` §7).
+
+### 10.3 Admin IA (inside the existing `AppShell`)
+Add these to `appNav.admin` in `src/components/shell/navConfig.ts`:
+
+| Nav item | Route (all under `src/app/(app)/dashboard/admin/`) | Screens |
+|---|---|---|
+| Learning | `learning/` | Course list (status chips, last reviewed) → `learning/[courseId]` course editor (metadata, disclosure, modules, drag-order lessons) → `learning/lessons/[lessonId]` Markdown editor with live preview + "Submit for review" / "Publish" |
+| Question bank | `questions/` | Filterable table (syllabus ref, difficulty, status) → question editor (options, `whyWrong`, explanation) → attach to quizzes |
+| Assessments | `assessments/` | CRUD over `ChallengePlan` (stages) + "Publish rule version" (creates `AssessmentRuleVersion`; published versions are read-only) |
+| Certificates | `certificates/` | Issued list, search by code or user, revoke with reason (writes `AuditLog`), re-issue |
+| Careers | `careers/` | Openings CRUD; applications pipeline per opening (status changes audited) |
+| Reports | `reports/` | `ContentReport` queue: open → fixed or rejected, with a link to the lesson or question |
+
+- **Mobile:** admin nav grows past 5 items, so give `NavItem` a `primary?: boolean`. The bottom bar shows the primary items plus a "More" action that opens a `Drawer` with the rest. Desktop rail is unchanged.
+- **Build every screen from `src/components/ui/`:** `PageHeader` with actions, `SectionCard flush` around tables, `StatusPill` for `ContentStatus`, `EmptyState` for empty lists.
+- **New shared primitive `src/components/ui/DataTable.tsx`:** a table on md+ and stacked cards on xs, to be reused by Users, KYC, Questions, Certificates and Applications.
+- **Markdown:** add `react-markdown` + `remark-gfm` (small) for rendering. The editor is a plain `TextField multiline` with a preview tab; no heavy WYSIWYG. Image upload is an open decision (§10.7).
+
+### 10.4 Learner and public IA
+| Route | Group | What it is |
+|---|---|---|
+| `/learn` | `(marketing)` | Public course catalogue (published only); free/preview lessons readable without login, which is good for SEO |
+| `/learn/[course]` | `(marketing)` | Syllabus outline, disclosure, "Start learning" (creates a FREE `Enrollment` after login) |
+| `/learn/[course]/[lesson]` | `(app)` | Lesson reader (`ContentPage`-style column), next/previous, "Report an error", mark complete |
+| `/learn/quiz/[quizId]` | `(app)` | Quiz runner, one question per screen on mobile; the review shows the explanation plus `whyWrong` for each option |
+| `/dashboard/user` | `(app)` | Add a "Continue learning" `SectionCard` and progress `StatTile`s |
+| `/dashboard/user/certificate` | `(app)` | Your certificate(s) with a share link |
+| `/careers` | `(marketing)` | Open roles (only when a real opening exists, per `docs/business.md` §7) |
+| `/careers/[id]/apply` | `(app)` | Application form; requires an ISSUED certificate if `requiresCertificate` |
+| `/verify/[code]` | `(marketing)` | Public certificate verification |
+
+- Add a trader nav item "Learn" (`/learn`, primary).
+- `src/proxy.ts` needs `/learn` and `/careers`, and their children, in `publicPageRoutes`. Lesson, quiz and apply pages enforce login and entitlement **in their API routes**, since API routes are not gated by the proxy.
+- Landing-page CTAs become real links once L2 ships: "Learning" → `/learn`, and the learning-note chip → "Browse the library".
+
+### 10.5 API surface (routes follow the existing `requireRole` / `ErrorHandlers` pattern in `src/lib/apiAuth.ts` + `src/lib/apiResponse.ts`)
+- **Admin:** `/api/admin/courses[/:id]`, `/api/admin/modules/:id`, `/api/admin/lessons[/:id]` (+ `/publish`), `/api/admin/questions[/:id]`, `/api/admin/quizzes[/:id]`, `/api/admin/assessments[/:id]` (+ `/publish-rules`), `/api/admin/certificates[/:id/revoke]`, `/api/admin/careers/openings[/:id]`, `/api/admin/careers/applications/:id`, `/api/admin/reports/:id`. Every mutation writes an `AuditLog` row.
+- **Learner:** `/api/learn/courses`, `/api/learn/courses/:slug`, `/api/learn/lessons/:id` (entitlement check), `/api/learn/progress`, `/api/learn/quizzes/:id/attempts` (server-side scoring; correct answers are never sent before submit), `/api/learn/reports`, `/api/careers/openings`, `/api/careers/applications`.
+- **Public:** `/api/certificates/verify/:code` (minimal fields, rate-limited).
+- **Certificate issue:** automatic when `evaluateChallenge` sets `PASSED` **and** the challenge has a `ruleVersionId`. Issue inside the same transaction as the status change and keep it idempotent (`@@unique challengeId`).
+
+### 10.6 Phasing (independent of the market-data phases, all Vercel-only)
+| Phase | Scope | Ships when |
+|---|---|---|
+| L0 | §7 migration-drift fix; `DataTable` primitive; nav "More" overflow | Before any learning migration |
+| L1 | Course, Module, Lesson models + admin Learning editor + public `/learn` read-only catalogue | Content team can author drafts |
+| L2 | Enrollment, progress, lesson reader, content reports; turn on the landing "Learning" link | First Foundations course published |
+| L3 | Question bank, quizzes, attempts, diagnostic quiz | First topic quizzes reviewed |
+| L4 | Assessments admin: `ChallengePlan` CRUD + `AssessmentRuleVersion`, with `UserChallenge.ruleVersionId` frozen at selection | Before any paid assessment (release gate) |
+| L5 | Certificates: issue on pass, revoke, `/verify/[code]`, learner certificate page | After L4 |
+| L6 | Careers: openings + applications pipeline | Only when a real vacancy exists |
+
+**Acceptance per phase:**
+- Unit tests for server-side scoring and entitlement.
+- An editing-after-publish test: old attempts keep their scores.
+- The certificate can't be issued twice.
+- Verification leaks no PII.
+- Every admin mutation is audited.
+- Lint passes, so no hex colours, and every screen is built from `src/components/ui/`.
+
+### 10.7 Open decisions (learning)
+1. **Pricing:** which content is free vs paid (`Course.isFree`, `priceInr`). Checkout stays off until the commerce gates in `docs/release-review-2026-09.md` pass.
+2. **Media storage** for lesson images: Vercel Blob vs Supabase Storage vs external URLs only for MVP.
+3. **Who reviews content** (`reviewedById`): a separate reviewer role (`UserRole.REVIEWER`) or admins only.
+4. **Certificate display name:** does the learner choose it, or is it the KYC legal name? This affects the KYC dependency.
+5. **Retake policy and cool-down** for quizzes and assessments. Rule versions must record it.
+6. **Careers:** does Finloom host applications, or link out to the hiring firm's ATS? Also: are applicants' certificates shared automatically or with consent?
+7. **NISM tracks:** confirm Series VIII first, with Series XII only after demand (`docs/business.md` §5), and who maps questions to the official syllabus.
