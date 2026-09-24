@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAngelOneSession } from '@/lib/angelone';
 import { requireOneOfRoles } from '@/lib/apiAuth';
+import { internalDevelopmentOnlyResponse } from '@/lib/internalDevelopment';
 
 export async function GET(request: NextRequest) {
+  const blocked = internalDevelopmentOnlyResponse();
+  if (blocked) return blocked;
   try {
     const sessionUser = await requireOneOfRoles(request, ['TRADER', 'ADMIN']);
     if (!sessionUser) {

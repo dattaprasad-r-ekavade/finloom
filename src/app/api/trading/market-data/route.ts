@@ -7,6 +7,7 @@ import { NextRequest } from 'next/server';
 import { ErrorHandlers, successResponse } from '@/lib/apiResponse';
 import { requireOneOfRoles } from '@/lib/apiAuth';
 import { getAngelOneSession } from '@/lib/angelone';
+import { internalDevelopmentOnlyResponse } from '@/lib/internalDevelopment';
 
 const ANGELONE_BASE_URL = 'https://apiconnect.angelone.in';
 
@@ -51,6 +52,8 @@ async function searchExchange(
 }
 
 export async function GET(request: NextRequest) {
+  const blocked = internalDevelopmentOnlyResponse();
+  if (blocked) return blocked;
   try {
     const session = await requireOneOfRoles(request, ['TRADER', 'ADMIN']);
     if (!session) {

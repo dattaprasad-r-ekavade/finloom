@@ -18,7 +18,9 @@ import {
   Stack,
   CircularProgress,
   Alert,
+  Button,
 } from '@mui/material';
+import Link from 'next/link';
 import {
   People,
   TrendingUp,
@@ -193,6 +195,7 @@ export default function AdminDashboard() {
             tuned for operational leaders.
           </Typography>
           <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+            <Button component={Link} href="/dashboard/admin/feedback" variant="outlined" size="small">Pilot feedback</Button>
             <Chip label="Capital" color="primary" variant="outlined" />
             <Chip label="Risk Alerts" color="error" variant="outlined" />
             <Chip label="Compliance" color="warning" variant="outlined" />

@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,6 +40,9 @@ async function getConnectionStatus(): Promise<ConnectionStatus> {
 }
 
 export default async function DatabaseTestPage() {
+  if (process.env.NODE_ENV === 'production') {
+    notFound();
+  }
   const status = await getConnectionStatus();
   const databaseUrlConfigured = Boolean(process.env.DATABASE_URL);
 

@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 
 import { prisma } from '@/lib/prisma';
-import { ensureDatabase } from '@/lib/ensureDatabase';
 import { signToken } from '@/lib/jwt';
 import { ErrorHandlers, isValidEmail } from '@/lib/apiResponse';
 
@@ -14,7 +13,6 @@ interface LoginRequestBody {
 
 export async function POST(request: Request) {
   try {
-    await ensureDatabase();
 
     const body = (await request.json()) as LoginRequestBody;
     const { email, password, expectedRole } = body;

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { ErrorHandlers, successResponse } from '@/lib/apiResponse';
+import { ErrorHandlers, errorResponse, successResponse } from '@/lib/apiResponse';
 import {
   calculateRequiredCapital,
   calculateUnrealizedPnl,
@@ -9,7 +9,8 @@ import {
 } from '@/lib/tradingUtils';
 import { getChallengeForTrader, requireTrader } from '@/app/api/trading/_helpers';
 import { TradeStatus } from '@prisma/client';
-import { getLivePriceMap } from '@/lib/angeloneLivePrice';
+import { freshQuoteMap, quoteKey, QuoteUnavailable } from '@/lib/tradeQuotes';
+import { internalDevelopmentOnlyResponse } from '@/lib/internalDevelopment';
 
 function parseDateParam(value: string | null): Date | null {
   if (!value) {
@@ -25,6 +26,8 @@ function parseDateParam(value: string | null): Date | null {
 }
 
 export async function GET(request: NextRequest) {
+  const blocked = internalDevelopmentOnlyResponse();
+  if (blocked) return blocked;
   try {
     const trader = await requireTrader(request);
 
@@ -99,19 +102,15 @@ export async function GET(request: NextRequest) {
         }),
       ]);
 
-    const priceMap = openTrades.length
-      ? await getLivePriceMap(
-          openTrades.map((t) => ({ scrip: t.scrip, exchange: t.exchange || 'NSE', fallbackPrice: t.entryPrice }))
-        )
-      : new Map<string, number>();
+    const priceMap = await freshQuoteMap(openTrades);
 
     const capitalUsed = openTrades.reduce((total, trade) => {
-      const ltp = priceMap.get(trade.scrip) ?? trade.entryPrice;
+      const ltp = priceMap.get(quoteKey(trade))!.ltp;
       return total + calculateRequiredCapital(trade.quantity, ltp);
     }, 0);
 
     const unrealizedPnl = openTrades.reduce((total, trade) => {
-      const ltp = priceMap.get(trade.scrip) ?? trade.entryPrice;
+      const ltp = priceMap.get(quoteKey(trade))!.ltp;
       return total + calculateUnrealizedPnl(trade, ltp);
     }, 0);
 
@@ -145,6 +144,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof QuoteUnavailable) return errorResponse(error.message, 409);
     console.error('Error fetching trading summary:', error);
     return ErrorHandlers.serverError('Failed to fetch trading summary');
   }

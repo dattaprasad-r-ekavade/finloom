@@ -3,6 +3,7 @@
 import React from 'react';
 import {
   Box,
+  Button,
   Chip,
   Divider,
   IconButton,
@@ -39,11 +40,14 @@ export interface TradeRecord {
   entryTime: string;
   exitTime: string | null;
   autoSquaredOff: boolean;
+  entryReason?: string | null;
+  reviewNote?: string | null;
 }
 
 interface TradesListProps {
   trades: TradeRecord[];
   onSquareOff: (tradeId: string) => Promise<void>;
+  onReview?: (trade: TradeRecord) => Promise<void>;
   processingTrades: Set<string>;
 }
 
@@ -56,6 +60,7 @@ const currencyFormatter = new Intl.NumberFormat('en-IN', {
 export const TradesList: React.FC<TradesListProps> = ({
   trades,
   onSquareOff,
+  onReview,
   processingTrades,
 }) => {
   const hasTrades = trades.length > 0;
@@ -181,6 +186,9 @@ export const TradesList: React.FC<TradesListProps> = ({
                     {trade.exitTime && ` → ${formatDateTime(trade.exitTime)}`}
                     {!isOpen && trade.autoSquaredOff && ' · Auto sq-off'}
                   </Typography>
+                  {trade.entryReason && <Typography variant="caption" display="block" mt={0.5}>Reason: {trade.entryReason}</Typography>}
+                  {trade.reviewNote && <Typography variant="caption" display="block">Review: {trade.reviewNote}</Typography>}
+                  {!isOpen && onReview && <Button size="small" onClick={() => onReview(trade)}>Review trade</Button>}
                 </Paper>
               );
             })}
@@ -216,6 +224,8 @@ export const TradesList: React.FC<TradesListProps> = ({
                       <Typography variant="caption" color="text.secondary">
                         {trade.scripFullName}
                       </Typography>
+                      {trade.entryReason && <Typography variant="caption" display="block">Reason: {trade.entryReason}</Typography>}
+                      {trade.reviewNote && <Typography variant="caption" display="block">Review: {trade.reviewNote}</Typography>}
                     </TableCell>
                     <TableCell align="right">
                       <Chip
@@ -276,9 +286,9 @@ export const TradesList: React.FC<TradesListProps> = ({
                             </IconButton>
                           </span>
                         </Tooltip>
-                      ) : (
-                        '-'
-                      )}
+                      ) : onReview ? (
+                        <Button size="small" onClick={() => onReview(trade)}>Review</Button>
+                      ) : null}
                     </TableCell>
                   </TableRow>
                 );

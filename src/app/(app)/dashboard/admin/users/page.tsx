@@ -263,6 +263,23 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handlePilotGrant = async (user: User) => {
+    handleMenuClose();
+    if (!window.confirm(`Grant a non-paid level-one practice challenge to ${user.email}?`)) return;
+    try {
+      const response = await fetch('/api/admin/practice-grants', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? 'Unable to grant practice');
+      setSuccess('Pilot practice granted without identity submission or payment.');
+      fetchUsers();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Unable to grant practice');
+    }
+  };
+
   return (
     <Box>
       <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -490,6 +507,11 @@ export default function AdminUsersPage() {
                                 </ListItemIcon>
                                 <ListItemText>Edit User</ListItemText>
                               </MenuItem>
+                              {process.env.NODE_ENV !== 'production' && user.role === 'TRADER' && (
+                                <MenuItem onClick={() => handlePilotGrant(user)}>
+                                  <ListItemText>Grant pilot practice</ListItemText>
+                                </MenuItem>
+                              )}
                               <MenuItem onClick={() => handleDeleteClick(user)}>
                                 <ListItemIcon>
                                   <Delete fontSize="small" color="error" />

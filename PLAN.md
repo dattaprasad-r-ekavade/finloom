@@ -238,7 +238,7 @@ Vercel plan note: Vercel Hobby is for non-commercial use, and its cron runs dail
   4. Upsert `Quote` rows with `priceAsOf` taken from NSE's timestamp when present, else receive time.
   5. Roll `Candle` 1m rows.
   6. Write `IngestHeartbeat`.
-  7. At 15:20, take a final snapshot, then POST `NEXT_BASE_URL/api/internal/eod-square-off` (§6).
+  7. At or just after 15:30 IST, take a final snapshot, then POST `NEXT_BASE_URL/api/internal/eod-square-off` (§6). A 15:20 quote is not the final market close.
   8. At 15:45, backfill the daily bar with `stock_df`/`index_df` for the universe.
   9. Weekly, refresh `Instrument` from the NSE equity master list [confirm source; jugaad may not provide one].
   10. Yearly, and on boot, refresh `holidays()` into `MarketCalendar`.
@@ -571,8 +571,8 @@ placeOrder({ userId, challengeId, instrumentKey, side, quantity, clientOrderId }
   - Idempotent via the `status: 'OPEN'` predicate.
   - Records an `EodRun { date @id, startedAt, finishedAt, closed, skipped }` row.
 - The existing `auto-square-off/route.ts` keeps admin-manual use by delegating to the same service.
-- **Primary trigger: the worker at 15:20 IST**, right after its final snapshot, so prices are known-fresh.
-- **Backstop: Vercel Cron** in `vercel.json` at `0 10 * * 1-5` UTC (15:30 IST) plus a second run at 15:45 IST. Precise scheduling needs Vercel Pro [verify].
+- **Primary trigger: the worker just after 15:30 IST**, following its final snapshot. Stop new entries at the separately configured 15:15 IST cutoff.
+- **Backstop: Vercel Cron** in `vercel.json` at `1 10 * * 1-5` UTC (15:31 IST) plus a second run at 15:45 IST. Precise scheduling needs Vercel Pro [verify].
 - Positions without a fresh quote at EOD are **not closed at entry**. They are closed at the stored `Quote.ltp` if it is less than 5 min old, else at the final `D1` close once the worker's 15:45 backfill lands (second cron run), and marked `closeReason='EOD_DEFERRED'`.
 - Batch size: at most 50 challenges per invocation, looping until done or 45 s elapse, then return `{ remaining }` so the next run continues [confirm the Vercel max duration on the chosen plan].
 - Worker cron vs Vercel cron: the worker has an accurate clock and knows price freshness, but it is a single point of failure. Vercel Cron is independent, and on Pro it can run every minute [verify]. **Use both; idempotency makes the double trigger safe.**
@@ -689,7 +689,7 @@ New env summary:
 7. **Money type:** migrate `Trade`/`UserChallenge`/`DailyTradeSummary` `Float` to `Decimal` now (phase 3) or later.
 8. **Instrument scope:** NSE equities (NIFTY 50 only, or NIFTY 500?) + indices chart-only. Confirm that MCX/NFO are dropped from `ChallengePlan.allowedInstruments`.
 9. **Intraday candle source:** worker-rolled from polls vs `NSELive.chart_data` [verify availability and terms].
-10. **Entry cut-off time** before EOD (default 15:15 IST) and EOD time (15:20 IST).
+10. **Entry cut-off time** before EOD (default 15:15 IST) and EOD time (just after the 15:30 IST close).
 11. **Should `/challenge-plans` be public marketing** (currently trader-gated in `src/proxy.ts`)?
 12. **Fonts:** keep Poppins (2 weights) or drop to Inter-only. **Tailwind:** remove the unused dependency or keep it.
 13. **Alerting channel** for worker down (email / Slack / none for MVP).
@@ -893,3 +893,22 @@ Add these to `appNav.admin` in `src/components/shell/navConfig.ts`:
 5. **Retake policy and cool-down** for quizzes and assessments. Rule versions must record it.
 6. **Careers:** does Finloom host applications, or link out to the hiring firm's ATS? Also: are applicants' certificates shared automatically or with consent?
 7. **NISM tracks:** confirm Series VIII first, with Series XII only after demand (`docs/business.md` §5), and who maps questions to the official syllabus.
+
+---
+
+## 11. Internal pilot before the customer-data worker
+
+An invited prototype and a paid customer assessment have different entry criteria. Complete one lesson → diagnostic → practice → trade review → feedback journey without requiring PAN or payment. This does not remove the legal, data-rights, replay, payment, certificate or hiring gates for an external paid release.
+
+**Current implementation checkpoint (2026-09-24):** an admin can grant a non-paid level-one challenge locally when `ENABLE_PILOT_GRANTS=true`; the grant records its administrator and is disabled in production. Traders can record an entry reason, review a closed trade, and submit feedback. Status/dashboard metrics derive from daily summaries and trades. Order mutations use challenge-level locking, idempotency and fresh candle timestamps in local development. Production broker and trading routes remain closed. The grant still relies on the existing local AngelOne terminal; it is **not** a fixture or licensed replay experience. Do not invite external testers to it until the next item is complete.
+
+**Pilot delivery order and acceptance:**
+1. Verify migrations against both a clean PostgreSQL database and a copy of the existing schema. The forward KYC migration preserves historical `idNumber` data; audit it before later removal. Apply migrations explicitly before deployment; do not perform DDL in request handlers.
+2. Build an isolated fixture or approved historical replay mode with a server-owned session clock, immutable price tape, instrument IDs and visible source/as-of labels. Demo grants must route only to this mode. Broker credentials stay local and inaccessible to testers. Do not expose cached quotes publicly until data rights are decided.
+3. Replace the local prompt-based trade review with an accessible in-app editor. Add a session debrief covering trade reasons, equity changes, rule breaches and next steps. Make one original foundation lesson and diagnostic with server-side scoring before expanding the L1–L6 catalogue.
+4. Invite 5–10 testers. Observe signup → lesson → practice → review → feedback. Track activation, time to first practice, completion, stale-quote errors, comprehension of simulated results and repeat use. Collect no unnecessary identity data. Review feedback weekly.
+5. Add CI with clean install, Prisma generation/validation, lint, types, unit and transaction tests, build, and migration verification. Include concurrent orders, duplicate IDs, double close, stale quotes, midnight IST, expired sessions, pending checkout order switching and dashboard/result reconciliation.
+
+**Data-mode decision gate:** §3's delayed near-live worker is a technical option, not approval to redistribute NSE data. Before customer-facing worker deployment, record the authorised source, display and assessment rights, allowed delay or historical age, and provider agreement. If near-live use is not approved, implement licensed historical replay from `docs/release-review-2026-09.md` instead. Keep the decision and evidence attached to this plan.
+
+**Purchase lifecycle follow-up:** switching a pending plan after a Razorpay order is created now returns a clear conflict and preserves the order. Add explicit cancellation/expiry, captured-after-abandonment reconciliation, support handling and tests before checkout. Never delete an order-bound challenge or assume a locally cancelled order cannot settle at the provider.

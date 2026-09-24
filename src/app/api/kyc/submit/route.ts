@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/prisma';
-import { ensureDatabase } from '@/lib/ensureDatabase';
 import { ErrorHandlers } from '@/lib/apiResponse';
 import { requireRole } from '@/lib/apiAuth';
 
@@ -31,7 +30,6 @@ export async function POST(request: NextRequest) {
       return ErrorHandlers.unauthorized('Trader authentication required.');
     }
 
-    await ensureDatabase();
 
     const body = (await request.json()) as KycRequestBody;
     const { fullName, phoneNumber, panNumber, dateOfBirth, address } = body;
