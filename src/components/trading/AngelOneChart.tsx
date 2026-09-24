@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useTheme } from '@mui/material/styles';
+import { useChartColors } from '@/theme/useChartColors';
 import {
   createChart,
   ColorType,
@@ -32,8 +32,6 @@ interface ChartMutableState {
   liveCandle: CandleData | null;
 }
 
-const UP_COLOR = '#26a69a';
-const DOWN_COLOR = '#ef5350';
 
 export const AngelOneChart: React.FC<AngelOneChartProps> = ({
   data,
@@ -49,18 +47,19 @@ export const AngelOneChart: React.FC<AngelOneChartProps> = ({
     prevData: [],
     liveCandle: null,
   });
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
+  const colors = useChartColors();
+  const UP_COLOR = colors.up;
+  const DOWN_COLOR = colors.down;
 
   useEffect(() => {
     if (!chartContainerRef.current) {
       return;
     }
 
-    const bgColor = isDark ? '#161B22' : '#ffffff';
-    const textColor = isDark ? '#8B949E' : '#333';
-    const gridColor = isDark ? '#21262D' : '#f0f0f0';
-    const borderColor = isDark ? '#30363D' : '#cccccc';
+    const bgColor = colors.surface;
+    const textColor = colors.axis;
+    const gridColor = colors.grid;
+    const borderColor = colors.border;
 
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -132,7 +131,7 @@ export const AngelOneChart: React.FC<AngelOneChartProps> = ({
         liveCandle: null,
       };
     };
-  }, [height, isDark]);
+  }, [height, colors, UP_COLOR, DOWN_COLOR]);
 
   useEffect(() => {
     const chartState = chartStateRef.current;
@@ -262,7 +261,8 @@ export const AngelOneChart: React.FC<AngelOneChartProps> = ({
       ...chartStateRef.current,
       prevData: data,
     };
-  }, [data]);
+    // Colours are deps so a theme switch (which recreates the chart above) reloads the data.
+  }, [data, UP_COLOR, DOWN_COLOR]);
 
   useEffect(() => {
     if (!liveStreamUrl) {

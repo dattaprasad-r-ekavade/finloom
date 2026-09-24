@@ -41,27 +41,27 @@ const getRiskLevel = (percentage: number): {
   if (percentage >= 95) {
     return {
       level: 'critical',
-      color: '#d32f2f',
+      color: 'error.main',
       icon: <ErrorIcon sx={{ fontSize: 16, animation: 'pulse 1s infinite' }} />,
     };
   }
   if (percentage >= 80) {
     return {
       level: 'danger',
-      color: '#f44336',
+      color: 'error.main',
       icon: <WarningIcon sx={{ fontSize: 16 }} />,
     };
   }
   if (percentage >= 50) {
     return {
       level: 'caution',
-      color: '#ff9800',
+      color: 'warning.main',
       icon: <WarningIcon sx={{ fontSize: 16 }} />,
     };
   }
   return {
     level: 'safe',
-    color: '#4caf50',
+    color: 'success.main',
     icon: <CheckCircleIcon sx={{ fontSize: 16 }} />,
   };
 };
@@ -94,7 +94,7 @@ export const RiskDashboard: React.FC<RiskDashboardProps> = ({
         sx={{
           p: 1.5,
           borderRadius: 2,
-          border: (theme) => `1px solid ${theme.palette.divider}`,
+          border: (theme) => `1px solid ${(theme.vars || theme).palette.divider}`,
         }}
       >
         <Stack spacing={1}>
@@ -131,7 +131,7 @@ export const RiskDashboard: React.FC<RiskDashboardProps> = ({
               sx={{
                 height: 5,
                 borderRadius: 3,
-                backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                backgroundColor: 'action.hover',
                 '& .MuiLinearProgress-bar': { backgroundColor: dailyRisk.color, borderRadius: 3 },
               }}
             />
@@ -153,7 +153,7 @@ export const RiskDashboard: React.FC<RiskDashboardProps> = ({
               sx={{
                 height: 5,
                 borderRadius: 3,
-                backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                backgroundColor: 'action.hover',
                 '& .MuiLinearProgress-bar': { backgroundColor: maxRisk.color, borderRadius: 3 },
               }}
             />
@@ -182,11 +182,8 @@ export const RiskDashboard: React.FC<RiskDashboardProps> = ({
       sx={{
         p: 2,
         borderRadius: 2,
-        border: (theme) => `1px solid ${theme.palette.divider}`,
-        backgroundColor: (theme) =>
-          theme.palette.mode === 'light'
-            ? 'rgba(255, 255, 255, 0.9)'
-            : 'rgba(30, 30, 30, 0.9)',
+        border: (theme) => `1px solid ${(theme.vars || theme).palette.divider}`,
+        backgroundColor: 'background.subtle',
         backdropFilter: 'blur(10px)',
       }}
     >
@@ -233,7 +230,7 @@ export const RiskDashboard: React.FC<RiskDashboardProps> = ({
             sx={{
               height: 8,
               borderRadius: 4,
-              backgroundColor: 'rgba(0, 0, 0, 0.08)',
+              backgroundColor: 'action.hover',
               '& .MuiLinearProgress-bar': {
                 backgroundColor: dailyRisk.color,
                 borderRadius: 4,
@@ -271,7 +268,7 @@ export const RiskDashboard: React.FC<RiskDashboardProps> = ({
             sx={{
               height: 8,
               borderRadius: 4,
-              backgroundColor: 'rgba(0, 0, 0, 0.08)',
+              backgroundColor: 'action.hover',
               '& .MuiLinearProgress-bar': {
                 backgroundColor: maxRisk.color,
                 borderRadius: 4,
@@ -298,9 +295,9 @@ export const RiskDashboard: React.FC<RiskDashboardProps> = ({
             sx={{
               height: 6,
               borderRadius: 3,
-              backgroundColor: 'rgba(0, 0, 0, 0.08)',
+              backgroundColor: 'action.hover',
               '& .MuiLinearProgress-bar': {
-                backgroundColor: '#2196f3',
+                backgroundColor: 'info.main',
                 borderRadius: 3,
               },
             }}

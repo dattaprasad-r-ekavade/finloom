@@ -1,272 +1,118 @@
-'use client';
-
 import { createTheme, responsiveFontSizes } from '@mui/material/styles';
+import type {} from '@mui/material/themeCssVarsAugmentation';
+import {
+  brand,
+  brandSurface,
+  fontFamily,
+  inverse,
+  market,
+  neutral,
+  radius,
+  status,
+} from './tokens';
 
-// Light theme colors
-const lightTheme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#174F3D',
-      light: '#4A8662',
-      dark: '#103B30',
-    },
-    secondary: {
-      main: '#6AA77E',
-      light: '#91C29D',
-      dark: '#477D5A',
-    },
-    success: {
-      main: '#4A8662',
-    },
-    error: {
-      main: '#E74C3C',
-    },
-    warning: {
-      main: '#F39C12',
-    },
-    background: {
-      default: '#F7F8F4',
-      paper: '#FFFFFF',
-    },
-    text: {
-      primary: '#152720',
-      secondary: '#65736C',
-    },
+declare module '@mui/material/styles' {
+  interface TypeBackground {
+    subtle: string;
+    raised: string;
+  }
+  interface Palette {
+    brand: { subtle: string; muted: string; onSubtle: string };
+    market: { up: string; down: string; flat: string };
+    inverse: { bg: string; bgDeep: string; text: string; textMuted: string; accent: string };
+  }
+  interface PaletteOptions {
+    brand?: Palette['brand'];
+    market?: Palette['market'];
+    inverse?: Palette['inverse'];
+  }
+}
+
+type Mode = 'light' | 'dark';
+
+const paletteFor = (mode: Mode) => ({
+  primary: brand[mode],
+  secondary: {
+    main: brandSurface[mode].onSubtle,
+    contrastText: mode === 'light' ? neutral.light.surface : neutral.dark.bg,
+  },
+  success: { main: status[mode].success },
+  error: { main: status[mode].error },
+  warning: { main: status[mode].warning },
+  info: { main: status[mode].info },
+  background: {
+    default: neutral[mode].bg,
+    paper: neutral[mode].surface,
+    subtle: neutral[mode].subtle,
+    raised: neutral[mode].surfaceRaised,
+  },
+  text: { primary: neutral[mode].text, secondary: neutral[mode].textMuted },
+  divider: neutral[mode].border,
+  brand: brandSurface[mode],
+  market: market[mode],
+  inverse: inverse[mode],
+});
+
+const headingFont = { fontFamily: fontFamily.display, letterSpacing: '-0.02em' };
+
+const baseTheme = createTheme({
+  cssVariables: { colorSchemeSelector: 'data-color-scheme' },
+  colorSchemes: {
+    light: { palette: paletteFor('light') },
+    dark: { palette: paletteFor('dark') },
   },
   typography: {
-    fontFamily: 'var(--font-inter), "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-    h1: {
-      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-      fontWeight: 700,
-    },
-    h2: {
-      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-      fontWeight: 600,
-    },
-    h3: {
-      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-      fontWeight: 600,
-    },
-    h4: {
-      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-      fontWeight: 600,
-    },
-    h5: {
-      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-      fontWeight: 500,
-    },
-    h6: {
-      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-      fontWeight: 500,
-    },
-    body1: {
-      fontFamily: 'var(--font-inter), "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-    },
-    body2: {
-      fontFamily: 'var(--font-inter), "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-    },
-    button: {
-      fontFamily: 'var(--font-inter), "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-      fontWeight: 500,
-      textTransform: 'none',
-    },
+    fontFamily: fontFamily.sans,
+    h1: { ...headingFont, fontWeight: 600 },
+    h2: { ...headingFont, fontWeight: 600 },
+    h3: { ...headingFont, fontWeight: 600 },
+    h4: { ...headingFont, fontWeight: 600 },
+    h5: { ...headingFont, fontWeight: 600 },
+    h6: { ...headingFont, fontWeight: 600 },
+    button: { fontWeight: 600, textTransform: 'none' },
+    overline: { fontWeight: 700, letterSpacing: '0.12em' },
   },
-  shape: {
-    borderRadius: 10,
-  },
+  shape: { borderRadius: radius.md },
   components: {
     MuiCssBaseline: {
       styleOverrides: {
-        body: {
-          backgroundColor: '#F7F8F4',
-          color: '#152720',
-        },
-      },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(0,0,0,0.06)',
-          transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out',
-          '&:hover': {
-            transform: 'translateY(-2px)',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-            borderColor: 'rgba(0,0,0,0.1)',
-          },
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          padding: '10px 24px',
+        body: { WebkitFontSmoothing: 'antialiased' },
+        '::selection': {
+          background: 'var(--mui-palette-brand-muted)',
+          color: 'var(--mui-palette-text-primary)',
         },
       },
     },
     MuiPaper: {
-      styleOverrides: {
-        root: {
-          backgroundImage: 'none',
-        },
-      },
-    },
-    MuiChip: {
-      styleOverrides: {
-        root: {
-          transition: 'background-color 0.2s ease, border-color 0.2s ease',
-        },
-      },
-    },
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          '& .MuiOutlinedInput-root': {
-            transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-          },
-        },
-      },
-    },
-  },
-});
-
-// Dark theme colors
-const darkTheme = createTheme({
-  palette: {
-    mode: 'dark',
-    primary: {
-      main: '#4FC3F7',
-      light: '#80D4FA',
-      dark: '#2196F3',
-    },
-    secondary: {
-      main: '#4CAF50',
-      light: '#81C784',
-      dark: '#388E3C',
-    },
-    success: {
-      main: '#4CAF50',
-    },
-    error: {
-      main: '#E74C3C',
-    },
-    warning: {
-      main: '#F39C12',
-    },
-    background: {
-      default: '#0D1117',
-      paper: '#161B22',
-    },
-    text: {
-      primary: '#E6EDF3',
-      secondary: '#8B949E',
-    },
-  },
-  typography: {
-    fontFamily: 'var(--font-inter), "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-    h1: {
-      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-      fontWeight: 700,
-    },
-    h2: {
-      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-      fontWeight: 600,
-    },
-    h3: {
-      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-      fontWeight: 600,
-    },
-    h4: {
-      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-      fontWeight: 600,
-    },
-    h5: {
-      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-      fontWeight: 500,
-    },
-    h6: {
-      fontFamily: 'var(--font-poppins), "Poppins", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-      fontWeight: 500,
-    },
-    body1: {
-      fontFamily: 'var(--font-inter), "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-    },
-    body2: {
-      fontFamily: 'var(--font-inter), "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-    },
-    button: {
-      fontFamily: 'var(--font-inter), "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
-      fontWeight: 500,
-      textTransform: 'none',
-    },
-  },
-  shape: {
-    borderRadius: 10,
-  },
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: {
-        body: {
-          backgroundColor: '#0D1117',
-          color: '#E6EDF3',
-        },
-      },
+      defaultProps: { elevation: 0 },
+      styleOverrides: { root: { backgroundImage: 'none' } },
     },
     MuiCard: {
-      styleOverrides: {
-        root: {
-          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out',
-          '&:hover': {
-            transform: 'translateY(-2px)',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-            borderColor: 'rgba(255,255,255,0.1)',
-          },
-        },
-      },
+      defaultProps: { variant: 'outlined' },
+      styleOverrides: { root: { borderRadius: radius.lg } },
     },
     MuiButton: {
+      defaultProps: { disableElevation: true },
+      styleOverrides: { root: { borderRadius: radius.sm, paddingInline: 18 } },
+    },
+    MuiTextField: { defaultProps: { variant: 'outlined' } },
+    MuiOutlinedInput: { styleOverrides: { root: { borderRadius: radius.sm } } },
+    MuiChip: { styleOverrides: { root: { fontWeight: 600 } } },
+    MuiAppBar: {
+      defaultProps: { elevation: 0, color: 'inherit' },
       styleOverrides: {
         root: {
-          borderRadius: 8,
-          padding: '10px 24px',
+          backgroundColor: 'var(--mui-palette-background-paper)',
+          borderBottom: '1px solid var(--mui-palette-divider)',
         },
       },
     },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          backgroundImage: 'none',
-        },
-      },
-    },
-    MuiChip: {
-      styleOverrides: {
-        root: {
-          transition: 'background-color 0.2s ease, border-color 0.2s ease',
-        },
-      },
-    },
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          '& .MuiOutlinedInput-root': {
-            transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-          },
-        },
-      },
-    },
+    MuiDialog: { styleOverrides: { paper: { borderRadius: radius.lg } } },
+    MuiTableCell: { styleOverrides: { head: { fontWeight: 600, color: 'var(--mui-palette-text-secondary)' } } },
   },
 });
 
-// Font family for monospace stats
-const robotoMonoFontFamily = 'var(--font-roboto-mono), "Roboto Mono", "Courier New", monospace';
+export const theme = responsiveFontSizes(baseTheme);
 
-// Apply responsive font scaling across breakpoints
-const responsiveLightTheme = responsiveFontSizes(lightTheme);
-const responsiveDarkTheme = responsiveFontSizes(darkTheme);
-
-export { responsiveLightTheme as lightTheme, responsiveDarkTheme as darkTheme, robotoMonoFontFamily };
+/** Monospace family for prices and tabular numbers. */
+export const robotoMonoFontFamily = fontFamily.mono;

@@ -20,7 +20,7 @@ import {
   CardContent,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import Navbar from '@/components/Navbar';
+import SiteHeader from '@/components/shell/SiteHeader';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -53,8 +53,8 @@ export default function AngelOneTestPage() {
 
 function AngelOneTestUnavailable() {
   return (
-    <Box sx={{ minHeight: '100vh', background: '#f7f8f4' }}>
-      <Navbar />
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      <SiteHeader />
       <Box sx={{ maxWidth: 760, mx: 'auto', px: 3, py: { xs: 7, md: 12 } }}>
         <Alert severity="info" sx={{ borderRadius: 3 }}>
           The AngelOne test console is internal development tooling and is unavailable in production.
@@ -401,9 +401,9 @@ function AngelOneTestDevelopmentPage() {
                           p: 1,
                           mb: 1,
                           cursor: 'pointer',
-                          backgroundColor: '#f5f5f5',
+                          backgroundColor: 'background.subtle',
                           borderRadius: 1,
-                          '&:hover': { backgroundColor: '#e0e0e0' },
+                          '&:hover': { backgroundColor: 'action.hover' },
                         }}
                         onClick={() => {
                           setTradingSymbol(result.tradingsymbol);
@@ -653,7 +653,7 @@ function AngelOneTestDevelopmentPage() {
             <Box
               component="pre"
               sx={{
-                backgroundColor: '#f5f5f5',
+                backgroundColor: 'background.subtle',
                 p: 2,
                 borderRadius: 1,
                 overflow: 'auto',

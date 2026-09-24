@@ -13,6 +13,25 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // Design system guard: colours come from src/theme/tokens.ts via the MUI theme
+    // (e.g. sx={{ color: 'text.secondary' }}) or CSS variables, never hex literals.
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/theme/**'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Literal[value=/#[0-9a-fA-F]{3,8}\\b/]',
+          message: 'Use a theme token (src/theme/tokens.ts) instead of a hex colour.',
+        },
+        {
+          selector: 'TemplateElement[value.raw=/#[0-9a-fA-F]{3,8}\\b/]',
+          message: 'Use a theme token (src/theme/tokens.ts) instead of a hex colour.',
+        },
+      ],
+    },
+  },
+  {
     files: ['prisma/**/*.js'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',

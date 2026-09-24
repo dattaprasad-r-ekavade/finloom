@@ -67,14 +67,14 @@ export const TradesList: React.FC<TradesListProps> = ({
       elevation={0}
       sx={{
         borderRadius: 3,
-        border: (theme) => `1px solid ${theme.palette.divider}`,
+        border: (theme) => `1px solid ${(theme.vars || theme).palette.divider}`,
       }}
     >
       <Box
         sx={{
           px: 3,
           py: 2,
-          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+          borderBottom: (theme) => `1px solid ${(theme.vars || theme).palette.divider}`,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
