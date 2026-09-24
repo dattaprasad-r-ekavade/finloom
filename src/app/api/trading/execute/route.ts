@@ -1,250 +1,36 @@
 import { NextRequest } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { ErrorHandlers, successResponse } from '@/lib/apiResponse';
-import {
-  calculateRequiredCapital,
-  calculateUnrealizedPnl,
-  clampQuantity,
-  getISTStartOfDay,
-  normalizeScripSymbol,
-} from '@/lib/tradingUtils';
-import { requireTrader, getChallengeForTrader } from '@/app/api/trading/_helpers';
-import { TradeStatus, TradeType } from '@prisma/client';
-import { getLivePrice, getLivePriceMap } from '@/lib/angeloneLivePrice';
-
-interface ExecuteBody {
-  challengeId?: string;
-  scrip?: string;
-  exchange?: string;
-  quantity?: number;
-  tradeType?: TradeType;
-}
+import { TradeType } from '@prisma/client';
+import { ErrorHandlers, errorResponse, successResponse } from '@/lib/apiResponse';
+import { requireTrader } from '@/app/api/trading/_helpers';
+import { placeOrder, OrderRejected } from '@/lib/orderService';
+import { QuoteUnavailable } from '@/lib/tradeQuotes';
+import { clampQuantity, normalizeScripSymbol } from '@/lib/tradingUtils';
 
 export async function POST(request: NextRequest) {
+  if (process.env.NODE_ENV === 'production') {
+    return errorResponse('Customer trading is disabled in this preview.', 503);
+  }
+  const trader = await requireTrader(request);
+  if (!trader) return ErrorHandlers.unauthorized('Trader authentication required');
   try {
-    const trader = await requireTrader(request);
-
-    if (!trader) {
-      return ErrorHandlers.unauthorized('Trader authentication required');
-    }
-
-    const body = (await request.json()) as ExecuteBody;
-
-    const challengeId = body.challengeId?.trim();
-    const scrip = body.scrip ? normalizeScripSymbol(body.scrip) : '';
-    const exchange = (body.exchange?.trim().toUpperCase()) || 'NSE';
+    const body = await request.json();
+    const challengeId = typeof body.challengeId === 'string' ? body.challengeId.trim() : '';
+    const scrip = typeof body.scrip === 'string' ? normalizeScripSymbol(body.scrip) : '';
+    const exchange = typeof body.exchange === 'string' ? body.exchange.trim().toUpperCase() : 'NSE';
     const quantity = clampQuantity(Number(body.quantity));
-    const tradeType = body.tradeType;
-
-    if (!challengeId || !scrip || !tradeType || quantity <= 0) {
-      return ErrorHandlers.validationError('Invalid request payload', {
-        challengeId,
-        scrip,
-        quantity,
-        tradeType,
-      });
+    const tradeType = body.tradeType as TradeType;
+    const clientOrderId = typeof body.clientOrderId === 'string' ? body.clientOrderId.trim() : '';
+    const entryReason = typeof body.entryReason === 'string' ? body.entryReason.trim() : '';
+    if (!challengeId || !scrip || !exchange || quantity <= 0 ||
+        ![TradeType.BUY, TradeType.SELL].includes(tradeType) ||
+        !/^[0-9a-f-]{36}$/i.test(clientOrderId)) {
+      return ErrorHandlers.validationError('Valid challenge, instrument, quantity, side and clientOrderId are required.');
     }
-
-    if (tradeType !== TradeType.BUY && tradeType !== TradeType.SELL) {
-      return ErrorHandlers.validationError('tradeType must be BUY or SELL');
-    }
-
-    const challenge = await getChallengeForTrader(challengeId, trader.userId);
-
-    if (!challenge) {
-      return ErrorHandlers.notFound('Challenge not found');
-    }
-
-    if (challenge.status !== 'ACTIVE') {
-      return ErrorHandlers.forbidden('Challenge is not active');
-    }
-
-    // Fetch live price from AngelOne
-    const liveData = await getLivePrice(scrip, exchange);
-    if (!liveData) {
-      return ErrorHandlers.notFound(`Live market data unavailable for ${scrip} on ${exchange}. Market may be closed or scrip not found.`);
-    }
-    const { ltp: currentLtp, tradingSymbol, scripFullName } = liveData;
-
-    const todayStart = getISTStartOfDay();
-    const tomorrowStart = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
-
-    const tradesTodayCountPromise = prisma.trade.count({
-      where: {
-        challengeId,
-        entryTime: {
-          gte: todayStart,
-          lt: tomorrowStart,
-        },
-      },
-    });
-
-    const openTradesPromise = prisma.trade.findMany({
-      where: {
-        challengeId,
-        status: TradeStatus.OPEN,
-      },
-    });
-
-    const aggregateRealizedPromise = prisma.trade.aggregate({
-      where: {
-        challengeId,
-        status: TradeStatus.CLOSED,
-      },
-      _sum: {
-        pnl: true,
-      },
-    });
-
-    const [tradesTodayCount, openTrades, aggregateRealized] = await Promise.all([
-      tradesTodayCountPromise,
-      openTradesPromise,
-      aggregateRealizedPromise,
-    ]);
-
-    if (tradesTodayCount >= 100) {
-      return ErrorHandlers.forbidden('Daily trade limit of 100 reached');
-    }
-
-    const scripsToFetch = Array.from(
-      new Set([...openTrades.map((trade) => trade.scrip), scrip]),
-    );
-    const priceMap = await getLivePriceMap(
-      openTrades.map((t) => ({ scrip: t.scrip, exchange: t.exchange || 'NSE', fallbackPrice: t.entryPrice }))
-    );
-    priceMap.set(scrip, currentLtp);
-
-    const capitalUsedBefore = openTrades.reduce((total, trade) => {
-      const ltp = priceMap.get(trade.scrip) ?? trade.entryPrice;
-      return total + calculateRequiredCapital(trade.quantity, ltp);
-    }, 0);
-
-    const requiredCapital = calculateRequiredCapital(quantity, currentLtp);
-    const realizedSum = aggregateRealized._sum.pnl ?? 0;
-    const realizedLoss = realizedSum < 0 ? Math.abs(realizedSum) : 0;
-    const capitalAvailableBefore =
-      challenge.plan.accountSize - capitalUsedBefore - realizedLoss;
-
-    if (capitalAvailableBefore < requiredCapital) {
-      return ErrorHandlers.forbidden(
-        'Insufficient available capital to place this trade',
-      );
-    }
-
-    const createdTrade = await prisma.trade.create({
-      data: {
-        challengeId,
-        scrip: normalizeScripSymbol(tradingSymbol.replace(/-EQ$/, '')),
-        scripFullName,
-        exchange,
-        quantity,
-        entryPrice: currentLtp,
-        tradeType,
-        status: TradeStatus.OPEN,
-        pnl: 0,
-      },
-    });
-
-    const openTradesAfter = [...openTrades, createdTrade];
-    const capitalUsedAfter = openTradesAfter.reduce((total, trade) => {
-      const ltp = priceMap.get(trade.scrip) ?? trade.entryPrice;
-      return total + calculateRequiredCapital(trade.quantity, ltp);
-    }, 0);
-
-    const capitalAvailableAfter =
-      challenge.plan.accountSize - capitalUsedAfter - realizedLoss;
-
-    const unrealizedPnlAfter = openTradesAfter.reduce((total, trade) => {
-      const ltp = priceMap.get(trade.scrip) ?? trade.entryPrice;
-      return total + calculateUnrealizedPnl(trade, ltp);
-    }, 0);
-
-    const closedTradesTodayCountPromise = prisma.trade.count({
-      where: {
-        challengeId,
-        status: TradeStatus.CLOSED,
-        exitTime: {
-          gte: todayStart,
-          lt: tomorrowStart,
-        },
-      },
-    });
-
-    const realizedTodayPromise = prisma.trade.aggregate({
-      where: {
-        challengeId,
-        status: TradeStatus.CLOSED,
-        exitTime: {
-          gte: todayStart,
-          lt: tomorrowStart,
-        },
-      },
-      _sum: {
-        pnl: true,
-      },
-    });
-
-    const [closedTradesTodayCount, realizedToday] = await Promise.all([
-      closedTradesTodayCountPromise,
-      realizedTodayPromise,
-    ]);
-
-    const realizedPnlToday = realizedToday._sum.pnl ?? 0;
-    const totalTradesToday = tradesTodayCount + 1;
-    const dayPnlPct =
-      ((realizedPnlToday + unrealizedPnlAfter) / challenge.plan.accountSize) *
-      100;
-
-    const summary = await prisma.dailyTradeSummary.upsert({
-      where: {
-        challengeId_date: {
-          challengeId,
-          date: todayStart,
-        },
-      },
-      create: {
-        challengeId,
-        date: todayStart,
-        totalTrades: totalTradesToday,
-        openTrades: openTradesAfter.length,
-        closedTrades: closedTradesTodayCount,
-        realizedPnl: realizedPnlToday,
-        unrealizedPnl: unrealizedPnlAfter,
-        capitalUsed: capitalUsedAfter,
-        capitalAvailable: Math.max(0, capitalAvailableAfter),
-        dayPnlPct: Number(dayPnlPct.toFixed(4)),
-      },
-      update: {
-        totalTrades: totalTradesToday,
-        openTrades: openTradesAfter.length,
-        closedTrades: closedTradesTodayCount,
-        realizedPnl: realizedPnlToday,
-        unrealizedPnl: unrealizedPnlAfter,
-        capitalUsed: capitalUsedAfter,
-        capitalAvailable: Math.max(0, capitalAvailableAfter),
-        dayPnlPct: Number(dayPnlPct.toFixed(4)),
-      },
-    });
-
-    const combinedPnl = realizedSum + unrealizedPnlAfter;
-    await prisma.userChallenge.update({
-      where: { id: challengeId },
-      data: {
-        currentPnl: combinedPnl,
-      },
-    });
-
-    return successResponse({
-      trade: createdTrade,
-      summary,
-      portfolio: {
-        capitalUsed: capitalUsedAfter,
-        capitalAvailable: Math.max(0, capitalAvailableAfter),
-        unrealizedPnl: unrealizedPnlAfter,
-        realizedPnl: realizedSum,
-      },
-    });
+    if (entryReason.length > 500) return ErrorHandlers.validationError('Trade reason must be 500 characters or fewer.');
+    return successResponse(await placeOrder({ userId: trader.userId, challengeId, scrip, exchange, quantity, tradeType, clientOrderId, entryReason }));
   } catch (error) {
+    if (error instanceof OrderRejected) return errorResponse(error.message, error.status);
+    if (error instanceof QuoteUnavailable) return errorResponse(error.message, 409);
     console.error('Error executing trade:', error);
     return ErrorHandlers.serverError('Failed to execute trade');
   }

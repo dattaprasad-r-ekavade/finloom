@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { ErrorHandlers, successResponse } from '@/lib/apiResponse';
 import { requireOneOfRoles } from '@/lib/apiAuth';
 import { getLivePrice } from '@/lib/angeloneLivePrice';
+import { internalDevelopmentOnlyResponse } from '@/lib/internalDevelopment';
 
 interface RouteParams {
   params: Promise<{
@@ -10,6 +11,8 @@ interface RouteParams {
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const blocked = internalDevelopmentOnlyResponse();
+  if (blocked) return blocked;
   try {
     const session = await requireOneOfRoles(request, ['TRADER', 'ADMIN']);
     if (!session) {

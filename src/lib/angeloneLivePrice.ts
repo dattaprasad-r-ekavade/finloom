@@ -115,7 +115,7 @@ export async function searchScripToken(
 export async function getLivePrice(
   scrip: string,
   exchange: string,
-): Promise<{ ltp: number; symbolToken: string; tradingSymbol: string; scripFullName: string } | null> {
+): Promise<{ ltp: number; asOf: Date; symbolToken: string; tradingSymbol: string; scripFullName: string } | null> {
   const tokenInfo = await searchScripToken(scrip, exchange);
   if (!tokenInfo) return null;
 
@@ -172,7 +172,9 @@ export async function getLivePrice(
         try { retryData = JSON.parse(retryRaw); } catch { return null; }
         if (retryResp.ok && Array.isArray(retryData.data) && (retryData.data as any[]).length > 0) {
           const last = (retryData.data as any[])[retryData.data.length - 1];
-          return { ltp: last[4], ...tokenInfo };
+          const asOf = new Date(last[0]);
+          if (!Number.isFinite(last[4]) || last[4] <= 0 || Number.isNaN(asOf.getTime())) return null;
+          return { ltp: last[4], asOf, ...tokenInfo };
         }
       }
       console.warn(`[angeloneLivePrice] getCandleData empty for ${exchange}:${scrip}:`, (data as any)?.message ?? data);
@@ -181,35 +183,12 @@ export async function getLivePrice(
 
     const candles = data.data as any[];
     const last = candles[candles.length - 1];
-    return { ltp: last[4], ...tokenInfo }; // close price
+    const asOf = new Date(last[0]);
+    if (!Number.isFinite(last[4]) || last[4] <= 0 || Number.isNaN(asOf.getTime())) return null;
+    return { ltp: last[4], asOf, ...tokenInfo }; // candle close, not an exchange tick
   } catch (err) {
     console.error('[angeloneLivePrice] getLivePrice error:', err);
     tokenCache.delete(`${exchange}:${scrip.toUpperCase()}`);
     return null;
   }
-}
-
-/**
- * Fetch live LTP for multiple scrips in parallel.
- * Returns a map of scrip -> ltp (uses entryPrice as fallback if lookup fails).
- */
-export async function getLivePriceMap(
-  scrips: Array<{ scrip: string; exchange: string; fallbackPrice: number }>,
-): Promise<Map<string, number>> {
-  const priceMap = new Map<string, number>();
-
-  const results = await Promise.allSettled(
-    scrips.map(async ({ scrip, exchange, fallbackPrice }) => {
-      const result = await getLivePrice(scrip, exchange);
-      return { scrip, ltp: result?.ltp ?? fallbackPrice };
-    }),
-  );
-
-  results.forEach((r) => {
-    if (r.status === 'fulfilled') {
-      priceMap.set(r.value.scrip, r.value.ltp);
-    }
-  });
-
-  return priceMap;
 }

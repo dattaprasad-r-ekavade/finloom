@@ -9,6 +9,7 @@
 import { NextRequest } from 'next/server';
 import { requireOneOfRoles } from '@/lib/apiAuth';
 import { getAngelOneSession } from '@/lib/angelone';
+import { internalDevelopmentOnlyResponse } from '@/lib/internalDevelopment';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,8 @@ function toAngelOneDate(d: Date): string {
 }
 
 export async function GET(request: NextRequest) {
+  const blocked = internalDevelopmentOnlyResponse();
+  if (blocked) return blocked;
   const sessionUser = await requireOneOfRoles(request, ['TRADER', 'ADMIN']);
   if (!sessionUser) {
     return new Response('Unauthorized', { status: 401 });

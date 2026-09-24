@@ -62,6 +62,7 @@ model User {
   challengeOrders     ChallengeOrder[]
   mockedKyc           MockedKYC?
   mockedPayments      MockedPayment[]
+  pilotFeedback        PilotFeedback[]
 
   @@index([passwordResetToken])
 }
@@ -93,6 +94,8 @@ model UserChallenge {
   userId                 String
   planId                 String
   status                 ChallengeStatus     @default(PENDING)
+  isDemo                 Boolean             @default(false)
+  demoGrantedBy          String?
   demoAccountCredentials String?
   startDate              DateTime?
   endDate                DateTime?
@@ -207,7 +210,12 @@ model Trade {
   exchange       String        @default("NSE")
   quantity       Int
   entryPrice     Float
+  clientOrderId  String?
+  entryPriceAsOf DateTime?
+  entryReason    String?
+  reviewNote     String?
   exitPrice      Float?
+  exitPriceAsOf  DateTime?
   tradeType      TradeType
   status         TradeStatus
   pnl            Float         @default(0)
@@ -222,6 +230,7 @@ model Trade {
   @@index([status])
   @@index([challengeId, status])
   @@index([entryTime])
+  @@unique([challengeId, clientOrderId])
 }
 
 model MockedMarketData {
@@ -276,4 +285,17 @@ model AngelOneCredentials {
   tokenExpiresAt   DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+}
+
+model PilotFeedback {
+  id          String   @id @default(cuid())
+  userId      String
+  challengeId String?
+  rating      Int
+  message     String
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([userId])
 }

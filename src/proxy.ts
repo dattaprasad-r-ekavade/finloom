@@ -8,6 +8,8 @@ const publicPageRoutes = [
   '/privacy',
   '/refund-policy',
   '/signup',
+  '/forgot-password',
+  '/reset-password',
   '/terms',
   '/admin/login',
   '/admin/local-credentials',
@@ -27,7 +29,7 @@ const traderPagePrefixes = [
   '/live-trading',
 ];
 
-const adminPagePrefixes = ['/dashboard/admin'];
+const adminPagePrefixes = ['/dashboard/admin', '/db-test'];
 
 function isPublicPage(pathname: string): boolean {
   return publicPageRoutes.some(
@@ -79,7 +81,12 @@ async function getRoleFromVerifiedToken(token: string): Promise<'TRADER' | 'ADMI
   }
 
   const dataBytes = new TextEncoder().encode(`${encodedHeader}.${encodedPayload}`);
-  const signatureBytes = base64UrlToBytes(encodedSignature);
+  let signatureBytes: Uint8Array;
+  try {
+    signatureBytes = base64UrlToBytes(encodedSignature);
+  } catch {
+    return null;
+  }
   const dataBuffer = new Uint8Array(dataBytes).buffer as ArrayBuffer;
   const signatureBuffer = new Uint8Array(signatureBytes).buffer as ArrayBuffer;
 
@@ -98,6 +105,11 @@ async function getRoleFromVerifiedToken(token: string): Promise<'TRADER' | 'ADMI
 
   const payload = decodePayload(encodedPayload);
   if (!payload) {
+    return null;
+  }
+
+  // A valid signature alone does not make an expired session valid.
+  if (typeof payload.exp !== 'number' || payload.exp <= Date.now() / 1000) {
     return null;
   }
 
@@ -146,6 +158,9 @@ export async function proxy(request: NextRequest) {
   }
 
   const role = await getRoleFromVerifiedToken(token);
+  if (!role) {
+    return redirectToLogin(request);
+  }
   const isAdminPage = startsWithAny(pathname, adminPagePrefixes);
   const isTraderPage = startsWithAny(pathname, traderPagePrefixes);
 

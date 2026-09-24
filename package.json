@@ -7,6 +7,7 @@
     "build": "node scripts/run-build.js",
     "start": "next start",
     "lint": "cross-env BROWSERSLIST_IGNORE_OLD_DATA=1 BASELINE_BROWSER_MAPPING_IGNORE_OLD_DATA=1 eslint",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "seed": "node prisma/seed.js",
     "postinstall": "prisma generate"
   },

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 
-import { ensureDatabase } from '@/lib/ensureDatabase';
 import { ErrorHandlers, isValidEmail, isValidPassword } from '@/lib/apiResponse';
 import { prisma } from '@/lib/prisma';
 import {
@@ -28,7 +27,6 @@ export async function GET(request: Request) {
       return ErrorHandlers.forbidden('This endpoint is only available on local development.');
     }
 
-    await ensureDatabase();
     const user = await ensurePrimaryAdminUser();
 
     return NextResponse.json({
@@ -64,7 +62,6 @@ export async function PUT(request: Request) {
       return ErrorHandlers.forbidden('This endpoint is only available on local development.');
     }
 
-    await ensureDatabase();
     await ensurePrimaryAdminUser();
 
     const body = (await request.json()) as UpdateBody;

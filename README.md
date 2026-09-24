@@ -42,7 +42,7 @@ The UI conventions are in PLAN.md §5. In short:
 
 ## Local development
 
-Use Node.js 20.9 or later and PostgreSQL. Create a local `.env` (never commit it):
+Use Node.js 24 for the built-in TypeScript test runner and PostgreSQL. Create a local `.env` (never commit it):
 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/finloom?schema=public"
@@ -61,6 +61,8 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). Seeded plans are development fixtures.
 
+For local invited practice, set `ENABLE_PILOT_GRANTS=true`, create a trader, then use **Admin → Users → Grant pilot practice**. This activates a non-paid challenge without collecting identity details. The existing practice terminal still requires the local AngelOne development integration and fresh quotes; fixture/replay practice is the next pilot gate in PLAN.md §11. Never put broker credentials in a hosted deployment.
+
 ## Vercel
 
 Use a dedicated PostgreSQL database per environment. Set `DATABASE_URL`, a strong `JWT_SECRET` and `CRON_SECRET`. Apply migrations to that database deliberately before using routes that need it.
@@ -74,8 +76,9 @@ Do not add broker (AngelOne) credentials to any Vercel environment.
 ```bash
 npm run dev
 npm run lint
+npm test
 npm run build
 npx prisma validate
 ```
 
-There is no automated test suite or CI yet. Adding them is part of PLAN.md phase 3.
+Focused tests cover daily progress and IST boundaries. CI runs lint, tests, types and a build. Database concurrency and migration tests remain in PLAN.md §11.

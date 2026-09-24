@@ -18,6 +18,7 @@ export interface OrderPayload {
   scrip: ScripOption;
   quantity: number;
   tradeType: 'BUY' | 'SELL';
+  entryReason?: string;
   orderDetails?: {
     scrip: string;
     scripFullName: string;
@@ -50,6 +51,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
 }) => {
   const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY');
   const [quantity, setQuantity] = useState<string>('1');
+  const [entryReason, setEntryReason] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const handlePlaceOrder = async () => {
@@ -69,6 +71,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
       scrip: selectedScrip,
       quantity: Math.floor(parsedQuantity),
       tradeType,
+      entryReason: entryReason.trim(),
     });
   };
 
@@ -146,6 +149,15 @@ export const OrderForm: React.FC<OrderFormProps> = ({
       </Stack>
 
       {/* Preset Quantity Buttons */}
+      <TextField
+        label="Why this trade? (optional)"
+        value={entryReason}
+        onChange={(event) => setEntryReason(event.target.value)}
+        multiline
+        maxRows={3}
+        inputProps={{ maxLength: 500 }}
+        size="small"
+      />
       <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
         {[10, 25, 50, 100].map((preset) => (
           <Button

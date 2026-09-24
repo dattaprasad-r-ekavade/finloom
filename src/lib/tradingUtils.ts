@@ -1,4 +1,5 @@
-import { Trade, TradeStatus, TradeType } from '@prisma/client';
+import { TradeStatus, TradeType } from '@prisma/client';
+import type { Trade } from '@prisma/client';
 
 const IST_OFFSET_MINUTES = 330;
 
@@ -19,7 +20,7 @@ export function toIST(date: Date = new Date()): Date {
  */
 export function getISTStartOfDay(date: Date = new Date()): Date {
   const istDate = toIST(date);
-  istDate.setHours(0, 0, 0, 0);
+  istDate.setUTCHours(0, 0, 0, 0);
   return new Date(istDate.getTime() - IST_OFFSET_MINUTES * 60 * 1000);
 }
 
@@ -35,14 +36,14 @@ export function nowIST(): Date {
  */
 export function isMarketOpen(date: Date = new Date()): boolean {
   const ist = toIST(date);
-  const day = ist.getDay();
+  const day = ist.getUTCDay();
   // Market closed on Saturday (6) and Sunday (0)
   if (day === 0 || day === 6) {
     return false;
   }
 
-  const hours = ist.getHours();
-  const minutes = ist.getMinutes();
+  const hours = ist.getUTCHours();
+  const minutes = ist.getUTCMinutes();
 
   const isAfterOpen =
     hours > MARKET_OPEN_HOUR ||
@@ -52,6 +53,12 @@ export function isMarketOpen(date: Date = new Date()): boolean {
     (hours === MARKET_CLOSE_HOUR && minutes < MARKET_CLOSE_MINUTE);
 
   return isAfterOpen && isBeforeClose;
+}
+
+export function isEntryWindow(date: Date = new Date()): boolean {
+  if (!isMarketOpen(date)) return false;
+  const ist = toIST(date);
+  return ist.getUTCHours() < 15 || (ist.getUTCHours() === 15 && ist.getUTCMinutes() < 15);
 }
 
 export function calculateRequiredCapital(quantity: number, price: number): number {

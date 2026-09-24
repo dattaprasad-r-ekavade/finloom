@@ -7,6 +7,7 @@ import {
   parseChallengeCredentials,
 } from '@/lib/challengeCredentials';
 import { requireOneOfRoles } from '@/lib/apiAuth';
+import { deriveProgressMetrics } from '@/lib/challengeProgress';
 
 interface ChallengeStatusSummary {
   cumulativePnl: number;
@@ -23,6 +24,7 @@ interface ChallengeStatusResponse {
   challenge: {
     id: string;
     status: ChallengeStatus;
+    isDemo: boolean;
     startDate: Date | null;
     endDate: Date | null;
   };
@@ -85,9 +87,8 @@ export async function GET(
         mockedPayments: {
           orderBy: { createdAt: 'desc' },
         },
-        metrics: {
-          orderBy: { date: 'asc' },
-        },
+        dailySummaries: { orderBy: { date: 'asc' } },
+        trades: { select: { entryTime: true, exitTime: true, pnl: true } },
       },
     });
 
@@ -112,11 +113,11 @@ export async function GET(
       );
     }
 
-    const metrics = challenge.metrics;
+    const profitTarget = challenge.plan.accountSize * challenge.plan.profitTargetPct / 100;
+    const metrics = deriveProgressMetrics(challenge.dailySummaries, challenge.trades, profitTarget);
 
     const latestMetric = metrics[metrics.length - 1];
-    const profitTarget = latestMetric?.profitTarget ?? 0;
-    const cumulativePnl = latestMetric?.cumulativePnl ?? 0;
+    const cumulativePnl = challenge.currentPnl;
     const progressPct = profitTarget
       ? Math.min(100, (cumulativePnl / profitTarget) * 100)
       : 0;
@@ -126,10 +127,7 @@ export async function GET(
       0
     );
 
-    const tradesCount = metrics.reduce(
-      (accumulator: number, metric: typeof metrics[0]) => accumulator + metric.tradesCount,
-      0
-    );
+    const tradesCount = challenge.trades.length;
 
     const winRate = latestMetric?.winRate ?? 0;
 
@@ -158,6 +156,7 @@ export async function GET(
       challenge: {
         id: challenge.id,
         status: challenge.status,
+        isDemo: challenge.isDemo,
         startDate: challenge.startDate,
         endDate: challenge.endDate,
       },

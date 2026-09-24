@@ -43,6 +43,7 @@ import {
   Legend,
 } from 'recharts';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { robotoMonoFontFamily } from '@/theme/theme';
 import { useChartColors } from '@/theme/useChartColors';
 import { useAuthStore } from '@/store/authStore';
@@ -97,6 +98,7 @@ interface ChallengeStatusPayload {
 type ChallengeSelection = {
   id: string;
   status: string;
+  isDemo: boolean;
   plan: {
     id: string;
     name: string;
@@ -379,13 +381,15 @@ export default function UserDashboard() {
           </Typography>
           <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
             <Chip label="Simulation only" color="success" variant="outlined" />
+            {selection?.isDemo && <Chip label="Invited practice · no payment" color="info" variant="outlined" />}
             <Chip label="Risk rules" color="warning" variant="outlined" />
             <Chip label="Assessment" color="primary" variant="outlined" />
             <Chip label={kycStatusText} color={kycChipColor} variant="filled" />
+            <Button component={Link} href="/dashboard/user/feedback" size="small">Share pilot feedback</Button>
           </Stack>
         </Stack>
 
-        {!hasCompletedKyc && (
+        {!hasCompletedKyc && !selection?.isDemo && (
           <Alert
             severity="warning"
             sx={{
@@ -870,7 +874,6 @@ export default function UserDashboard() {
     </Box>
   );
 }
-
 
 
 

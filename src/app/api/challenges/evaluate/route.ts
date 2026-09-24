@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { evaluateChallenge, getEvaluationSummary } from '@/lib/evaluateChallenge';
 import { requireOneOfRoles, AuthenticatedSession } from '@/lib/apiAuth';
+import { deriveProgressMetrics } from '@/lib/challengeProgress';
 
 interface EvaluateRequestBody {
   challengeId?: string;
@@ -53,33 +54,18 @@ interface LoadedChallenge {
     realizedPnl: number;
     unrealizedPnl: number;
   }>;
+  trades: Array<{ entryTime: Date; exitTime: Date | null; pnl: number }>;
 }
 
 function getEvaluationMetrics(challenge: LoadedChallenge) {
   if (challenge.dailySummaries.length === 0) {
     return challenge.metrics;
   }
-
-  let cumulativeRealizedPnl = 0;
-  let peakPnl = 0;
-  let maxDrawdown = 0;
-  return challenge.dailySummaries.map((summary) => {
-    cumulativeRealizedPnl += summary.realizedPnl;
-    const cumulativePnl = cumulativeRealizedPnl + summary.unrealizedPnl;
-    const dailyPnl = summary.realizedPnl + summary.unrealizedPnl;
-    peakPnl = Math.max(peakPnl, cumulativePnl);
-    maxDrawdown = Math.max(maxDrawdown, peakPnl - cumulativePnl);
-    return {
-      date: summary.date,
-      dailyPnl,
-      cumulativePnl,
-      maxDrawdown,
-      tradesCount: 0,
-      winRate: 0,
-      profitTarget: 0,
-      violations: 0,
-    };
-  });
+  return deriveProgressMetrics(
+    challenge.dailySummaries,
+    challenge.trades,
+    challenge.plan.accountSize * challenge.plan.profitTargetPct / 100,
+  );
 }
 
 class EvaluateApiError extends Error {
@@ -107,6 +93,7 @@ async function loadSingleChallenge(challengeId: string): Promise<LoadedChallenge
         orderBy: { date: 'asc' },
       },
       dailySummaries: { orderBy: { date: 'asc' } },
+      trades: { select: { entryTime: true, exitTime: true, pnl: true } },
     },
   }) as Promise<LoadedChallenge | null>;
 }
@@ -144,6 +131,7 @@ async function loadChallengesForRequest(
           orderBy: { date: 'asc' },
         },
         dailySummaries: { orderBy: { date: 'asc' } },
+        trades: { select: { entryTime: true, exitTime: true, pnl: true } },
       },
     })) as LoadedChallenge[];
   }
@@ -169,6 +157,7 @@ async function loadChallengesForRequest(
           orderBy: { date: 'asc' },
         },
         dailySummaries: { orderBy: { date: 'asc' } },
+        trades: { select: { entryTime: true, exitTime: true, pnl: true } },
       },
     })) as LoadedChallenge[];
   }
@@ -183,6 +172,7 @@ async function loadChallengesForRequest(
         orderBy: { date: 'asc' },
       },
       dailySummaries: { orderBy: { date: 'asc' } },
+      trades: { select: { entryTime: true, exitTime: true, pnl: true } },
     },
   })) as LoadedChallenge[];
 }

@@ -1,0 +1,41 @@
+name: Checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: build
+          POSTGRES_PASSWORD: build
+          POSTGRES_DB: finloom
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U build -d finloom"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://build:build@127.0.0.1:5432/finloom?schema=public
+      JWT_SECRET: build-only-dummy-secret-with-enough-length
+      CRON_SECRET: build-only-cron-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx prisma validate
+      - run: npx prisma migrate deploy
+      - run: npm run lint
+      - run: npm test
+      - run: TZ=Asia/Kolkata npm test
+      - run: npx tsc --noEmit
+      - run: npm run build

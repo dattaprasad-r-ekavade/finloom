@@ -112,10 +112,10 @@ interface TradingSummaryResponse {
 }
 
 const DEFAULT_SYMBOL: ScripOption = {
-  scrip: 'GOLD1!',
-  scripFullName: 'Gold Futures',
+  scrip: 'RELIANCE',
+  scripFullName: 'Reliance Industries',
   ltp: 0,
-  exchange: 'MCX',
+  exchange: 'NSE',
 };
 
 export default function TradingTerminalPage() {
@@ -182,6 +182,7 @@ function TradingTerminalDevelopmentPage() {
   const isInitialChartLoadRef = React.useRef(true);
   const symbolTokenCacheRef = React.useRef<Record<string, { symbolToken: string; tradingSymbol: string }>>({});
   const selectedScripRef = React.useRef<ScripOption | null>(DEFAULT_SYMBOL);
+  const pendingOrderRef = React.useRef<{ fingerprint: string; id: string } | null>(null);
 
   // Keep ref in sync so callbacks can read latest value without it being a dependency
   useEffect(() => {
@@ -436,6 +437,10 @@ function TradingTerminalDevelopmentPage() {
         setInfo(null);
 
         const tradingScrip = payload.scrip.scrip.split('-')[0];
+        const fingerprint = `${challengeId}:${tradingScrip}:${payload.scrip.exchange}:${payload.quantity}:${payload.tradeType}:${payload.entryReason ?? ''}`;
+        if (pendingOrderRef.current?.fingerprint !== fingerprint) {
+          pendingOrderRef.current = { fingerprint, id: crypto.randomUUID() };
+        }
 
         const response = await fetch('/api/trading/execute', {
           method: 'POST',
@@ -446,6 +451,8 @@ function TradingTerminalDevelopmentPage() {
             exchange: payload.scrip.exchange || selectedScripRef.current?.exchange || 'NSE',
             quantity: payload.quantity,
             tradeType: payload.tradeType,
+            clientOrderId: pendingOrderRef.current.id,
+            entryReason: payload.entryReason,
           }),
         });
 
@@ -464,6 +471,7 @@ function TradingTerminalDevelopmentPage() {
         }
 
         setInfo('Trade executed successfully.');
+        pendingOrderRef.current = null;
         setToast({ open: true, message: `${payload.tradeType} order executed for ${tradingScrip}`, severity: 'success' });
         await refreshAll();
       } catch (err) {
@@ -584,6 +592,23 @@ function TradingTerminalDevelopmentPage() {
       setToast({ open: true, message: `Squared off ${successCount}, ${errorCount} failed`, severity: 'warning' });
     }
   }, [challengeId, trades, refreshAll]);
+
+  const handleReview = useCallback(async (trade: TradeRecord) => {
+    const reviewNote = window.prompt('What did you learn from this trade?', trade.reviewNote ?? '');
+    if (reviewNote === null) return;
+    try {
+      const response = await fetch(`/api/trading/trades/${trade.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewNote }),
+      });
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error ?? 'Unable to save review');
+      await refreshAll();
+      setToast({ open: true, message: 'Trade review saved', severity: 'success' });
+    } catch (error) {
+      setToast({ open: true, message: error instanceof Error ? error.message : 'Unable to save review', severity: 'error' });
+    }
+  }, [refreshAll]);
 
   useKeyboardShortcuts({
     onBuy: () => { setToast({ open: true, message: 'Quick Buy (B) - Select quantity and confirm', severity: 'info' }); },
@@ -748,6 +773,7 @@ function TradingTerminalDevelopmentPage() {
       <TradesList
         trades={trades}
         onSquareOff={handleSquareOff}
+        onReview={handleReview}
         processingTrades={processingTrades}
       />
     </Box>
@@ -837,6 +863,7 @@ function TradingTerminalDevelopmentPage() {
               <TradesList
                 trades={trades}
                 onSquareOff={handleSquareOff}
+                onReview={handleReview}
                 processingTrades={processingTrades}
               />
             </Box>

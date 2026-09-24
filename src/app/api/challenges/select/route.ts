@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         plan: true,
+        challengeOrders: { select: { id: true, status: true } },
         mockedPayments: {
           orderBy: { createdAt: 'desc' },
         },
@@ -67,6 +68,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (existingChallenge?.status === 'PENDING' && existingChallenge.planId !== planId) {
+      // A provider order can still settle after the browser leaves checkout.
+      // Keep its bound challenge until reconciliation; the FK also restricts deletion.
+      if (existingChallenge.challengeOrders.length > 0) {
+        return ErrorHandlers.conflict(
+          'Checkout has already started for your selected plan. Complete it or contact support before switching plans.',
+        );
+      }
       await prisma.userChallenge.delete({
         where: { id: existingChallenge.id },
       });

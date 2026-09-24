@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAngelOneSession } from '@/lib/angelone';
 import { requireOneOfRoles } from '@/lib/apiAuth';
+import { internalDevelopmentOnlyResponse } from '@/lib/internalDevelopment';
 
 const ANGELONE_BASE_URL = 'https://apiconnect.angelone.in';
 
@@ -39,6 +40,8 @@ async function doSearchScrip(exchange: string, searchScrip: string, forceRefresh
 }
 
 export async function POST(request: NextRequest) {
+  const blocked = internalDevelopmentOnlyResponse();
+  if (blocked) return blocked;
   try {
     const sessionUser = await requireOneOfRoles(request, ['TRADER', 'ADMIN']);
     if (!sessionUser) {
